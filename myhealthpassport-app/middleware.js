@@ -17,12 +17,12 @@ export async function middleware(request) {
     'Content-Security-Policy',
     `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}';
+    script-src 'self' 'nonce-${nonce}' https://checkout.razorpay.com;
     style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
     img-src 'self' data: https:;
     font-src 'self' https://fonts.gstatic.com https:;
-    connect-src 'self' https:;
-    frame-src 'none';
+    connect-src 'self' https: https://api.razorpay.com https://lumberjack.razorpay.com;
+    frame-src 'self' https://api.razorpay.com https://*.razorpay.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

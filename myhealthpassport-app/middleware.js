@@ -18,9 +18,9 @@ export async function middleware(request) {
     `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}';
-    style-src 'self';
+    style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
     img-src 'self' data: https:;
-    font-src 'self' https:;
+    font-src 'self' https://fonts.gstatic.com https:;
     connect-src 'self' https:;
     frame-src 'none';
     object-src 'none';

@@ -12,7 +12,7 @@ const Hero = () => {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-mint/10 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-6 xl:gap-12 items-center">
           {/* Left Content */}
           <div className="flex flex-col items-start text-left">
             {/* Badge */}
@@ -33,22 +33,22 @@ const Hero = () => {
             </p>
             
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 w-full sm:w-auto animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <Button asChild size="lg" className="text-sm sm:text-base px-5 sm:px-6 py-4 sm:py-5 rounded-xl shadow-glow justify-center">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto animate-slide-up" style={{ animationDelay: "0.2s" }}>
+              <Button asChild size="lg" className="text-sm px-3 xl:px-5 py-4 sm:py-5 rounded-xl shadow-glow justify-center whitespace-nowrap">
                 <Link href="/parents">
-                  <span className="mr-2 text-base sm:text-lg">👨‍👩‍👧</span>
+                  <span className="mr-2 text-base">👨‍👩‍👧</span>
                   For Parents
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="text-sm sm:text-base px-5 sm:px-6 py-4 sm:py-5 rounded-xl bg-card hover:bg-secondary justify-center">
+              <Button asChild variant="outline" size="lg" className="text-sm px-3 xl:px-5 py-4 sm:py-5 rounded-xl bg-card hover:bg-secondary justify-center whitespace-nowrap">
                 <Link href="/schools">
-                  <span className="mr-2 text-base sm:text-lg">🏫</span>
+                  <span className="mr-2 text-base">🏫</span>
                   For Schools
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="text-sm sm:text-base px-5 sm:px-6 py-4 sm:py-5 rounded-xl border-brand/30 bg-brand-light text-brand-dark hover:bg-brand/10 justify-center">
+              <Button asChild variant="outline" size="lg" className="text-sm px-3 xl:px-5 py-4 sm:py-5 rounded-xl border-brand/30 bg-brand-light text-brand-dark hover:bg-brand/10 justify-center whitespace-nowrap">
                 <Link href="/parents#programs">
-                  <span className="mr-2 text-base sm:text-lg">📋</span>
+                  <span className="mr-2 text-base">📋</span>
                   Explore Our Programs →
                 </Link>
               </Button>

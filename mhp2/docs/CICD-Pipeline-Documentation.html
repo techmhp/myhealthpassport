@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MHP — CI/CD Pipeline Documentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --primary: #1e40af;
+    --primary-dark: #1e3a8a;
+    --primary-light: #dbeafe;
+    --primary-glow: #3b82f6;
+    --bg: #ffffff;
+    --bg-subtle: #f8fafc;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --code-bg: #f1f5f9;
+    --accent: #059669;
+    --accent-light: #d1fae5;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --card-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.06);
+    --card-shadow-hover: 0 4px 16px rgba(15,23,42,0.08), 0 8px 24px rgba(15,23,42,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.75;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(30,64,175,0.02) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(59,130,246,0.02) 0%, transparent 50%),
+      linear-gradient(180deg, #f8fafc 0%, #ffffff 300px);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  body::after {
+    content: 'MY HEALTH PASSPORT';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 6rem;
+    font-weight: 800;
+    color: rgba(30,64,175,0.018);
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .cover {
+    text-align: center;
+    padding: 80px 0 48px;
+    margin-bottom: 48px;
+    position: relative;
+    border-bottom: none;
+  }
+
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--primary), var(--primary-glow), var(--primary), transparent);
+    border-radius: 2px;
+  }
+
+  .cover-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: absolute;
+    top: 24px;
+    left: 0;
+  }
+
+  .cover-logo svg { width: 52px; height: 52px; filter: drop-shadow(0 2px 8px rgba(30,64,175,0.15)); }
+
+  .cover-logo .logo-text {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.25;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .cover .doc-type {
+    display: inline-block;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 6px 20px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  .cover h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .cover .subtitle {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    font-weight: 400;
+  }
+
+  .cover .meta {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+  }
+
+  .cover .meta div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cover .meta .label { color: var(--text-light); font-weight: 500; }
+  .cover .meta .value { font-weight: 700; color: var(--text); }
+
+  .toc {
+    background: linear-gradient(135deg, var(--primary-light) 0%, #eff6ff 100%);
+    border: 1px solid rgba(30,64,175,0.08);
+    border-radius: 16px;
+    padding: 32px 40px;
+    margin-bottom: 48px;
+    box-shadow: var(--card-shadow);
+  }
+
+  .toc h2 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: none;
+    padding: 0;
+  }
+
+  .toc ol {
+    columns: 2;
+    column-gap: 48px;
+    padding-left: 22px;
+  }
+
+  .toc li {
+    padding: 5px 0;
+    font-size: 0.92rem;
+    color: var(--text-muted);
+  }
+
+  .toc a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+  }
+
+  .toc a:hover { color: var(--primary-glow); text-decoration: underline; }
+
+  section {
+    margin-bottom: 44px;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--card-shadow);
+    transition: box-shadow 0.2s;
+  }
+
+  section:hover { box-shadow: var(--card-shadow-hover); }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 28px 0 14px;
+  }
+
+  h3:first-of-type { margin-top: 8px; }
+
+  p {
+    margin-bottom: 14px;
+    color: var(--text);
+    font-size: 0.94rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 16px 0 24px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  thead th {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: white;
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 18px;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  tbody td {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--bg-subtle); }
+  tbody tr:hover { background: var(--primary-light); }
+
+  .flow-diagram {
+    background: linear-gradient(180deg, var(--bg-subtle), var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .flow-diagram pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    display: inline-block;
+    text-align: left;
+    color: var(--text);
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+
+  .flow-box {
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--primary);
+    min-width: 110px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(30,64,175,0.08);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .flow-box:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,64,175,0.12); }
+  .flow-box.green { border-color: var(--accent); color: var(--accent); box-shadow: 0 2px 8px rgba(5,150,105,0.08); }
+  .flow-box.orange { border-color: var(--warning); color: var(--warning); box-shadow: 0 2px 8px rgba(217,119,6,0.08); }
+
+  .arrow {
+    font-size: 1.3rem;
+    color: var(--text-light);
+    font-weight: 300;
+  }
+
+  .note {
+    background: linear-gradient(135deg, #fffbeb, var(--warning-light));
+    border-left: 4px solid var(--warning);
+    padding: 16px 20px;
+    border-radius: 0 12px 12px 0;
+    margin: 18px 0;
+    font-size: 0.9rem;
+    box-shadow: 0 1px 4px rgba(217,119,6,0.06);
+  }
+
+  .note strong { color: #b45309; }
+
+  .step-list {
+    list-style: none;
+    padding: 0;
+    counter-reset: steps;
+  }
+
+  .step-list li {
+    counter-increment: steps;
+    padding: 12px 0 12px 52px;
+    position: relative;
+    border-left: 2px solid var(--border);
+    margin-left: 18px;
+    font-size: 0.94rem;
+  }
+
+  .step-list li::before {
+    content: counter(steps);
+    position: absolute;
+    left: -16px;
+    top: 10px;
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(30,64,175,0.2);
+  }
+
+  .step-list li:last-child { border-left-color: transparent; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .badge.auto { background: var(--accent-light); color: #065f46; }
+  .badge.manual { background: var(--warning-light); color: #92400e; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--code-bg);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    color: var(--primary-dark);
+    border: 1px solid var(--border);
+  }
+
+  footer {
+    text-align: center;
+    padding: 36px 0 0;
+    margin-top: 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    position: relative;
+  }
+
+  footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 15%;
+    right: 15%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+
+  footer .footer-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  footer .footer-logo svg { width: 28px; height: 28px; opacity: 0.5; }
+  footer .footer-logo span { font-weight: 700; color: var(--text-light); text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.08em; }
+
+  .confidential {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 5px 16px;
+    border-radius: 100px;
+    margin-top: 20px;
+  }
+
+  @media print {
+    body { padding: 20px; }
+    body::before, body::after { display: none; }
+    .cover { padding: 40px 0 24px; }
+    section { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+    .flow-box:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-logo">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="55" r="38" fill="#1e40af"/>
+      <circle cx="22" cy="25" r="14" fill="#1e40af"/>
+      <circle cx="78" cy="25" r="14" fill="#1e40af"/>
+      <circle cx="22" cy="25" r="8" fill="#dbeafe"/>
+      <circle cx="78" cy="25" r="8" fill="#dbeafe"/>
+      <circle cx="36" cy="48" r="5" fill="white"/>
+      <circle cx="64" cy="48" r="5" fill="white"/>
+      <circle cx="36" cy="48" r="2.5" fill="#1e40af"/>
+      <circle cx="64" cy="48" r="2.5" fill="#1e40af"/>
+      <ellipse cx="50" cy="62" rx="12" ry="9" fill="#dbeafe"/>
+      <ellipse cx="50" cy="59" rx="4" ry="3" fill="#1e40af"/>
+      <path d="M46 64 Q50 69 54 64" stroke="#1e40af" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M38 75 Q38 88 50 88 Q62 88 62 75" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="50" cy="90" r="4" fill="white"/>
+      <circle cx="50" cy="90" r="2" fill="#1e40af"/>
+      <circle cx="38" cy="73" r="2.5" fill="white"/>
+      <circle cx="62" cy="73" r="2.5" fill="white"/>
+    </svg>
+    <div class="logo-text">My Health<br>Passport</div>
+  </div>
+
+  <div class="doc-type">Technical Documentation</div>
+  <h1>CI/CD Pipeline<br>Architecture &amp; Operations</h1>
+  <p class="subtitle">Automated deployment infrastructure for the MHP platform</p>
+
+  <div class="meta">
+    <div><span class="label">Project</span><span class="value">MHP</span></div>
+    <div><span class="label">Version</span><span class="value">1.0</span></div>
+    <div><span class="label">Date</span><span class="value">February 13, 2026</span></div>
+    <div><span class="label">Status</span><span class="value" style="color:var(--accent);">● Active</span></div>
+  </div>
+
+  <div class="confidential">🔒 Internal — Confidential</div>
+</div>
+
+<nav class="toc">
+  <h2>📑 Table of Contents</h2>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#tech-stack">Technology Stack</a></li>
+    <li><a href="#branching">Branching Strategy</a></li>
+    <li><a href="#aws">AWS Infrastructure</a></li>
+    <li><a href="#workflows">GitHub Actions Workflows</a></li>
+    <li><a href="#secrets">Secrets &amp; Permissions</a></li>
+    <li><a href="#deployment-flow">Deployment Flow</a></li>
+    <li><a href="#architecture">Architecture Diagram</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#contacts">Contacts</a></li>
+  </ol>
+</nav>
+
+<section id="overview">
+  <h2>1. Overview</h2>
+  <p>This document outlines the CI/CD pipeline architecture for the <strong>MHP</strong> project. The pipeline automates code synchronization, build, deployment, and cache invalidation across <strong>UAT</strong> and <strong>Production</strong> environments hosted on AWS.</p>
+  <p>The infrastructure is designed for <strong>zero-downtime deployments</strong> with automated staging sync and manual production gating to ensure quality control at every release stage.</p>
+</section>
+
+<section id="tech-stack">
+  <h2>2. Technology Stack</h2>
+  <table>
+    <thead><tr><th>Component</th><th>Technology</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend Framework</td><td>React + Vite + TypeScript</td></tr>
+      <tr><td>UI Library</td><td>shadcn/ui + Tailwind CSS</td></tr>
+      <tr><td>Source Control</td><td>GitHub</td></tr>
+      <tr><td>CI/CD</td><td>GitHub Actions</td></tr>
+      <tr><td>Hosting</td><td>AWS S3 + CloudFront</td></tr>
+      <tr><td>Region</td><td>ap-south-1 (Mumbai)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="branching">
+  <h2>3. Branching Strategy</h2>
+  <table>
+    <thead><tr><th>Branch</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>main</code></td><td>Primary development branch (Lovable pushes here)</td></tr>
+      <tr><td><code>staging</code></td><td>UAT deployment branch (auto-synced from <code>main</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Flow</h3>
+  <div class="flow-arrow">
+    <div class="flow-box">Lovable</div>
+    <span class="arrow">→</span>
+    <div class="flow-box">main</div>
+    <span class="arrow">→</span>
+    <div class="flow-box green">staging</div>
+    <span class="arrow">→</span>
+    <div class="flow-box green">UAT</div>
+    <span class="arrow">→</span>
+    <div class="flow-box orange">Production</div>
+  </div>
+  <p style="text-align:center; font-size:0.85rem; color:var(--text-muted);">
+    <span class="badge auto">Auto</span> main → staging → UAT &nbsp;&nbsp;|&nbsp;&nbsp;
+    <span class="badge manual">Manual</span> UAT → Production
+  </p>
+</section>
+
+<section id="aws">
+  <h2>4. AWS Infrastructure</h2>
+
+  <h3>4.1 UAT Environment</h3>
+  <table>
+    <thead><tr><th>Resource</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>S3 Bucket</td><td><code>mhp-uat</code></td></tr>
+      <tr><td>CloudFront Distribution</td><td><code>EVF2MJYSV3EHO</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 Production Environment</h3>
+  <table>
+    <thead><tr><th>Resource</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>S3 Bucket</td><td><code>mhp-production</code></td></tr>
+      <tr><td>CloudFront Distribution</td><td><code>E3B92WOD20KCJ3</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="workflows">
+  <h2>5. GitHub Actions Workflows</h2>
+
+  <h3>5.1 Sync to Staging — <code>sync-to-staging.yml</code></h3>
+  <table>
+    <thead><tr><th>Property</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger</td><td>Push to <code>main</code> <span class="badge auto">Auto</span></td></tr>
+      <tr><td>Action</td><td>Merges <code>main</code> into <code>staging</code></td></tr>
+      <tr><td>Purpose</td><td>Keeps staging continuously up-to-date</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 Deploy to UAT — <code>deploy-uat.yml</code></h3>
+  <table>
+    <thead><tr><th>Property</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger</td><td>Push to <code>staging</code> <span class="badge auto">Auto</span></td></tr>
+      <tr><td>Actions</td><td>Checkout → Install → Build → S3 Sync → CloudFront Invalidation</td></tr>
+      <tr><td>Purpose</td><td>Automated deployment to UAT for testing</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 Deploy to Production — <code>deploy-prod.yml</code></h3>
+  <table>
+    <thead><tr><th>Property</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger</td><td><code>workflow_dispatch</code> <span class="badge manual">Manual</span></td></tr>
+      <tr><td>Actions</td><td>Checkout staging → Install → Build → S3 Sync → CloudFront Invalidation</td></tr>
+      <tr><td>Purpose</td><td>Controlled production release after UAT testing</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="secrets">
+  <h2>6. Secrets &amp; Permissions</h2>
+
+  <h3>6.1 GitHub Repository Secrets</h3>
+  <table>
+    <thead><tr><th>Secret</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>PAT_TOKEN</code></td><td>Personal Access Token with <code>repo</code> scope — triggers downstream workflows</td></tr>
+      <tr><td><code>AWS_ACCESS_KEY_ID</code></td><td>AWS IAM access key for S3 and CloudFront</td></tr>
+      <tr><td><code>AWS_SECRET_ACCESS_KEY</code></td><td>AWS IAM secret key</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>⚠ Important:</strong> The <code>PAT_TOKEN</code> is required because the default <code>GITHUB_TOKEN</code> cannot trigger other workflows. A PAT with <code>repo</code> scope enables the sync workflow to trigger the deployment workflow downstream.
+  </div>
+
+  <h3>6.2 Repository Settings</h3>
+  <table>
+    <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Workflow permissions</td><td>Read and write</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="deployment-flow">
+  <h2>7. Deployment Flow — Step by Step</h2>
+
+  <h3>UAT Deployment <span class="badge auto">Automated</span></h3>
+  <ol class="step-list">
+    <li>Developer makes changes in Lovable (or pushes to <code>main</code> via Git)</li>
+    <li><code>sync-to-staging.yml</code> triggers — merges <code>main</code> into <code>staging</code></li>
+    <li><code>deploy-uat.yml</code> triggers — builds and deploys to S3 (<code>mhp-uat</code>)</li>
+    <li>CloudFront cache is invalidated — latest version is live on UAT</li>
+  </ol>
+
+  <h3>Production Deployment <span class="badge manual">Manual</span></h3>
+  <ol class="step-list">
+    <li>QA completes regression testing on UAT</li>
+    <li>Authorized team member triggers <code>deploy-prod.yml</code> via GitHub Actions</li>
+    <li>Code is built from <code>staging</code> and deployed to S3 (<code>mhp-production</code>)</li>
+    <li>CloudFront cache is invalidated — latest version is live on Production</li>
+  </ol>
+</section>
+
+<section id="architecture">
+  <h2>8. Architecture Diagram</h2>
+  <div class="flow-diagram">
+<pre>
+┌─────────────┐
+│   Lovable   │
+│  (Dev IDE)  │
+└──────┬──────┘
+       │ push
+       ▼
+┌─────────────┐    auto-merge     ┌─────────────┐
+│    main      │ ───────────────► │   staging    │
+│  (branch)    │  sync-to-staging │  (branch)    │
+└─────────────┘                   └──────┬───────┘
+                                         │ push
+                                         ▼
+                                  ┌──────────────┐
+                                  │ deploy-uat   │
+                                  │  (workflow)  │
+                                  └──────┬───────┘
+                                         │
+                              ┌──────────┴──────────┐
+                              ▼                     ▼
+                        ┌──────────┐        ┌─────────────┐
+                        │ S3: UAT  │        │ CloudFront  │
+                        │ mhp-uat  │───────►│ EVF2MJY...  │
+                        └──────────┘        └─────────────┘
+
+                        ── Manual Trigger ──
+
+                                  ┌──────────────┐
+                                  │ deploy-prod  │
+                                  │  (workflow)  │
+                                  └──────┬───────┘
+                                         │
+                              ┌──────────┴──────────┐
+                              ▼                     ▼
+                        ┌──────────┐        ┌─────────────┐
+                        │ S3: Prod │        │ CloudFront  │
+                        │mhp-prod  │───────►│ E3B92WO...  │
+                        └──────────┘        └─────────────┘
+</pre>
+  </div>
+</section>
+
+<section id="troubleshooting">
+  <h2>9. Troubleshooting</h2>
+  <table>
+    <thead><tr><th>Issue</th><th>Cause</th><th>Resolution</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Sync workflow doesn't trigger deploy</td>
+        <td><code>GITHUB_TOKEN</code> used instead of <code>PAT_TOKEN</code></td>
+        <td>Ensure <code>PAT_TOKEN</code> secret is configured with <code>repo</code> scope</td>
+      </tr>
+      <tr>
+        <td>Deploy fails on S3 sync</td>
+        <td>Invalid AWS credentials</td>
+        <td>Verify <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> secrets</td>
+      </tr>
+      <tr>
+        <td>Old content served after deploy</td>
+        <td>CloudFront cache not invalidated</td>
+        <td>Check CloudFront invalidation step in workflow logs</td>
+      </tr>
+      <tr>
+        <td>Workflow permissions error</td>
+        <td>Insufficient permissions</td>
+        <td>Set workflow permissions to "Read and write" in repo settings</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="contacts">
+  <h2>10. Contacts</h2>
+  <table>
+    <thead><tr><th>Role</th><th>Name</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td>CTO</td><td><strong>Yakub Ali</strong></td><td>Technical vision, product strategy &amp; overall technology leadership</td></tr>
+      <tr><td>DevOps Lead</td><td><strong>Durga Nagulapalli</strong></td><td>CI/CD pipeline architecture, cloud infrastructure &amp; release management</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <div class="footer-logo">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="55" r="38" fill="#94a3b8"/>
+      <circle cx="22" cy="25" r="14" fill="#94a3b8"/>
+      <circle cx="78" cy="25" r="14" fill="#94a3b8"/>
+      <circle cx="22" cy="25" r="8" fill="#e2e8f0"/>
+      <circle cx="78" cy="25" r="8" fill="#e2e8f0"/>
+      <circle cx="36" cy="48" r="5" fill="white"/>
+      <circle cx="64" cy="48" r="5" fill="white"/>
+      <ellipse cx="50" cy="62" rx="12" ry="9" fill="#e2e8f0"/>
+    </svg>
+    <span>My Health Passport</span>
+  </div>
+  <p><em>Document maintained by the MHP Infrastructure Team</em></p>
+  <p style="margin-top:6px; font-size:0.78rem; color:var(--text-light);">Last updated: February 13, 2026 &nbsp;·&nbsp; Version 1.0</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/api/v1", tags=["delete"])
+
+from .is_deleted import router

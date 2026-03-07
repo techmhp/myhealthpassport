@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Health Screening Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Trebuchet MS', sans-serif;
+            background: #f8f9fa;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* ==================================================
+           TABLE HACK FOR REPEATING SECTION HEADERS (NEW)
+        ================================================== */
+        /* The wrapper table acts as the continuous container */
+        table.section-table-wrapper {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin: 0;
+            padding: 0;
+            page-break-inside: auto;
+        }
+
+        table.section-table-wrapper tr {
+            page-break-inside: auto;
+            page-break-after: auto;
+        }
+
+        table.section-table-wrapper td,
+        table.section-table-wrapper th {
+            border: none;
+            padding: 0;
+            margin: 0;
+            vertical-align: top;
+            text-align: left; /* Ensure headers align left */
+        }
+
+        /* Add space below the header so content on new pages doesn't hit it */
+        thead.section-header-wrapper th {
+            padding-bottom: 30px;
+            padding-top: 25px; /* Moved top padding here from container */
+        }
+
+        /* Inner wrapper for main content spacing */
+        .content-area-inner {
+            padding-top: 5px;
+        }
+
+        /* Page Structure */
+        .report-section {
+            position: relative;
+            width: 794px;
+            min-height: 1123px;
+            background: white;
+            /* Padding adjusted because table headers handle top padding now */
+            padding: 0 20px 20px 20px;
+            page-break-after: auto;
+            overflow: visible;
+            margin: 0;
+        }
+
+        /* Page Borders - Connected across pages */
+        .report-section.physical { border-right: 60px solid #FF7F95; }
+        .report-section.nutrition { border-right: 60px solid #FFBB70; }
+        .report-section.emotional { border-right: 60px solid #97E6A6; }
+        .report-section.dental { border-right: 60px solid #78C5FF; }
+        .report-section.eye { border-right: 60px solid #0EE1FD; }
+        .report-section.lab { border-right: 60px solid #FFDA31; }
+
+        /* Cover Page */
+        .cover-page {
+            width: 794px;
+            height: 1123px;
+            background: #fff;
+            position: relative;
+            box-sizing: border-box;
+            padding: 20px 20px 20px 20px;
+            margin: 0;
+            page-break-after: always;
+            overflow: hidden;
+        }
+
+        /* Header Logos (Used on Cover & Repeating headers) */
+        .header-logos {
+            display: flex;
+            margin-top: 15px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        
+        .logo-left img {
+            height: 110px;
+            margin-left: 5px;
+        }
+        .logo-right img{
+            height: 100px;
+            margin-right: 5px;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            align-items: center;
+            margin-top: 250px;
+            gap: 20px;
+            margin-left: 100px;
+        }
+
+        .profile-photo-wrapper {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+
+        .profile-bg {
+            position: absolute;
+            width: 170px;
+            height: 160px;
+            border-radius: 50%;
+            background-image: url('{{ profile }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .profile-photo {
+            position: absolute;
+            width:155px;
+            height: 155px;
+            border-radius: 50%;
+            object-fit: cover;
+            top: 3px;
+            left: 7px;
+            z-index: 2;
+            background: white;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            margin-top: 15px;
+        }
+
+        .profile-info h2 {
+            font-size: 22px;
+            font-weight: bold;
+            color: #222;
+            margin: 0;
+        }
+
+        .profile-info p {
+            font-size: 14px;
+            color: #201f1f;
+            margin-top: 9px;
+        }
+
+        .profile-details {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            color: #000;
+        }
+
+        .profile-details span {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .profile-details span:first-child {
+            padding-left: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: absolute;
+            bottom: 350px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-button {
+            width: 50px;
+            height: 50px;
+            padding: 0px 25px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .btn1 { background: #FF7F95; }
+        .btn2 { background: #FFBB70; }
+        .btn3 { background: #97E6A6; }
+        .btn4 { background: #78C5FF; }
+        .btn5 { background: #0EE1FD; }
+        .btn6 { background: #FFDA31; }
+
+        .sidebar-button img.sidebar-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        /* Page Header (Internal Pages - Now inside table th) */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            /* Margins removed as table th handles spacing */
+            margin-bottom: 20px;
+            width: 100%;
+            margin-right: -20px; /* Pull right to match border edge */
+        }
+
+        .logo img {
+            height: 110px;
+            margin-right: 5px;
+        }
+
+        .report-badge {
+            color: white;
+            display: flex;
+            padding: 20px 25px;
+            margin-right: -35px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            align-items: center;
+            text-transform: uppercase;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .badge-icon {
+            height: 24px;
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .physical .report-badge { background: #FF7F95; }
+        .nutrition .report-badge { background: #FFBB70; }
+        .emotional .report-badge { background: #97E6A6; }
+        .dental .report-badge { background: #78C5FF; }
+        .eye .report-badge { background: #0EE1FD; }
+        .lab .report-badge { background: #FFDA31; }
+
+        /* Summary Box */
+        .summary-box {
+            display: flex;
+            gap: 14px;
+            width: 95%;
+            height: auto;
+            margin-left: 20px;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            page-break-inside: avoid;
+        }
+
+        .summary-box.physical { background: #FFF3F5; }
+        .summary-box.nutrition { background: #FFF3E7; }
+        .summary-box.emotional { background: #EEFBF1; }
+        .summary-box.dental { background: #E8F5FF; }
+        .summary-box.eye { background: #E5FBFE; }
+        .summary-box.lab { background: #FFF9DD; }
+
+        .summary-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .summary-box.physical .summary-left { border-right: 2px solid #0f993e; }
+        .nutrition .summary-left { border-right: 2px solid #f4af62; }
+        .emotional .summary-left { border-right: 2px solid #ccc; }
+        .dental .summary-left { border-right: 2px solid #2eaeb5; }
+        .eye .summary-left { border-right: 2px solid #cce8f8; }
+        .lab .summary-left { border-right: 2px solid #f2f62c; }
+
+        .summary-left .icon {
+            margin-bottom: 8px;
+        }
+
+        .summary-left .icon img {
+            height: 30px;
+        }
+
+        .summary-right {
+            flex: 1;
+            padding: 7px;
+        }
+
+        .summary-right img {
+            height: 30px;
+            margin-bottom: 10px;
+        }
+
+        .summary-text {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        /* Score Section */
+        .score-section {
+            margin-bottom: 3px;
+            page-break-inside: avoid;
+        }
+
+        .score-chart {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-left: 50px;
+            color: #333;
+        }
+
+        .gauge-wrapper {
+            position: relative;
+            width: 180px;
+            height: 140px;
+        }
+
+        .gauge-image {
+            width: 100%;
+            height: auto;
+        }
+
+        .needle {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            width: 2px;
+            height: 50px;
+            background: #000;
+            transform-origin: bottom center;
+            transition: transform 1s ease-in-out;
+        }
+
+        .health-score {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 20px;
+            margin-left: 15px;
+            page-break-inside: avoid;
+            overflow: visible;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            margin-left: 35px;
+            color: #333;
+        }
+
+        .section-title-nutritional {
+            font-weight: 700;
+            color: #1e63e9;
+            font-size: 15px;
+            margin: 20px 0 15px;
+            margin-left: 45px;
+        }
+
+        .section-divider {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
+            page-break-after: avoid;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            font-size: 12px;
+            margin-left: 13px;
+            text-align: center;
+        }
+
+        .grid div {
+            padding: 2px 2px;
+        }
+
+        .grid .value {
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 1px;
+        }
+
+        .grid .label {
+            color: #777;
+            font-size: 12px;
+        }
+
+        /* Two Column Layout */
+        .two-column {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+
+        .column-left {
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content:center;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 25px;
+            color: #333;
+        }
+
+        .column-left .icon {
+            margin-bottom: 10px;
+        }
+
+        .column-left .icon img {
+            width: 25px;
+            height: auto;
+        }
+
+        .column-right {
+            flex: 1;
+            font-size: 12px;
+            color: #333;
+            line-height: 1.4;
+            align-items: center;
+        }
+
+        /* Items */
+        .item {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .item .ico {
+            width: 20px;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .item.good .ico {
+            color: #1a73e8;
+        }
+
+        .item.bad .ico img {
+            width: 13px;
+            height: 13px;
+        }
+
+        .icons {
+            color: #f4c542;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* Recommendation Title */
+        .recommend-title {
+            display: inline-block;
+            background: #4bc076;
+            color: #fff;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+
+        /* Tooth Diagram */
+        .tooth-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        .tooth-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 2px;
+            justify-content: center;
+            page-break-inside: avoid;
+        }
+                .tooth-row.bottom-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+            page-break-inside: avoid;
+                }
+        .tooth {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tooth img {
+            width: 28px;
+            height: auto;
+        }
+
+        .tooth .num {
+            font-size: 10px;
+            color: #333;
+        }
+
+        .tooth input[type="checkbox"] {
+            margin-top: 2px;
+        }
+
+        /* AR Table */
+        .ar-wrapper {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* 2. Main Table Styling */
+        .ar-table {
+            width: 100%;
+            max-width: 600px; /* Prevents it from getting too wide on large screens */
+            font-size: 9px;
+            color: #000;
+            
+            /* CRITICAL: This makes the borders touch like Excel */
+            border-collapse: collapse !important;
+            
+            /* Outer border */
+            border: 1px solid #393838 !important;
+        }
+
+        /* 3. Style Every Single Cell (Header and Data) */
+        .ar-table th, 
+        .ar-table td {
+            /* Spacing inside the cells */
+            padding: 10px 12px !important;
+            
+            /* Center the text horizontally and vertically */
+            text-align: center !important;
+            vertical-align: middle !important;
+            
+            /* BLACK BORDER on all 4 sides of every cell */
+            border: 1px solid #393838 !important;
+        }
+
+        /* 4. Header Specifics (Blue Background) */
+        .ar-table th {
+            background-color: #e6f7ff !important;
+            font-weight: 700 !important;
+        }
+
+        /* 5. First Column Specifics (Bold labels) */
+        .ar-table td:first-child {
+            font-weight: 600 !important;
+            background-color: #f9f9f9 !important; /* Slight grey background */
+        }
+        .eye-image {
+            width: 100px;
+            height: auto;
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        /* Signature Section */
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            flex: 1;
+        }
+
+        .signature-box h4 {
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .role-date {
+            display: flex;
+            gap: 20px;
+        }
+
+        .role-date div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .role-date .role,
+        .role-date .label {
+            font-size: 12px;
+            color: #a5a2a2;
+            margin-bottom: 2px;
+        }
+
+        .role-date .name,
+        .role-date .date,
+        .role-date .id {
+            font-size: 9px;
+            color: #151515;
+        }
+
+        /* Print Styles */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+            
+            body {
+                background: white;
+                font-family: 'Trebuchet MS', sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* Vital for the table header hack to work in Chrome/Edge */
+            thead {
+                display: table-header-group;
+            }
+            
+            .cover-page {
+                padding: 20px;
+                margin: 0;
+                page-break-after: always;
+            }
+            
+            .report-section {
+                /* Ensure padding is right for print */
+                padding: 20px 20px 20px 20px;
+                page-break-after: auto;
+                margin: 0;
+            }
+
+            .page-header,
+            .summary-box,
+            .score-section,
+            .signature-section,
+            .two-column,
+            .tooth-row {
+                page-break-inside: avoid;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .sidebar {
+        position: absolute;
+        top: 350px;  /* adjust as needed */
+        right: 50px;     /* align to right edge of the page */
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 10;
+    }
+
+    .sidebar-button {
+        width: 100px;
+        height: 50px;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        text-decoration: none;
+        justify-content:flex-start;
+        font-size: 24px;
+        color: #fff;
+    }
+    .sidebar-button img.sidebar-img {
+        width: 32px;  /* icon size */
+        height: 32px;
+        object-fit: contain;
+    }
+    .btn1 { background: #FF7F95; }
+    .btn2 { background: #FFBB70; }
+    .btn3 { background: #97E6A6; }
+    .btn4 { background: #78C5FF; }
+    .btn5 { background: #0EE1FD; }
+    .btn6 { background: #FFDA31; }
+
+    /* Prevent sidebar from being cut between pages */
+    .sidebar, .sidebar * {
+        page-break-inside: avoid;
+    }
+        }
+    </style>
+</head>
+<body>
+    <div class="cover-page">
+        <div class="header-logos">
+            <div class="logo-left">
+            <img src="{{ left_logo }}" alt="Left Logo">
+            </div>
+            <div class="logo-right">
+            <img src="{{ right_logo }}" alt="Right Logo">
+            </div>
+        </div>
+        
+        <div class="profile-section">
+            <div class="profile-photo-wrapper">
+                <div class="profile-bg"></div>
+                <img src="{{ profile_url }}" alt="Student" class="profile-photo">
+            </div>
+            <div class="profile-info">
+                <h2>{{ student.first_name }} {{ student.last_name }}</h2>
+                <p>Health Screening Report {{ ongoing_year }}</p>
+                <div class="profile-details">
+                    <span>Age: {{ smart.age_years }}</span>
+                    <span>Gender: {{ student.gender }}</span>
+                    {% if student.blood_group %}
+                    <span>Blood Group: {{ student.blood_group }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            {% if show_physical %}
+            <a href="#physical" class="sidebar-button btn1">
+                <img src="{{ physical_icon }}" alt="Physical" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_nutrition %}
+            <a href="#nutrition" class="sidebar-button btn2">
+                <img src="{{ nutrition_icon }}" alt="Nutrition" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_emotional %}
+            <a href="#emotional" class="sidebar-button btn3">
+                <img src="{{ emotional_icon }}" alt="Emotional" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_dental %}
+            <a href="#dental" class="sidebar-button btn4" >
+                <img src="{{ dental_icon }}" alt="Dental" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_eye %}
+            <a href="#eye" class="sidebar-button btn5">
+                <img src="{{ eye_icon }}" alt="Eye" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_lab %}
+            <a href="#labreports" class="sidebar-button btn6">
+                <img src="{{ labreports_icon }}" alt="Lab Reports" class="sidebar-img">
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if show_physical %}
+    <div id="physical" class="report-section physical">
+        <table class="section-table-wrapper">
+            <thead>
+                <tr class="section-header-wrapper">
+                    <th>
+                        <div class="page-header">
+                            <div class="logo">
+                                <img src="{{ left_logo }}" alt="Logo">
+                            </div>
+                            <div class="report-badge">
+                                <img src="{{ physical_icon }}" alt="Physical" class="badge-icon">
+                                Physical Screening
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="content-area-inner">
+                            <div class="summary-box physical">
+                                <div class="summary-left">
+                                    <div class="icon"><img src="{{ ph }}" alt="Physical"></div>
+                                    <span>Overall Summary</span>
+                                </div>
+                                <div class="summary-right">
+                                    {% if pstatus.status == "all_good" %}
+                                    <img src="{{ all_good }}" alt="All Good">
+                                    {% elif pstatus.status == "need_attention" %}
+                                    <img src="{{ need_attention }}" alt="Needs Attention">
+                                    {% endif %}
+                                    <div class="summary-text">
+                                        {% for sentence in pstatus.summary.split('.') %}
+                                        {% if sentence.strip() %}
+                                        {{ sentence.strip() }}.<br>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="score-section">
+                                <div class="score-chart">
+                                    <div class="score-info">
+                                        <div class="score-title">Health Score</div>
+                                    </div>
+                                    <div class="gauge-wrapper">
+                                        <img class="gauge-image" src="{{ gauge }}" alt="Health Score Gauge">
+                                        <div class="needle" style="transform: rotate({{ (smart.physical_score / 100 * 180 - 90)|round(2) }}deg)"></div>
+                                        <div class="health-score">{{ smart.physical_score }}/100</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section">
+                                <div class="section-title">Basic Anthropometrics</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.height_cm }} cm</div><div class="label">Height</div></div>
+                                    <div><div class="value">{{ smart.age_years }} Yrs</div><div class="label">Age</div></div>
+                                    <!-- <div><div class="value">{{ smart.weighing_time.strftime("%I:%M %p") if smart.weighing_time else "-" }}</div><div class="label">Weighing Time</div></div> -->
+                                    <div><div class="value">{{ smart.body_weight_kg }} kgs</div><div class="label">Body Weight</div></div>
+                                    <div><div class="value">{{ smart.bmi }}</div><div class="label">BMI</div></div>
+                                    <div><div class="value">{{ smart.physical_age }} Yrs</div><div class="label">Physical Age</div></div>
+                                    <div><div class="value">{{ smart.body_type }}</div><div class="label">Body Type</div></div>
+                                    <!-- <div><div class="value">{{ smart.standard_body_weight }} kgs</div><div class="label">Standard Body Weight</div></div> -->
+                                    <div><div class="value">{{ smart.ideal_weight }} kgs</div><div class="label">Ideal Weight</div></div>
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="section">
+                                <div class="section-title">Body Composition Analysis</div>
+                                <div class="grid">
+                                    <!-- <div><div class="value">{{ smart.body_fat_rate_percent }}%</div><div class="label">Body Fat Rate</div></div> -->
+                                    <div><div class="value">{{ smart.fat_content_kg }} kgs</div><div class="label">Fat Content</div></div>
+                                    <div><div class="value">{{ smart.lean_body_mass_kg }} kgs</div><div class="label">Lean Body Mass</div></div>
+                                    <div><div class="value">{{ smart.muscle_mass_kg }} kgs</div><div class="label">Muscle Mass</div></div>
+                                    <!-- <div><div class="value">{{ smart.muscle_rate_percent }}%</div><div class="label">Muscle Rate</div></div> -->
+                                    <div><div class="value">{{ smart.skeletal_muscle_mass_kg }} kgs</div><div class="label">Skeletal Muscle Mass</div></div>
+                                    <div><div class="value">{{ smart.skeletal_muscle_mass_index }}</div><div class="label">Skeletal Muscle Mass Index</div></div>
+                                    <div><div class="value">{{ smart.bone_mass_kg }} kgs</div><div class="label">Bone Mass</div></div>
+                                    <div><div class="value">{{ smart.protein_content_kg }} kgs</div><div class="label">Protein Content</div></div>
+                                    <!-- <div><div class="value">{{ smart.internal_protein_rate_percent }}%</div><div class="label">Internal Protein Rate</div></div> -->
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="section">
+                                <div class="section-title">Fat Distribution & Regional Composition</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.subcutaneous_fat_volume_kg }} kgs</div><div class="label">Subcutaneous Fat</div></div>
+                                    <!-- <div><div class="value">{{ smart.subcutaneous_fat_rate }}%</div><div class="label">Subcutaneous Fat Rate</div></div> -->
+                                    <div><div class="value">{{ smart.visceral_fat_level }}</div><div class="label">Visceral Fat Level</div></div>
+                                    <!-- <div><div class="value">{{ smart.left_hand_fat_mass_kg }} kgs</div><div class="label">Left Hand Fat Mass</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.right_hand_fat_mass_kg }} kgs</div><div class="label">Right Hand Fat Mass</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.left_foot_fat_mass_kg }} kgs</div><div class="label">Left Foot Fat Mass</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.right_foot_fat_mass_kg }} kgs</div><div class="label">Right Foot Fat Mass</div></div> -->
+                                    <div><div class="value">{{ smart.trunk_fat_mass_kg }} kgs</div><div class="label">Trunk Fat Mass</div></div>
+                                    <!-- <div><div class="value">{{ smart.left_hand_fat_rate_percent }}%</div><div class="label">Left Hand Fat Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.right_hand_fat_rate_percent }}%</div><div class="label">Right Hand Fat Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.left_foot_fat_rate_percent }}%</div><div class="label">Left Foot Fat Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.right_foot_fat_rate_percent }}%</div><div class="label">Right Foot Fat Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.trunk_fat_rate_percent }}%</div><div class="label">Trunk Fat Rate</div></div> -->
+                                    <div><div class="value">{{ smart.whr }}</div><div class="label">WHR (Waist-Hip Ratio)</div></div>
+                                </div>
+                            </div>
+
+
+                            <div class="section">
+                                <div class="section-title">Muscle Mass & Strength Distribution</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.left_hand_muscle_mass_kg }} kgs</div><div class="label">Left Hand Muscle Mass</div></div>
+                                    <div><div class="value">{{ smart.right_hand_muscle_mass_kg }} kgs</div><div class="label">Right Hand Muscle Mass</div></div>
+                                    <div><div class="value">{{ smart.left_foot_muscle_mass_kg }} kgs</div><div class="label">Left Foot Muscle Mass</div></div>
+                                    <div><div class="value">{{ smart.right_foot_muscle_mass_kg }} kgs</div><div class="label">Right Foot Muscle Mass</div></div>
+                                    <div><div class="value">{{ smart.trunk_muscle_mass_kg }} kgs</div><div class="label">Trunk Muscle Mass</div></div>
+                                    <!-- <div><div class="value">{{ smart.left_hand_muscle_rate }}%</div><div class="label">Left Hand Muscle Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.right_hand_muscle_rate }}%</div><div class="label">Right Hand Muscle Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.left_leg_muscle_rate }}%</div><div class="label">Left Leg Muscle Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.right_foot_muscle_rate }}%</div><div class="label">Right Leg Muscle Rate</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.trunk_muscle_rate }}%</div><div class="label">Trunk Muscle Rate</div></div> -->
+                                    <div><div class="value">{{ smart.skeletal_muscle_rate_percent }}%</div><div class="label">Skeletal Muscle Rate</div></div>
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="section">
+                                <div class="section-title">Hydration & Cellular Health</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.water_content_kg }} kgs</div><div class="label">Water Content</div></div>
+                                    <div><div class="value">{{ smart.body_moisture_content_percent }}%</div><div class="label">Body Moisture Content</div></div>
+                                    <div><div class="value">{{ smart.inorganic_salt_content_kg }} kgs</div><div class="label">Inorganic Salt Content</div></div>
+                                    <div><div class="value">{{ smart.body_cell_volume_kg }} kgs</div><div class="label">Body Cell Volume</div></div>
+                                    <!-- <div><div class="value">{{ smart.extracellular_water_volume_kg }} kgs</div><div class="label">Extracellular Water Volume</div></div> -->
+                                    <!-- <div><div class="value">{{ smart.intracellular_water_volume_kg }} kgs</div><div class="label">Intracellular Water Volume</div></div> -->
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="section">
+                                <div class="section-title">Metabolic Health Indicators</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.bmr }}</div><div class="label">BMR (kcal)</div></div>
+                                    <div><div class="value">{{ smart.obesity_percent }}</div><div class="label">Obesity (%)</div></div>
+                                    <div><div class="value">{{ smart.obesity_level }}</div><div class="label">Obesity Level</div></div>
+                                </div>
+                            </div>
+                            <!-- <hr class="section-divider"> -->
+
+                            <!-- <div class="section">
+                                <div class="section-title">Metabolic & Fitness Control Indicators</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.fat_control_quantity }} kgs</div><div class="label">Fat Control Quantity</div></div>
+                                    <div><div class="value">{{ smart.weight_control_quantity }} kgs</div><div class="label">Weight Control Quantity</div></div>
+                                    <div><div class="value">{{ smart.muscle_control_quantity }} kgs</div><div class="label">Muscle Control Quantity</div></div>
+                                </div>
+                            </div> -->
+
+                            <hr class="section-divider">
+
+                            <div class="section">
+                                <div class="section-title">Cardiovascular & Circulatory Indicators</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.heart_rate_beats_min }}</div><div class="label">Heart Rate (bpm)</div></div>
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="section">
+                                <div class="section-title">Overall Health Scores</div>
+                                <div class="grid">
+                                    <div><div class="value">{{ smart.physical_score }}</div><div class="label">Physical Score (/100)</div></div>
+                                    <div><div class="value">{{ smart.health_level }}</div><div class="label">Health Level</div></div>
+                                </div>
+                            </div>
+
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ si }}" alt="Strengths">
+                                    </div>
+                                    <span>Strengths</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for ans in pstrength %}
+                                    <div class="item good">
+                                        <div class="ico">✓</div>
+                                        <div>{{ ans }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ ni }}" alt="Needs Attention">
+                                    </div>
+                                    <span>Needs Attention</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for ans in pneedattention %}
+                                    <div class="item bad">
+                                        <div class="ico">
+                                            <img src="{{ nb }}" alt="Warning">
+                                        </div>
+                                        <div>{{ ans }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- <div class="signature-section">
+                                <div class="signature-box">
+                                    <h4>Evaluated By</h4>
+                                    <div class="role-date">
+                                        <div>
+                                            <p class="role">Psychologist</p>
+                                            <p class="name">Tarun Kumar</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">Date</p>
+                                            <p class="date">03-01-2025</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="signature-box">
+                                    <h4>Verified By</h4>
+                                    <div class="role-date">
+                                        <div>
+                                            <p class="role">Head Psychologist</p>
+                                            <p class="name">Vishwa Kalyan</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">Date</p>
+                                            <p class="date">03-01-2025</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">RCI No</p>
+                                            <p class="id">1212012010</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div> </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show_nutrition %}
+    <div id="nutrition" class="report-section nutrition">
+        <table class="section-table-wrapper">
+            <thead>
+                <tr class="section-header-wrapper">
+                    <th>
+                        <div class="page-header">
+                            <div class="logo">
+                                <img src="{{ left_logo }}" alt="Logo">
+                            </div>
+                            <div class="report-badge">
+                                <img src="{{ nutrition_icon }}" alt="Nutrition" class="badge-icon">
+                                Nutritional Assessment Report
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="content-area-inner">
+                            <div class="summary-box nutrition">
+                                <div class="summary-left">
+                                    <div class="icon"><img src="{{ nu }}" alt="Nutrition"></div>
+                                    <span>Overall Summary</span>
+                                </div>
+                                <div class="summary-right">
+                                    {% if status.common_status == "all_good" %}
+                                    <img src="{{ all_good }}" alt="All Good">
+                                    {% elif status.common_status == "need_attention" %}
+                                    <img src="{{ need_attention }}" alt="Needs Attention">
+                                    {% endif %}
+                                    <div class="summary-text">
+                                        {% for sentence in status.common_summary.split('.') %}
+                                        {% if sentence.strip() %}
+                                        {{ sentence.strip() }}.<br>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                            <div class="section-title-nutritional">A. Nutrition Questionnaire Analysis</div>
+
+                            {# Adjust this number: 8 is usually safe to fit on one page. #}
+                            {% set batch_size = 10 %}
+                            
+                            {% for batch in nqa.strengths | batch(batch_size) %}
+                            
+                            <div class="two-column" {% if loop.index > 1 %}style="page-break-before: always; margin-top: 20px;"{% endif %}>
+                                
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ si }}" alt="Strengths">
+                                    </div>
+                                    {% if loop.index > 1 %}
+                                        <span>Strengths<br><small style="font-size: 0.8em; color: #666;">(Cont'd)</small></span>
+                                    {% else %}
+                                        <span>Strengths</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="column-right">
+                                    {% for item in batch %}
+                                    <div class="item good">
+                                        <div class="ico">✓</div>
+                                        <div>{{ item.findings }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            {% endfor %}
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ ni }}" alt="Needs Attention">
+                                    </div>
+                                    <span>Needs Attention</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in nqa.needs_attention %}
+                                    <div class="item bad">
+                                        <div class="ico">
+                                            <img src="{{ nb }}" alt="Warning">
+                                        </div>
+                                        <div>{{ item.findings }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            </div>
+                            <hr class="section-divider">
+                            <div>
+                            <div class="section-title-nutritional">B. Nutrition Screening Analysis</div>
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ si }}" alt="Strengths">
+                                    </div>
+                                    <span>Strengths</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in nsa.strengths %}
+                                    <div class="item good">
+                                        <div class="ico">✓</div>
+                                        <div>{{ item.findings }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ ni }}" alt="Needs Attention">
+                                    </div>
+                                    <span>Needs Attention</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in nsa.needs_attention %}
+                                    <div class="item bad">
+                                        <div class="ico">
+                                            <img src="{{ nb }}" alt="Warning">
+                                        </div>
+                                        <div>{{ item.findings }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            </div>
+                            
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show_emotional %}
+    <div id="emotional" class="report-section emotional">
+        <table class="section-table-wrapper">
+            <thead>
+                <tr class="section-header-wrapper">
+                    <th>
+                        <div class="page-header">
+                            <div class="logo">
+                                <img src="{{ left_logo }}" alt="Logo">
+                            </div>
+                            <div class="report-badge">
+                                <img src="{{ emotional_icon }}" alt="Emotional" class="badge-icon">
+                                Developmental & Emotional Assessment
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="content-area-inner">
+                            <div class="summary-box emotional">
+                                <div class="summary-left">
+                                    <div class="icon"><img src="{{ em }}" alt="Emotional"></div>
+                                    <span>Overall Summary</span>
+                                </div>
+                                <div class="summary-right">
+                                    {% if emo.status == "all_good" %}
+                                    <img src="{{ all_good }}" alt="All Good">
+                                    {% elif emo.status == "need_attention" %}
+                                    <img src="{{ need_attention }}" alt="Needs Attention">
+                                    {% endif %}
+                                    <div class="summary-text">
+                                        {% for sentence in emo.summary.split('.') %}
+                                        {% if sentence.strip() %}
+                                        {{ sentence.strip() }}.<br>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ si }}" alt="Strengths">
+                                    </div>
+                                    <span>Strengths</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in emo.findings_data %}
+                                    <div class="item good">
+                                        <div class="ico">✓</div>
+                                        <div><span class="highlight">{{ item.findings }}:</span> {{ item.remarks }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ ni }}" alt="Needs Attention">
+                                    </div>
+                                    <span>Needs Attention</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in (emo.need_attention_data or []) %}
+                                    <div class="item bad">
+                                        <div class="ico">
+                                            <img src="{{ nb }}" alt="Warning">
+                                        </div>
+                                        <div><span class="highlight">{{ item.findings }}:</span> {{ item.remarks }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="recommend-title">Recommendations</div>
+                                </div>
+                               <div class="column-right">
+    {% if emo.clinical_notes_recommendations %}
+        {# 1. Ensure it is a string and remove the outer curly braces {} #}
+        {% set raw_text = emo.clinical_notes_recommendations|string %}
+        {% set cleaned_raw_text = raw_text.strip('{}') %}
+
+        {# 2. Split by comma #}
+        {% for sentence in cleaned_raw_text.split(',') %}
+            
+            {# 3. Strip whitespace AND dots from both ends #}
+            {# 'mera bhai tu.' becomes 'mera bhai tu' #}
+            {# 'zindagi' stays 'zindagi' #}
+            {% set clean_msg = sentence.strip(' .') %}
+
+            {# Only show if there is text left (this handles the trailing comma) #}
+            {% if clean_msg %}
+            <div class="item good">
+                <div class="icons">★</div>
+                <div>{{ clean_msg }}.</div>
+            </div>
+            {% endif %}
+            
+        {% endfor %}
+    {% else %}
+        <div class="item good">
+            <div class="icons">★</div>
+            <div>No recommendations available</div>
+        </div>
+    {% endif %}
+</div>
+                            </div>
+<!-- 
+                            <div class="signature-section">
+                                <div class="signature-box">
+                                    <h4>Evaluated By</h4>
+                                    <div class="role-date">
+                                        <div>
+                                            <p class="role">Psychologist</p>
+                                            <p class="name">Tarun Kumar</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">Date</p>
+                                            <p class="date">03-01-2025</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="signature-box">
+                                    <h4>Verified By</h4>
+                                    <div class="role-date">
+                                        <div>
+                                            <p class="role">Head Psychologist</p>
+                                            <p class="name">Vishwa Kalyan</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">Date</p>
+                                            <p class="date">03-01-2025</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">RCI No</p>
+                                            <p class="id">1212012010</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show_dental %}
+    <div id="dental" class="report-section dental">
+        <table class="section-table-wrapper">
+            <thead>
+                <tr class="section-header-wrapper">
+                    <th>
+                        <div class="page-header">
+                            <div class="logo">
+                                <img src="{{ left_logo }}" alt="Logo">
+                            </div>
+                            <div class="report-badge">
+                                <img src="{{ dental_icon }}" alt="Dental" class="badge-icon">
+                                Dental Screening
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="content-area-inner">
+                            <div class="summary-box dental">
+                                <div class="summary-left">
+                                    <div class="icon"><img src="{{ dd }}" alt="Dental"></div>
+                                    <span>Overall Summary</span>
+                                </div>
+                                <div class="summary-right">
+                                    {% if dental.status == "all_good" %}
+                                    <img src="{{ all_good }}" alt="All Good">
+                                    {% elif dental.status == "need_attention" %}
+                                    <img src="{{ need_attention }}" alt="Needs Attention">
+                                    {% endif %}
+                                    <div class="summary-text">
+                                        {% for sentence in dental.report_summary.split('.') %}
+                                        {% if sentence.strip() %}
+                                        {{ sentence.strip() }}.<br>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="two-column">
+                                <div class="column-left">Patient Concern</div>
+                                <div class="column-right">
+                                    {% if dental_concerns %}
+                                    {% for concern in dental_concerns %}
+                                    <div class="item good">
+                                        <div class="ico">•</div>
+                                        <div>{{ concern }}</div>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p>No patient concerns reported.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">Oral Examination Findings</div>
+                                <div class="column-right">
+                                    {% if oral_examination %}
+                                    {% for item in oral_examination %}
+                                    <div style="margin-bottom: 10px;">
+                                        <b>Tooth {{ item.tooth_numbers|join(', ') }}:</b> {{ item.remarks }}
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p>No oral examination findings recorded.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="tooth-row">
+                                <div class="tooth">
+                                    <img style="width: 25px;" src="{{ teeth18 }}">
+                                    <span class="num">18</span>
+                                    <input type="checkbox" name="tooth18" value="18"
+                                           {% if highlight_teeth and '18' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 27px;" src="{{ teeth17 }}">
+                                    <span class="num">17</span>
+                                    <input type="checkbox" name="tooth17" value="17"
+                                           {% if highlight_teeth and '17' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 29px;" src="{{ teeth16 }}">
+                                    <span class="num">16</span>
+                                    <input type="checkbox" name="tooth16" value="16"
+                                           {% if highlight_teeth and '16' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 20px;" src="{{ teeth15 }}">
+                                    <span class="num">15</span>
+                                    <input type="checkbox" name="tooth15" value="15"
+                                           {% if highlight_teeth and '15' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 21px;" src="{{ teeth14 }}">
+                                    <span class="num">14</span>
+                                    <input type="checkbox" name="tooth14" value="14"
+                                           {% if highlight_teeth and '14' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 16.5px;" src="{{ teeth13 }}">
+                                    <span class="num">13</span>
+                                    <input type="checkbox" name="tooth13" value="13"
+                                           {% if highlight_teeth and '13' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 17px;" src="{{ teeth12 }}">
+                                    <span class="num">12</span>
+                                    <input type="checkbox" name="tooth12" value="12"
+                                           {% if highlight_teeth and '12' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 19.5px;" src="{{ teeth11 }}">
+                                    <span class="num">11</span>
+                                    <input type="checkbox" name="tooth11" value="11"
+                                           {% if highlight_teeth and '11' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 20px;" src="{{ teeth21 }}">
+                                    <span class="num">21</span>
+                                    <input type="checkbox" name="tooth21" value="21"
+                                           {% if highlight_teeth and '21' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 18.5px;" src="{{ teeth22 }}">
+                                    <span class="num">22</span>
+                                    <input type="checkbox" name="tooth22" value="22"
+                                           {% if highlight_teeth and '22' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 16px;" src="{{ teeth23 }}">
+                                    <span class="num">23</span>
+                                    <input type="checkbox" name="tooth23" value="23"
+                                           {% if highlight_teeth and '23' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 21px;" src="{{ teeth24 }}">
+                                    <span class="num">24</span>
+                                    <input type="checkbox" name="tooth24" value="24"
+                                           {% if highlight_teeth and '24' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 20px;" src="{{ teeth25 }}">
+                                    <span class="num">25</span>
+                                    <input type="checkbox" name="tooth25" value="25"
+                                           {% if highlight_teeth and '25' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 28px;" src="{{ teeth26 }}">
+                                    <span class="num">26</span>
+                                    <input type="checkbox" name="tooth26" value="26"
+                                           {% if highlight_teeth and '26' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 28px;" src="{{ teeth27 }}">
+                                    <span class="num">27</span>
+                                    <input type="checkbox" name="tooth27" value="27"
+                                           {% if highlight_teeth and '27' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 26px;" src="{{ teeth28 }}">
+                                    <span class="num">28</span>
+                                    <input type="checkbox" name="tooth28" value="28"
+                                           {% if highlight_teeth and '28' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                            </div>
+
+                            <div class="tooth-row bottom-row">
+                                <div class="tooth">
+                                    <img style="width: 26px;" src="{{ teeth48 }}">
+                                    <span class="num">48</span>
+                                    <input type="checkbox" name="tooth48" value="48"
+                                           {% if highlight_teeth and '48' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 27.5px;" src="{{ teeth47 }}">
+                                    <span class="num">47</span>
+                                    <input type="checkbox" name="tooth47" value="47"
+                                           {% if highlight_teeth and '47' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 29px;" src="{{ teeth46 }}">
+                                    <span class="num">46</span>
+                                    <input type="checkbox" name="tooth46" value="46"
+                                           {% if highlight_teeth and '46' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 20px;" src="{{ teeth45 }}">
+                                    <span class="num">45</span>
+                                    <input type="checkbox" name="tooth45" value="45"
+                                           {% if highlight_teeth and '45' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 21px;" src="{{ teeth44 }}">
+                                    <span class="num">44</span>
+                                    <input type="checkbox" name="tooth44" value="44"
+                                           {% if highlight_teeth and '44' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 17px;" src="{{ teeth43 }}">
+                                    <span class="num">43</span>
+                                    <input type="checkbox" name="tooth43" value="43"
+                                           {% if highlight_teeth and '43' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 16px;" src="{{ teeth42 }}">
+                                    <span class="num">42</span>
+                                    <input type="checkbox" name="tooth42" value="42"
+                                           {% if highlight_teeth and '42' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 15.5px;" src="{{ teeth41 }}">
+                                    <span class="num">41</span>
+                                    <input type="checkbox" name="tooth41" value="41"
+                                           {% if highlight_teeth and '41' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 16px;" src="{{ teeth31 }}">
+                                    <span class="num">31</span>
+                                    <input type="checkbox" name="tooth31" value="31"
+                                           {% if highlight_teeth and '31' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 14.5px;" src="{{ teeth32 }}">
+                                    <span class="num">32</span>
+                                    <input type="checkbox" name="tooth32" value="32"
+                                           {% if highlight_teeth and '32' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 16px;" src="{{ teeth33 }}">
+                                    <span class="num">33</span>
+                                    <input type="checkbox" name="tooth33" value="33"
+                                           {% if highlight_teeth and '33' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 20.5px;" src="{{ teeth34 }}">
+                                    <span class="num">34</span>
+                                    <input type="checkbox" name="tooth34" value="34"
+                                           {% if highlight_teeth and '34' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 19.5px;" src="{{ teeth35 }}">
+                                    <span class="num">35</span>
+                                    <input type="checkbox" name="tooth35" value="35"
+                                           {% if highlight_teeth and '35' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 28px;" src="{{ teeth36 }}">
+                                    <span class="num">36</span>
+                                    <input type="checkbox" name="tooth36" value="36"
+                                           {% if highlight_teeth and '36' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 27.5px;" src="{{ teeth37 }}">
+                                    <span class="num">37</span>
+                                    <input type="checkbox" name="tooth37" value="37"
+                                           {% if highlight_teeth and '37' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                                <div class="tooth">
+                                    <img style="width: 27px;" src="{{ teeth38 }}">
+                                    <span class="num">38</span>
+                                    <input type="checkbox" name="tooth38" value="38"
+                                           {% if highlight_teeth and '38' in highlight_teeth %}checked{% endif %}>
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">Additional Notes</div>
+                                <div class="column-right">
+                                    {% if dental and dental.examination_note %}
+                                    <div class="item good">
+                                        <div class="ico">✓</div>
+                                        <div>{{ dental.examination_note }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">Diagnosis</div>
+                                <div class="column-right">
+                                    {% if diagnoses %}
+                                    {% for diagnosis in diagnoses %}
+                                    <div class="item good">
+                                        <div class="ico">•</div>
+                                        <div>{{ diagnosis }}</div>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p>No diagnosis recorded.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="recommend-title">Recommendations</div>
+                                </div>
+                                <div class="column-right">
+                                    {% for rec in treatment_recommendations %}
+                                    <div class="item good">
+                                        <div class="icons">★</div>
+                                        <div><span class="highlight">{{ rec.title }}:</span> {{ rec.description }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                           
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show_eye %}
+    <div id="eye" class="report-section eye">
+        <table class="section-table-wrapper">
+            <thead>
+                <tr class="section-header-wrapper">
+                    <th>
+                        <div class="page-header">
+                            <div class="logo">
+                                <img src="{{ left_logo }}" alt="Logo">
+                            </div>
+                            <div class="report-badge">
+                                <img src="{{ eye_icon }}" alt="Eye" class="badge-icon">
+                                Vision Screening
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="content-area-inner">
+                            
+                            <div class="summary-box eye">
+                                <div class="summary-left">
+                                    <div class="icon"><img src="{{ ee }}" alt="Eye"></div>
+                                    <span>Overall Summary</span>
+                                </div>
+                                <div class="summary-right">
+                                    {% if eye and eye.status %}
+                                        {% set eye_status_lower = eye.status|lower|trim %}
+                                        {# ✅ FIXED: Check for both 'all_good' (underscore) and 'all good' (space) #}
+                                        {% if eye_status_lower in ('all_good', 'all good', 'normal', 'no abnormality detected', 'no issues', 'healthy') %}
+                                            <img src="{{ all_good }}" alt="All Good">
+                                        {% else %}
+                                            <img src="{{ need_attention }}" alt="Needs Attention">
+                                        {% endif %}
+                                    {% else %}
+                                        <img src="{{ all_good }}" alt="Status Unknown">
+                                    {% endif %}
+                                    
+                                    <div class="summary-text">
+                                        {% if eye and eye.report_summary %}
+                                            {% for sentence in eye.report_summary.split('.') %}
+                                                {% if sentence.strip() %}
+                                                    {{ sentence.strip() }}.<br>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            No summary available.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="two-column">
+                                <div class="column-left">Patient Concern</div>
+                                <div class="column-right">
+                                    {% if eye_concerns %}
+                                    {% for concern in eye_concerns %}
+                                    <div class="item good">
+                                        <div class="ico">•</div>
+                                        <div>{{ concern }}</div>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p>No patient concerns reported.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    AR Test Results
+                                    <img src="{{ eye2 }}" alt="Eye" class="eye-image">
+                                </div>
+                                <div class="column-right">
+                                    <div class="ar-wrapper">
+                                    <table class="ar-table">
+                                        <tr>
+                                            <th>Eye</th>
+                                            <th>SPH<br>(Spherical)</th>
+                                            <th>CYL<br>(Cylindrical)</th>
+                                            <th>Axis</th>
+                                        </tr>
+                                        <tr>
+                                            <td>Left Eye<br>(OS)</td>
+                                            <td>{{ (eye.left.sph if eye and eye.left else "") | default("N/A") }}</td>
+                                            <td>{{ (eye.left.cyl if eye and eye.left else "") | default("N/A") }}</td>
+                                            <td>{{ (eye.left.axis ~ "°" if eye and eye.left and eye.left.axis else "") | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Right Eye<br>(OD)</td>
+                                            <td>{{ (eye.right.sph if eye and eye.right else "") | default("N/A") }}</td>
+                                            <td>{{ (eye.right.cyl if eye and eye.right else "") | default("N/A") }}</td>
+                                            <td>{{ (eye.right.axis ~ "°" if eye and eye.right and eye.right.axis else "") | default("N/A") }}</td>
+                                        </tr>
+                                    </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <!-- <div class="two-column">
+                                <div class="column-left">
+                                    <div class="recommend-title">Recommendations</div>
+                                </div>
+                                <div class="column-right">
+                                    {% if eye.recommendations %}
+                                        {# 1. Force string conversion and strip DB curly braces {} #}
+                                        {% set raw_text = eye.recommendations|string %}
+                                        {% set cleaned_text = raw_text.strip('{}') %}
+
+                                        {# 2. Split by comma #}
+                                        {% for rec in cleaned_text.split(',') %}
+                                            
+                                            {# 3. Remove whitespace AND existing dots #}
+                                            {% set clean_rec = rec.strip(' .') %}
+
+                                            {# Only display if there is text (handles empty trailing commas) #}
+                                            {% if clean_rec %}
+                                            <div class="item good">
+                                                <div class="icons">★</div>
+                                                {# 4. Add exactly one dot #}
+                                                <div>{{ clean_rec }}.</div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                        {% endfor %}
+                                    {% else %}
+                                        {# Fallback if no data exists #}
+                                        <div class="item good">
+                                            <div class="icons">★</div>
+                                            <div>No recommendations available.</div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div> -->
+                            <div class="two-column">
+    <div class="column-left">
+        <div class="recommend-title">Recommendations</div>
+    </div>
+    <div class="column-right">
+        {% if eye.recommendations and eye.recommendations != [] %}
+            {% for rec in eye.recommendations %}
+                {% set clean_rec = rec|string|trim %}
+                {% if clean_rec %}
+                    <div class="item good">
+                        <div class="icons">★</div>
+                        <div>{{ clean_rec }}.</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="item good">
+                <div class="icons">★</div>
+                <div>No recommendations available.</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+                            <!-- <div class="signature-section">
+                                <div class="signature-box">
+                                    <h4>Evaluated By</h4>
+                                    <div class="role-date">
+                                        <div>
+                                            <p class="role">Optometrist</p>
+                                            <p class="name">Tarun Kumar</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">Date</p>
+                                            <p class="date">03-01-2025</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show_lab %}
+    <div id="labreports" class="report-section lab">
+        <table class="section-table-wrapper">
+            <thead>
+                <tr class="section-header-wrapper">
+                    <th>
+                        <div class="page-header">
+                            <div class="logo">
+                                <img src="{{ left_logo }}" alt="Logo">
+                            </div>
+                            <div class="report-badge">
+                                <img src="{{ labreports_icon }}" alt="Lab" class="badge-icon">
+                                Lab Reports
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="content-area-inner">
+                            <div class="summary-box lab">
+                                <div class="summary-left">
+                                    <div class="icon"><img src="{{ li }}" alt="Lab"></div>
+                                    <span>Overall Summary</span>
+                                </div>
+                                <div class="summary-right">
+                                    {% if lab.status == "all_good" %}
+                                    <img src="{{ all_good }}" alt="All Good">
+                                    {% elif lab.status == "need_attention" %}
+                                    <img src="{{ need_attention }}" alt="Needs Attention">
+                                    {% endif %}
+                                    <div class="summary-text">
+                                        {% for sentence in lab.summary.split('.') %}
+                                        {% if sentence.strip() %}
+                                        {{ sentence.strip() }}.<br>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ si }}" alt="Strengths">
+                                    </div>
+                                    <span>Strengths</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in lstrength %}
+                                    <div class="item good">
+                                        <div class="ico">✓</div>
+                                        <div>{{ item }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="section-divider">
+
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="icon">
+                                        <img src="{{ ni }}" alt="Concerns">
+                                    </div>
+                                    <span>Areas of Concern</span>
+                                </div>
+                                <div class="column-right">
+                                    {% for item in lconcern %}
+                                    <div class="item bad">
+                                        <div class="ico">
+                                            <img src="{{ nb }}" alt="Warning">
+                                        </div>
+                                        <div>{{ item }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <!-- <hr class="section-divider">
+                            <div class="two-column">
+                                <div class="column-left">
+                                    <div class="recommend-title">Recommendations</div>
+                                </div>
+                                <div class="column-right">
+                                    {% if emo.clinical_notes_recommendations %}
+                                    {% for sentence in emo.clinical_notes_recommendations.split('.') if sentence.strip() %}
+                                    <div class="item good">
+                                        <div class="icons">★</div>
+                                        <div>{{ sentence.strip() }}.</div>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <div class="item good">
+                                        <div class="icons">★</div>
+                                        <div>No recommendations available</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div> -->
+
+                            <!-- <div class="signature-section">
+                                <div class="signature-box">
+                                    <h4>Evaluated By</h4>
+                                    <div class="role-date">
+                                        <div>
+                                            <p class="role">Lab Technician</p>
+                                            <p class="name">Tarun Kumar</p>
+                                        </div>
+                                        <div>
+                                            <p class="label">Date</p>
+                                            <p class="date">03-01-2025</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        function updateNeedle() {
+            const wrappers = document.querySelectorAll('.gauge-wrapper');
+            wrappers.forEach(wrapper => {
+                const needle = wrapper.querySelector('.needle');
+                const scoreText = wrapper.querySelector('.health-score').textContent;
+                const score = parseInt(scoreText.split('/')[0]) || 0;
+                const angle = (score / 100) * 180 - 90;
+                needle.style.transform = `rotate(${angle}deg)`;
+            });
+        }
+
+        async function generateAndDownloadPDF() {
+            const studentId = "{{ student.id }}";
+            const statusMsg = document.getElementById("pdf-status");
+
+            statusMsg.innerText = "⏳ Preparing your report...";
+            const startRes = await fetch(`/report/${studentId}/start-download-selected`);
+            if (!startRes.ok) {
+                statusMsg.innerText = "❌ Failed to start PDF generation.";
+                return;
+            }
+
+            const interval = setInterval(async () => {
+                const statusRes = await fetch(`/report/${studentId}/status-selected`);
+                const data = await statusRes.json();
+
+                if (data.ready) {
+                    clearInterval(interval);
+                    statusMsg.innerHTML = `
+                        ✅ Report ready! 
+                        <a href="/report/${studentId}/download-selected-ready" target="_blank" class="btn btn-success">
+                            Download Now
+                        </a>
+                    `;
+                } else {
+                    statusMsg.innerText = "⏳ Still preparing...";
+                }
+            }, 3000);
+        }
+
+        function downloadServerPDF() {
+            const pdfUrl = "{{ request.url_for('download_report_pdf', student_id=student.id) }}";
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = `report_{{ student.id }}.pdf`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.onload = function () {
+            updateNeedle();
+
+            document.addEventListener('keydown', function (e) {
+                if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+                    e.preventDefault();
+                    downloadServerPDF();
+                }
+            });
+        };
+    </script>
+</body>
+</html>

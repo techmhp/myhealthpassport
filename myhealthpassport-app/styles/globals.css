@@ -1,0 +1,240 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@plugin "tailwindcss-animate";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Nunito:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+    --brand: 221 83% 53%;
+    --brand-light: 217 91% 60%;
+    --brand-dark: 224 76% 48%;
+    --coral: 0 84% 60%;
+    --mint: 152 69% 31%;
+    --sunshine: 45 93% 47%;
+    --lavender: 263 70% 50%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+html, body {
+    font-family: "Inter", sans-serif !important;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    scroll-behavior: smooth;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+button{
+    cursor: pointer;
+}
+
+/*
+@theme {
+    --color-indigo-500: #FF0000;
+    --color-indigo-400: #FF0000;
+    --color-indigo-600: #FF5733;
+    --color-gray-900: #1a1a1a;
+} */
+
+.home {
+    background-color: #f9f9f9;
+    background-image: radial-gradient(circle, rgba(217, 217, 217, 1) 1px, transparent 1px);
+    font-family: inherit;
+    background-size: 20px 20px;
+    position: relative;
+    /* min-height: 100vh; */
+}
+
+/* Adding Hand-drawn Elements */
+.background-container::before {
+    content: "";
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    width: 207.68px;
+    height: 205px;
+    opacity: 40%;
+    background: url('../public/iconx/drawn-sun.svg') no-repeat center/contain;
+}
+
+.background-container::after {
+    content: "";
+    position: absolute;
+    bottom: 40px;
+    right: 80px;
+    width: 88px;
+    height: 86px;
+    opacity: 40%;
+    background: url('../public/iconx/colorful-stars.svg') no-repeat center/contain;
+}
+
+
+.header-width {
+    border-bottom: 1.6px solid rgba(179, 203, 255, 1);
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+
+/* Ant design date overide  */
+
+.ant-picker-outlined:focus-within {
+    border-color: #4f46e5 !important;
+    /* Matches focus:outline-indigo-600 */
+    outline: 2px solid #4f46e5 !important;
+}
+
+.filter-light{
+    filter: opacity(0.5);
+}
+
+.filter-white {
+    filter: invert(0%) sepia(90%) saturate(80%) hue-rotate(90deg) brightness(120%) contrast(120%);
+}
+
+.filter-gray {
+    filter: invert(0%) sepia(90%) saturate(80%) hue-rotate(90deg) brightness(120%) contrast(120%);
+}
+.CircularProgressbar{
+    position: relative;
+    height: 120px;
+    flex: 1;
+}
+
+.CircularProgressbar-path {
+    stroke: #5389FF !important;
+}
+
+.CircularProgressbar-trail {
+    stroke: "#E2EBFF" !important;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}
+.custom-otp-input .ant-input-otp-input {
+    width: 40px !important;
+    height: 40px !important;
+    text-align: center !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    border-radius: 4px !important;
+    border-color: #d5d9e2 !important;
+}
+
+.custom-otp-input .ant-input-otp-input:focus {
+    border-color: #3b82f6 !important;
+    outline: none !important;
+}
+
+.custom-otp-input .ant-input-otp-group {
+    gap: 10px !important;
+}
+
+.custom-otp-input .ant-input-otp-input {
+    width: 40px !important;
+    height: 40px !important;
+    text-align: center !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    border-radius: 4px !important;
+    border-color: #d5d9e2 !important;
+}
+
+.custom-otp-input .ant-input-otp-input:focus {
+    border-color: #3b82f6 !important;
+    outline: none !important;
+}
+
+.custom-otp-input .ant-input-otp-group {
+    gap: 10px !important;
+}
+
+.health-gauge {
+    position: relative;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.health-gauge .text-group {
+    position: relative;
+}
+.health-gauge .needle {
+    position: relative;
+}

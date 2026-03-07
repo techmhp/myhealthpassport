@@ -1,0 +1,110 @@
+'use client';
+
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import BreadcrumbsProfile from '@/components/BreadcrumbsProfile';
+import Link from 'next/link';
+import nookies from 'nookies';
+
+const ProfileHeader = ({ details, school }) => {
+  const cookies = nookies.get();
+  const [root, setRoot] = useState('');
+  const [profile, setProfile] = useState({});
+
+  useEffect(() => {
+    if (cookies.root && cookies.root !== 'undefined') {
+      setRoot(cookies.root);
+    }
+    if (details.status === true) {
+      setProfile(details.data.student_details);
+    }
+  }, [cookies]);
+
+  const baseUrlMap = {
+    parent: `/parent/children/${profile.id}`,
+    admin: `/admin/schools/${school.school_id}/student/${profile.id}/profile`,
+    'school-admin': `/school-admin/students/${profile.id}/profile`,
+    teacher: `/teacher/roster/student/${profile.id}`,
+    screening: `/screening/roster/${school.school_id}/student/${profile.id}/profile`,
+    analyst: `/analyst/roster/${school.school_id}/student/${profile.id}/profile`,
+    expert: `/expert/patients/${profile.id}`,
+  };
+
+  const href = baseUrlMap[root] || '/';
+  const pathname = usePathname();
+
+  return (
+    <div className="flex flex-col w-full space-y-4 sm:space-y-6">
+      <ul role="list" className="w-full space-y-4">
+        {details.status === true ? (
+          <li className="w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-y-3 gap-x-4 md:gap-x-6 w-full">
+              {/* Profile Image */}
+              <Image
+                alt="profile"
+                src={profile.image ? profile.image : '/iconx/profile-image.svg'}
+                className="size-16 sm:size-20 md:size-24 rounded-full mx-auto sm:mx-0"
+                width={102}
+                height={102}
+              />
+              {/* Name and breadcrumbs */}
+              <div className="flex flex-col gap-y-1.5 text-center sm:text-left w-full">
+                <span className="text-sm sm:text-base font-semibold tracking-tight text-gray-900">{`${profile.first_name} ${profile.middle_name} ${profile.last_name}`}</span>
+                <BreadcrumbsProfile profile={profile} />
+                {(pathname.startsWith('/parent') ||
+                  pathname.startsWith('/school-admin') ||
+                  pathname.startsWith('/expert') ||
+                  pathname.startsWith('/admin')) && (
+                    <Link href={href} className="font-medium text-xs sm:text-sm text-[#363AF5]">
+                      View Full Profile
+                    </Link>
+                  )}
+              </div>
+
+              {/* Partial Report Badge */}
+              {pathname.startsWith('/parent') ||
+                pathname === '/school-admin' ||
+                (pathname.startsWith('/admin') && (
+                  <div className="flex justify-center sm:justify-end sm:ml-auto w-full">
+                    <div className="flex items-center bg-[#FEFCE8] border border-[#FB923C] gap-1 rounded-[6px] p-[4px] px-[8px]">
+                      <img src="/iconx/warning-icon.svg" alt="icon" className="w-4 h-4" />
+                      <span className="font-normal text-xs leading-[22px] text-[#CA8A04]">Partial Report</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </li>
+        ) : (
+          ''
+        )}
+      </ul>
+
+      {/* Expert-specific partial report badge (bottom) */}
+      {/* {pathname === '/expert/patients/1' && (
+        <div className="w-full pt-4">
+          <div className="flex justify-end">
+            <button className="flex items-center text-xs border bg-[#FEFCE8] text-[#CA8A04] border-[#FB923C] rounded-md p-2 gap-1">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <g clipPath="url(#clip0_1607_2993)">
+                  <path
+                    d="M7.99998 14.6663C11.6819 14.6663 14.6666 11.6816 14.6666 7.99967C14.6666 4.31778 11.6819 1.33301 7.99998 1.33301C4.31808 1.33301 1.33331 4.31778 1.33331 7.99967C1.33331 11.6816 4.31808 14.6663 7.99998 14.6663Z"
+                    stroke="#CA8A04"
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M8 10.6667V8" stroke="#CA8A04" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 5.33301H8.00667" stroke="#CA8A04" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                </g>
+              </svg>
+              <span>Partial Report</span>
+            </button>
+          </div>
+        </div>
+      )} */}
+    </div>
+  );
+};
+
+export default ProfileHeader;

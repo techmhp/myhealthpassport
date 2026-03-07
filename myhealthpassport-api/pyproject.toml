@@ -1,0 +1,22 @@
+[tool.aerich]
+tortoise_orm = "src.config.TORTOISE_ORM"
+location = "./migrations"
+
+[[tool.aerich.apps]]
+name = "models"
+models = [
+    "src.models.user_models",
+    "src.models.consultation_models",
+    "src.models.other_models",
+    "src.models.school_models",
+    "src.models.screening_models",
+    "src.models.transaction_models",
+    "src.models.student_models",
+    "src.models.questionnaire_models",
+    "src.models.helthians_booking",
+    "src.models.thyrocare_models",
+]
+
+[[tool.aerich.apps]]
+name = "aerich"
+models = ["aerich.models"]

@@ -1,0 +1,39 @@
+*.pyc
+*.egg
+*.pyo
+*.db
+*.sqlite3
+*.log
+*.DS_Store
+*.coverage
+*.cover
+
+*.egg-info/
+.idea/
+
+venv/
+__pycache__/
+
+db.sqlite3
+db.sqlite3-shm
+db.sqlite3-wal
+
+
+# migrations/
+static/
+
+uploads/
+.env
+.env.*
+
+# DB dumps - contain real data, never commit
+myhealth_passport.sql
+*.sql.gz
+
+# Compiled / temp files
+__pycache__/
+*.pyc
+invoice.pdf
+temp.py
+random.txt
+test_upload_client.txt

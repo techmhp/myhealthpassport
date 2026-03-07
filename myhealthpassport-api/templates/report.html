@@ -1,0 +1,2406 @@
+  {% comment %} <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Health Screening Report</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background: #f8f9fa;
+                font-family: 'Trebuchet Ms', sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* Common Page Styles */
+             .page {
+                width: 794px; /* A4 width */
+                min-height: 1100px; /* A4 height */
+                background: #fff;
+                position: relative;
+                box-sizing: border-box;
+                padding: 0 20px 0 20px;
+                margin: 0; 
+                overflow: hidden;
+                display: block;
+            }
+         
+            /* Page-specific colored borders */
+            .page.physical { border-right: 60px solid #FF7F95; }
+
+            .page.nutrition { border-right: 60px solid #FFBB70; }
+            .page.emotional { border-right: 60px solid #97E6A6; }
+            .page.dental { border-right: 60px solid #78C5FF; }
+            .page.eye {border-right:60px solid #0EE1FD;}
+            .page.lab { border-right: 60px solid #FFDA31; }
+
+            /* Headers and Footers */
+            .header-logos {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .logo-left img,
+            .logo-right img {
+                height: 90px;
+            }
+
+            .topbar {
+                margin-top: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px;
+                margin-left: -10px;
+            }
+
+            .brand img {
+                height: 80px;
+                width: auto;
+                display: block;
+            }
+
+            .brand-badge {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                background: #1e63e9;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-weight: bold;
+                margin-top: 10px;
+                font-size: 20px;
+            }
+
+            .report-badge {
+                color: white;
+                display: flex;
+                padding: 20px 25px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 14px;
+                margin-right: -35px;
+                align-items: center;
+                text-transform: uppercase;
+            }
+            .badge-icon {
+                height: 2em;               /* match text height */
+                width: auto;                /* maintain aspect ratio */
+                display: inline-block;
+                margin-right: 10px;
+            }
+
+            .page.physical .report-badge { background: #FF7F95;; }
+            .page.nutrition .report-badge { background: #FFBB70; }
+            .page.emotional .report-badge { background: #97E6A6; }
+
+            .page.dental .report-badge { background: #78C5FF; }
+            .page.eye .report-badge{background: #0EE1FD;}
+            .page.lab .report-badge { background: #FFDA31; }
+            
+            .footer {
+                position: absolute;
+                right: 40px;
+                bottom: 30px;
+                font-size: 11px;
+                color: #555;
+            }
+
+            /* Page 1 Specific */
+            .profile-section {
+                align-items: center;
+                margin-top: 150px;
+                gap: 20px;
+                margin-left: 100px;
+            }   
+
+            .profile-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.profile-photo-wrapper {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.profile-bg {
+    position: absolute;
+    width: 130px;
+    height: 120px;
+    border-radius: 50%;
+    background-image: url('{{ profile }}');  
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.profile-photo {
+    position: absolute;
+    width:115px;
+    height: 115px;
+    border-radius: 50%;
+    object-fit: cover;
+    top: 3px;
+    left: 7px;
+    z-index: 2;
+    background: white;
+}
+
+
+            .profile-info {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .profile-info h2 {
+                font-size: 22px;
+                font-weight: bold;
+                color: #222;
+                margin: 0;
+            }
+
+            .profile-info p {
+                font-size: 14px;
+                color: #201f1f;
+                margin-top: 6px;
+            }
+
+            .profile-details {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                font-size: 14px;
+                color: #000;
+                
+            }
+
+            .profile-details span {
+                display: inline-flex;
+                align-items: center;           
+            }
+
+            .profile-details span:first-child {
+                padding-left: 0;
+            }
+
+            .sidebar {
+                position: absolute;
+                bottom: 350px;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+               
+            }
+
+            .sidebar-button {
+                width: 50px;
+                height: 50px;
+                padding: 0px 25px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                color: #fff;
+                font-size: 24px;
+                font-weight: bold;
+                text-decoration: none;
+            }
+
+            .btn1 { background: #FF7F95; }
+            .btn2 { background: #FFBB70; }
+            .btn3 { background: #97E6A6; }
+            .btn4 { background: #78C5FF; }
+            .btn5 { background: #0EE1FD; }
+            .btn6 { background: #FFDA31; }
+
+            .sidebar-button img.sidebar-img {
+                width: 32px;  /* icon size */
+                height: 32px;
+                object-fit: contain;
+            }
+
+
+            .eye-image {
+                width: 120px;   /* adjust as needed */
+                height: auto;
+                display: block;
+                margin-left: 20px;
+                 
+            }
+            /* Common Summary Box Styles */
+            .summary-box {
+                display: flex;
+                gap: 15px;
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 10px;
+                align-items: center;
+                overflow: hidden;
+                margin-top: 10px;
+            }
+
+            .summary-box.default { background: #eaf5ff; }
+            .summary-box.emotional { background: #EEFBF1; margin-bottom: 10px; }
+            .summary-box.grid { 
+                display: grid;
+                grid-template-columns: 200px 1fr;
+                margin-top: 50px;
+            }
+
+            .summary-left {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                flex-direction: column;
+                padding: 16px 12px;
+                font-size: 12px;
+                font-weight: 600;
+                text-align: center;
+                white-space: nowrap;
+                
+            }
+
+            .summary-left .icon {
+                font-size: 14px;
+            }
+            .summary-box.eye{
+                background: #E5FBFE;
+            }
+            .summary-box.nutrition{
+                background: #FFF3E7;
+            }
+            .summary-box.eye .summary-left{
+                color: #151515;
+                border-right: 2px solid #cce8f8 ;
+            }
+            .summary-box.nutrition .summary-left{
+                border-right: 2px solid #f4af62;
+            }
+            .summary-box.dental .summary-left,
+            .summary-box.lab .summary-left {
+                border-right: 2px solid #2eaeb5;
+            }
+            .summary-box.physical .summary-left{
+                border-right: 1px solid #0f993e
+            }
+
+            .summary-box.lab .summary-left {
+                white-space: normal;
+                border-right: 2px solid #f2f62c
+            }
+
+            .summary-box.emotional .summary-left {
+                width: 100px;
+                padding-right: 15px;
+                border-right: 1px solid #ccc;
+            }
+            .summary-box.physical {
+                background: #FFF3F5;
+            }
+            .summary-right {
+                flex: 1;
+                padding: 5px;
+            }
+            .summary-right img.summary-img {
+            width: 120px;
+            height: 30px;
+            
+            margin: 0;
+            padding: 0;
+            display: block;
+            }
+            .summary-right img.summary-img2 {
+            width: 100px;
+            height: 30px;
+            
+            margin: 0;
+            padding: 0;
+            display: block;
+            }
+
+            
+            .summary-box.emotional .summary-right {
+                padding-left: 30px;
+            }
+
+            .summary-box.dental .summary-right,
+            .summary-box.eye .summary-right,
+            .summary-box.lab .summary-right {
+                padding: 14px 16px;
+            }
+
+            
+            .summary-box.dental {
+                background: #E8F5FF;
+            }
+            .summary-box.lab{
+                background: #FFF9DD;
+
+            }
+                
+            .summary-text {
+                font-size: 12px;
+                color: #333;
+                line-height: 1.6;
+            }
+
+            /* Two-Column Layouts */
+            .two-column {
+                display: flex;
+                align-items: stretch;
+                margin-bottom: 5px;
+                margin-top: 5px;
+            }
+            
+            .column-left {
+                width: 150px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-size: 12px;
+                font-weight: bold;
+                color: #333;
+                white-space: nowrap;
+                padding-right: 15px;
+            }
+            
+            .column-right {
+                flex: 1;
+                font-size: 11px;
+                color: #444;
+                line-height: 1.2;
+                padding-left: 35px;
+            }
+
+            .column-left .icon {
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+            .column-left .icon img.main-need-icon {
+                width: 25px;       /* adjust as needed */
+                height: auto;
+                object-fit: contain;
+                display: block;
+            }
+            .column-left .icon img.main-strength-icon {
+                width: 25px;       /* adjust as needed */
+                height: auto;
+                object-fit: contain;
+                display: block;
+            }
+            .column-right ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .column-right ul li {
+                position: relative;
+                padding-left: 25px;
+                margin-bottom: 3px;
+            }
+
+            .column-right ul li::before {
+                content: "✔";
+                color: #4bc076;
+                position: absolute;
+                left: 0;
+                font-weight: bold;
+                top: 0;
+            }
+
+            .column-right ul.warning li::before {
+                content: "⚠️";
+                color: orange;
+                display: inline-block;  /* allow margin to take effect */
+                margin-right: 6px;
+            }
+            .column-right .ico img.warn-icon {
+                width: 13px;
+                height: 13px;
+                object-fit: contain;
+                vertical-align:baseline;
+            }
+
+            /* Page-specific column adjustments */
+            
+
+            
+
+            .icons {
+                color: #007bff;
+            }
+            .item .icons {
+                width: 18px;
+                flex: none;
+                text-align: center;
+                margin-right: 0px;
+                margin-left: -30px;
+                font-size: 14px;
+            }
+            .page.emotional .column-right ul.check li::before {
+                content: "✔";
+                color: #007bff;
+            }
+
+            .page.dental .two-column .column-right .recommend-list li {
+                margin-bottom: 6px;
+            }
+            
+        
+            
+            
+            .page.eye .two-column .column-right {
+                width: 70%;
+                font-size: 12px;
+                color: #333;
+            }
+            .page.dental .two-column .column-right {
+                width: 70%;
+                font-size: 12px;
+                color: #333;
+            }
+            .page.emotional .two-column .column-right {
+                width: 70%;
+                line-height: 1.4;
+                font-size: 12px;
+                color: #333;
+            }
+            .page.nutrition .two-column .column-right {
+                width: 70%;
+                line-height: 1.4;
+                
+                color: #333;
+            }
+            /* Score Box and Gauge */
+            .score-box {
+                margin-bottom: 2px;
+            }
+
+            .score-chart {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .score-info {
+                flex: 1;
+            }
+
+            .score-title {
+                font-size: 15px;
+                font-weight: 700;
+                padding-left: 20px;
+                margin-bottom: 5px;
+                color: #333;
+            }
+
+            .gauge-wrapper {
+            position: relative;
+            width: 180px;
+            height: 140px;
+            margin: 0 auto;
+        }
+
+        .semi-gauge {
+            /* This div now acts as the container for the gauge background image */
+            position: relative;
+            width: 180px;
+            height: 90px;
+            overflow: hidden;
+        }
+
+        /* The ::after pseudo-element is no longer needed since we're using an image */
+
+        /* Styles for the gauge image */
+        .gauge-image {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+            .needle {
+                position: absolute;
+                bottom: 70px;
+                left: 50%;
+                width: 2px;
+                height: 50px;
+                background: #000;
+                transform-origin: bottom center;
+                transform: rotate(-90deg);
+                transition: transform 1s ease-in-out;
+            }
+
+            .health-score {
+                position: absolute;
+                bottom: 45px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 18px;
+                font-weight: bold;
+                color: #27ae60;
+            }
+
+            .section {
+                margin-bottom: 1px;
+                margin-top: 2px;
+            }
+
+            .section2 {
+                margin-bottom: 1px;
+                margin-top: 30px;
+            }
+
+            .section.dental {
+                display: flex;
+                margin-bottom: 25px;
+                margin-top: 40px;
+            }
+
+            .section-title {
+                font-size: 13px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                color: #333;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 3px 3px;
+                margin-top: 2px;
+                font-size: 11px;
+                text-align: center;
+            }
+
+            .grid div {
+                padding: 2px;
+            }
+
+            .grid .label {
+                color: #777;
+            }
+
+            .grid .value {
+                font-weight: 700;
+                color: #000;
+            }
+
+            .section-divider {
+                border: none;
+                border-top: 1px solid #ddd;
+                margin: 15px 0;
+            }
+
+            /* Signature Section */
+            .signature-section {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 45px;
+                gap: 10px;
+            }
+
+            .signature-box {
+                flex: 1;
+            }
+
+            .signature-box h4 {
+                margin-bottom: 5px;
+                font-weight: bold;
+                font-size: 11px;
+                text-align: left;
+                color: #666;
+            }
+
+            .role-date {
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 20px;
+                align-items: flex-start;
+            }
+
+            .role-date div {
+                display: flex;
+                flex-direction: column;
+                text-align: left;
+            }
+
+            .role-date .role,
+            .role-date .label {
+                font-size: 9px;
+                color: #a5a2a2;
+                margin: 0;
+                font-weight: normal;
+            }
+
+            .role-date .name,
+            .role-date .date,
+            .role-date .id {
+                font-size: 9px;
+                color: #151515;
+                margin: 0;
+                font-weight: normal;
+            }
+
+            .signature-box > .role {
+                font-size: 7px;
+                color: #858282;
+                margin: 15px 0 0;
+                font-weight: normal;
+                margin-left: 50px;
+            }
+
+            .signature-img {
+                width: 60px;
+                height: 60px;
+                margin-top: 4px;
+                margin-left: 40px;
+            }
+
+            /* Recommendations */
+            .recommend-title {
+                display: inline-block;
+                background: #4bc076;
+                color: #fff;
+                font-weight: bold;
+                font-size: 11px;
+                padding: 3px 8px;
+                border-radius: 4px;
+            }
+
+            
+
+            
+            .recommendation-list {
+                flex: 1;
+            }
+
+            .recommendation-list ul {
+                margin: 0;
+                padding-left: 0;
+                list-style: none;
+            }
+
+            .recommendation-list li {
+                margin-bottom: 12px;
+                line-height: 1.6;
+                position: relative;
+                padding-left: 18px;
+            }
+            .recommendation-list li:last-child {
+                margin-bottom: 0;
+            }
+            .recommendation-list li::before {
+                content: "★";
+                color: #28a745;
+                font-size: 12px;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+            .recommendation-list.dental li::before {
+                color: #67c3f3;
+            }
+
+            /* Nutrition Specific Styles */
+            
+
+            
+            .nutrition-summary-text {
+                flex: 1;
+                padding: 15px 10px;
+                margin-top: 10px;
+                flex-wrap: wrap;
+                word-wrap: break-word;
+            }
+
+
+            .overall-summary {
+                font-weight: 600;
+                font-size: 10px;
+                margin-top: 5px;
+            }
+            
+
+            .pill {
+                border: 1px solid #0f993e;
+                background: #e6f7ec;
+                color: #0f993e;
+                border-radius: 999px;
+                font-size: 10px;
+                padding: 4px 12px;
+                white-space: nowrap;
+                display: inline-block;
+                margin-bottom: 8px;
+            }
+
+            .section-title-nutritional {
+                font-weight: 700;
+                color: #1e63e9;
+                font-size: 14px;
+                margin: 25px 30px 8px;
+            }
+
+
+            
+            .item {
+                display: flex;
+                margin-bottom: 9px;
+                line-height: 1.1;
+            }
+
+            .item:last-child {
+                margin-bottom: 0;
+            }
+
+            .item .ico {
+                width: 18px;
+                flex: none;
+                text-align: center;
+                margin-right: 0px;
+                margin-left: -30px;
+                font-size: 14px;
+            }
+            .bold {
+                font-weight: bold;
+            }
+
+            .good .ico {
+                color: #1a73e8;
+            }
+
+            .bad .ico {
+                color: #f7931e;
+            }
+
+            /* Dental Specific */
+            .info-box {
+                margin-left: 30px;
+            }
+
+            .row {
+                display: grid;
+                grid-template-columns: 210px 1fr;
+                align-items: start;
+                padding: 12px 0;
+                margin-top: 20px;
+            }
+
+            .cell-left {
+                font-size: 12px;
+                font-weight: 700;
+                color: #333;
+                margin-top: 20px;
+            }
+
+            .cell-right {
+                font-size: 12px;
+                color: #333;
+                line-height: 1.6;
+            }
+
+            .section-text {
+                font-size: 12px;
+                line-height: 1.6;
+                margin-bottom: 10px;
+            }
+            .section-text:last-child {
+                margin-bottom: 0;
+            }
+
+            .section-text b {
+                color: #222;
+            }
+
+            .tooth-diagram {
+                
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .tooth-row {
+                display: flex;
+                gap: 10px;
+                margin-right: 50px;
+                justify-content: center;
+            }
+
+            .tooth {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 28px;
+                gap:3px;
+            }
+
+            .tooth img {
+                width: 28px;
+                height: auto;
+                
+
+            }
+
+            .num {
+                font-size: 11px;
+                color: #333;
+                margin-top: 3px;
+            }
+
+            .box {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #9bbbd9;
+                border-radius: 2px;
+                margin: 2px 0;
+                margin-left: 20px;
+                margin-top: 1px;
+            }
+
+            .tooth .box.checked::after {
+                content: "✓";
+                position: absolute;
+                top: 4px;
+                left: 4px;
+                color: green;
+                font-weight: bold;
+                font-size: 14px;
+            }
+
+            .bottom-row .tooth {
+                flex-direction: column;
+            }
+
+            /* Eye/AR Test Table */
+            .ar-wrapper {
+                display: flex;
+                gap: 20px;
+                align-items: center;
+            }
+
+            .ar-table {
+                border-collapse: collapse;
+                font-size: 13px;
+                width: 100%;
+            }
+
+            .ar-table th,
+            .ar-table td {
+                border: 1px solid #ccc;
+                padding: 6px 8px;
+                text-align: center;
+            }
+
+            .ar-table th {
+                background: #e6f7ff;
+            }
+
+            .recommend-list,
+            .sub-points {
+                list-style: none;      /* remove default bullets */
+                padding-left: 0;
+                margin-left: 0;
+            }
+            .recommend-list > li {
+                position: relative;
+                padding-left: 20px;
+                margin-bottom: 12px;
+                line-height: 1.6;
+            }
+/* ★ before each main recommendation */
+    .recommend-list > .star-item::before,
+    .recommend-list > li::before {
+            content: "★ ";
+            color: #f4c542;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+/* ✓ before each sub-point */
+.sub-points > li::before {
+    content: "✓ ";
+    color: green;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+/* indent sub-points for clarity */
+.sub-points {
+    margin-left: 1.5rem;    /* indent to look like nested list */
+}
+            .sub-points {
+                margin: 8px 0 0 25px;
+                padding: 0;
+                list-style-type: disc;
+            }
+
+            .sub-points li {
+                position: relative;
+                padding-left: 20px;
+                margin-bottom: 8px;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            .sub-points li:last-child {
+                margin-bottom: 0;
+            }
+            /* Lab Report Status Indicators */
+            .tick::before {
+                content: "✔ ";
+                color: #24a148;
+                font-weight: bold;
+            }
+            .star::before {
+                content: "★ ";
+                color: #ff9800;
+                font-weight: bold;
+            }
+            .warn::before {
+                content: "⚠ ";
+                color: #ff9800;
+                font-weight: bold;
+            }
+
+            .highlight {
+                font-weight: bold;
+                color: #000;
+            }
+            @media print {
+            .download-container {
+                display: none;
+            }
+            
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+                font-family: 'Trebuchet MS', sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .page {
+                page-break-after: always;
+                width: 794px; /* A4 width */
+                min-height: 1100px; /* A4 height */
+                position: relative;
+                margin-left: 20px;
+                
+            }
+            
+            .page:last-child {
+                page-break-after: auto;
+            }
+            .sidebar {
+        position: absolute;
+        top: 300px;  /* adjust as needed */
+        right: 50px;     /* align to right edge of the page */
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        z-index: 10;
+    }
+
+    .sidebar-button {
+        width: 100px;
+        height: 50px;
+        padding: 10px;
+        border-radius: 8px;
+        display: flex;
+        text-decoration: none;
+        justify-content:flex-start;
+        font-size: 24px;
+        color: #fff;
+    }
+    .sidebar-button img.sidebar-img {
+        width: 32px;  /* icon size */
+        height: 32px;
+        object-fit: contain;
+    }
+    .btn1 { background: #ff4891; }
+    .btn2 { background: #f3b773; }
+    .btn3 { background: #5bf655; }
+    .btn4 { background: #67c3f3; }
+    .btn5 { background: #a5d9f7; }
+    .btn6 { background: #f9fd17; }
+
+    /* Prevent sidebar from being cut between pages */
+    .sidebar, .sidebar * {
+        page-break-inside: avoid;
+    }
+        }
+        </style>
+    </head>
+    <body id="report">
+        <div class="download-container">
+        <button class="download-btn" onclick="downloadPDF()">
+            📄 Download PDF
+        </button>
+        <p id="status-msg"></p>
+    </div>
+        <div class="page page1">
+            <div class="header-logos">
+                <div class="logo-left">
+                    <img src="{{ left_logo }}" alt="Left Logo">
+                </div>
+                <div class="logo-right">
+                    <img src="{{ right_logo }}" alt="Right Logo">
+                </div>
+            </div>
+            
+                <div class="profile-section">
+  <div class="profile-photo-wrapper">
+    <div class="profile-bg"></div>
+    <img src="{{ profile_url }}" alt="Student" class="profile-photo">
+  </div>
+  <div class="profile-info">
+    <h2>{{ student.first_name }} {{ student.last_name }}</h2>
+    <p>Health Screening Report 2025</p>
+    <div class="profile-details">
+      <span>Age: {{ smart.age_years }}</span>
+      <span>Gender: {{ student.gender }}</span>
+      {% if student.blood_group %}
+        <span>Blood Group: {{ student.blood_group }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+            <div class="sidebar">
+                 {% if show_physical %}
+            <a href="#physical" class="sidebar-button btn1">
+                <img src="{{ physical_icon }}" alt="Physical" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_nutrition %}
+            <a href="#nutrition" class="sidebar-button btn2">
+                <img src="{{ nutrition_icon }}" alt="Nutrition" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_emotional %}
+            <a href="#emotional" class="sidebar-button btn3">
+                <img src="{{ emotional_icon }}" alt="Emotional" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_dental %}
+            <a href="#dental" class="sidebar-button btn4">
+                <img src="{{ dental_icon }}" alt="Dental" class="sidebar-img">
+            </a>
+            {% endif %}
+            {% if show_eye %}
+            <a href="#eye" class="sidebar-button btn5">
+                <img src="{{ eye_icon }}" alt="Eye" class="sidebar-img">
+            </a>{% endif %}
+            {% if show_lab %}
+            <a href="#labreports" class="sidebar-button btn6">
+                <img src="{{ labreports_icon }}" alt="Lab Reports" class="sidebar-img">
+            </a>
+            {% endif %}
+        </div>
+        </div>
+        {% if show_physical %}
+        <div id="physical" class="page physical">
+        
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"><img src="{{ physical_icon }}" alt="Lab Reports" class="badge-icon"> Physical Screening</div>
+            </div>
+            <div class="summary-box physical">
+                <div class="summary-left">
+                    <div class="icon"><img src="{{ ph }}" alt="Lab Reports" class="badge-icon"></div>
+                    <span>Overall Summary</span>
+                </div>
+                <div class="summary-right">
+                    <div>{% if pstatus.common_status == "all_good" %}
+        <span><img src="{{ all_good }}" alt="All Good" class="summary-img2"></span>
+    {% elif pstatus.common_status == "needs attention" %}
+        <span><img src="{{ need_attention }}" alt="Needs Attention" class="summary-img"></span>
+    {% else %}
+        <span ></span>
+    {% endif %}</div>
+                    <div class="summary-text">
+                        {% for sentence in pstatus.summary.split('.') %}
+                            {% if sentence.strip() %}
+                                {{ sentence.strip() }}.<br>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="score-box">
+                <div class="score-chart">
+                    <div class="score-info">
+                        <div class="score-title">Health Score*</div>
+                    </div>
+                    <div class="score-visual">
+                        <div class="gauge-wrapper">
+            <img class="gauge-image" src="{{gauge}}" alt="Health Score Gauge">
+                            <div class="needle" style="transform: rotate({{ (smart.physical_score / 100 * 180 - 90)|round(2) }}deg)"></div>
+
+                            <div class="health-score">{{ smart.physical_score }}/100</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title">Basic Anthropometrics</div>
+                <div class="grid">
+                   <div><div class="value">{{ smart.height_cm }} cm</div><div class="label">Height</div></div>
+    <div><div class="value">{{ smart.age_years }} Yrs</div><div class="label">Age</div></div>
+    <div><div class="value">{{ smart.weighing_time.strftime("%I:%M %p") if smart.weighing_time else "-" }}</div><div class="label">Weighing Time</div></div>
+    <div><div class="value">{{ smart.body_weight_kg }} kgs</div><div class="label">Body Weight</div></div>
+    <div><div class="value">{{ smart.bmi }}</div><div class="label">BMI</div></div>
+    <div><div class="value">{{ smart.physical_age }} Yrs</div><div class="label">Physical Age</div></div>
+    <div><div class="value">{{ smart.body_type }}</div><div class="label">Body Type</div></div>
+    <div><div class="value">{{ smart.standard_body_weight }} kgs</div><div class="label">Standard Body Weight</div></div>
+    <div><div class="value">{{ smart.ideal_weight }} kgs</div><div class="label">Ideal Weight</div></div>
+  </div>
+</div>
+           
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Body Composition Analysis</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.body_fat_rate_percent }}%</div><div class="label">Body Fat Rate</div></div>
+    <div><div class="value">{{ smart.fat_content_kg }} kgs</div><div class="label">Fat Content</div></div>
+    <div><div class="value">{{ smart.lean_body_mass_kg }} kgs</div><div class="label">Lean Body Mass</div></div>
+    <div><div class="value">{{ smart.muscle_mass_kg }} kgs</div><div class="label">Muscle Mass</div></div>
+    <div><div class="value">{{ smart.muscle_rate_percent }}%</div><div class="label">Muscle Rate</div></div>
+    <div><div class="value">{{ smart.skeletal_muscle_mass_kg }} kgs</div><div class="label">Skeletal Muscle Mass</div></div>
+    <div><div class="value">{{ smart.skeletal_muscle_mass_index }}</div><div class="label">Skeletal Muscle Mass Index</div></div>
+    <div><div class="value">{{ smart.bone_mass_kg }} kgs</div><div class="label">Bone Mass</div></div>
+    <div><div class="value">{{ smart.protein_content_kg }} kgs</div><div class="label">Protein Content</div></div>
+    <div><div class="value">{{ smart.internal_protein_rate_percent }}%</div><div class="label">Internal Protein Rate</div></div>
+  </div>
+</div>
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Fat Distribution & Regional Composition</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.subcutaneous_fat_volume_kg }} kgs</div><div class="label">Subcutaneous Fat</div></div>
+                    <div><div class="value">{{ smart.subcutaneous_fat_rate }} %</div><div class="label">Subcutaneous Fat </div></div>
+                    <div><div class="value">{{ smart.visceral_fat_level }}</div><div class="label">Visceral Fat Level</div></div>
+                    <div><div class="value">{{ smart.left_hand_fat_mass_kg }} kgs</div><div class="label">Left Hand Fat Mass</div></div>
+                    <div><div class="value">{{ smart.right_hand_fat_mass_kg }} kgs</div><div class="label">Right Hand Fat Mass</div></div>
+                    <div><div class="value">{{ smart.left_foot_fat_mass_kg }} kgs</div><div class="label">Left Foot Fat Mass</div></div>
+                    <div><div class="value">{{ smart.right_foot_fat_mass_kg }} kgs</div><div class="label">Right Foot Fat Mass</div></div>
+                    <div><div class="value">{{ smart.trunk_fat_mass_kg }} kgs</div><div class="label">Trunk Fat Mass</div></div>
+                    <div><div class="value">{{ smart.left_hand_fat_rate_percent }}%</div><div class="label">Left Hand Fat Rate</div></div>
+                    <div><div class="value">{{ smart.right_hand_fat_rate_percent }}%</div><div class="label">Right Hand Fat Rate</div></div>
+                    <div><div class="value">{{ smart.left_foot_fat_rate_percent }}%</div><div class="label">Left Foot Fat Rate</div></div>
+                    <div><div class="value">{{ smart.right_foot_fat_rate_percent }}%</div><div class="label">Right Foot Fat Rate</div></div>
+                    <div><div class="value">{{ smart.trunk_fat_rate_percent }}%</div><div class="label">Trunk Fat Rate</div></div>
+                    <div><div class="value">{{ smart.whr }}</div><div class="label">WHR (Waist-Hip Ratio)</div></div>
+                </div>
+            </div>
+            <div class="footer">Page 2</div>
+        
+        </div>
+        {% endif %}
+        {% if show_physical %}        
+        <div class="page physical">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"><img src="{{ physical_icon }}" alt="Physical" class="badge-icon"> Physical Screening</div>
+            </div>
+            <div class="section2">
+                <div class="section-title">Muscle Mass & Strength Distribution</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.left_hand_muscle_mass_kg }} kgs</div><div class="label">Left Hand Muscle Mass (kgs)</div></div>
+                    <div><div class="value">{{ smart.right_hand_muscle_mass_kg }} kgs</div><div class="label">Right Hand Muscle Mass (kgs)</div></div>
+                    <div><div class="value">{{ smart.left_foot_muscle_mass_kg }} kgs</div><div class="label">Left Foot Muscle Mass (kgs)</div></div>
+                    <div><div class="value">{{ smart.right_foot_muscle_mass_kg }} kgs</div><div class="label">Right Foot Muscle Mass (kgs)</div></div>
+                    <div><div class="value">{{ smart.trunk_muscle_mass_kg }} kgs</div><div class="label">Trunk Muscle Mass (kgs)</div></div>
+
+                    <div><div class="value">{{ smart.left_hand_muscle_rate }}%</div><div class="label">Left Hand Muscle Rate (%)</div></div>
+                    <div><div class="value">{{ smart.right_hand_muscle_rate }}%</div><div class="label">Right Hand Muscle Rate (%)</div></div>
+                    <div><div class="value">{{ smart.left_leg_muscle_rate }}%</div><div class="label">Left Leg Muscle Rate (%)</div></div>
+                    <div><div class="value">{{ smart.right_foot_muscle_rate }}%</div><div class="label">Right Leg Muscle Rate (%)</div></div>
+                    <div><div class="value">{{ smart.trunk_muscle_rate }}%</div><div class="label">Trunk Muscle Rate (%)</div></div>
+                    <div><div class="value">{{ smart.skeletal_muscle_rate_percent }}%</div><div class="label">Skeletal Muscle Rate (%)</div></div>
+                </div>
+            </div>
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Hydration & Cellular Health</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.water_content_kg }} kgs</div><div class="label">Water Content (kgs)</div></div>
+    <div><div class="value">{{ smart.body_moisture_content_percent }}%</div><div class="label">Body Moisture Content (%)</div></div>
+    <div><div class="value">{{ smart.inorganic_salt_content_kg }} kgs</div><div class="label">Inorganic Salt Content (kgs)</div></div>
+    <div><div class="value">{{ smart.body_cell_volume_kg }} kgs</div><div class="label">Body Cell Volume (kgs)</div></div>
+    <div><div class="value">{{ smart.extracellular_water_volume_kg }} kgs</div><div class="label">Extracellular Water Volume (kgs)</div></div>
+    <div><div class="value">{{ smart.intracellular_water_volume_kg }} kgs</div><div class="label">Intracellular Water Volume (kgs)</div></div>
+                </div>
+            </div>
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Metabolic Health Indicators</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.bmr }}</div><div class="label">BMR (kcal)</div></div>
+    <div><div class="value">{{ smart.obesity_percent }}</div><div class="label">Obesity (%)</div></div>
+    <div><div class="value">{{ smart.obesity_level }}</div><div class="label">Obesity Level</div></div>
+                </div>
+            </div>
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Metabolic & Fitness Control Indicators</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.fat_control_quantity }} kgs</div><div class="label">Fat Control Quantity (kgs)</div></div>
+    <div><div class="value">{{ smart.weight_control_quantity }} kgs</div><div class="label">Weight Control Quantity (kgs)</div></div>
+    <div><div class="value">{{ smart.muscle_control_quantity }} kgs</div><div class="label">Muscle Control Quantity (kgs)</div></div>
+                </div>
+            </div>
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Cardiovascular & Circulatory Indicators</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.heart_rate_beats_min }}</div><div class="label">Heart Rate (bpm)</div></div>
+                </div>
+            </div>
+            <hr class="section-divider">
+            <div class="section">
+                <div class="section-title">Overall Health Scores</div>
+                <div class="grid">
+                    <div><div class="value">{{ smart.physical_score }}</div><div class="label">Physical Score (/100)</div></div>
+    <div><div class="value">{{ smart.health_level }}</div><div class="label">Health Level</div></div>
+                </div>
+            </div>
+            <div class="footer">Page 3</div>
+        </div>
+        {% endif %}
+        {% if show_physical %}
+        <div class="page physical">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"><img src="{{ physical_icon }}" alt="Physical" class="badge-icon"> Physical Screening</div>
+            </div>
+            <div class="sections-container">
+                <div class="two-column">
+                    <div class="column-left">
+                        <div class="icon">
+                             <img src="{{ si }}" alt="strength Icon" class="main-strength-icon">
+                        </div>
+                        <!-- <div class="label">Strengths</div></div>
+                <div class="column-right">
+                   {% for item in nqa.strengths %}
+        <div class="item good">
+            <div class="ico">✓</div>
+            <div>{{ item.findings }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+    <hr class="section-divider">
+    <div class="two-column">  
+    <div class="column-left">
+    <div class="label">Needs Attention</div></div>
+    <div class="column-right">
+        {% for item in nqa.needs_attention %}
+        <div class="item bad">
+            <div class="ico">⚠</div>
+            <div>{{ item.findings }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div> -->
+                        <span>Strengths</span>
+                    </div>
+                    <div class="column-right">
+                        {% for ans in pstrength %}
+        <div class="item good">
+            <div class="ico">✓</div>
+            <div>{{ ans }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+                            <!-- {% for ans in pstrength %}
+                                <li> {{ ans }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div> -->
+
+
+               
+                <hr class="section-divider">
+                <div class="two-column">
+                    <div class="column-left">
+                        <div class="icon">
+                             <img src="{{ ni }}" alt="Needs Attention Icon" class="main-need-icon">
+                             </div>
+                        <span>Needs Attention</span>
+                    </div>
+                    <div class="column-right">
+                            {% for ans in pneedattention %}
+                               <div class="item bad">
+                            <div class="ico">
+                                 <img src="{{ nb }}" alt="Warning" class="warn-icon">
+                            </div>
+                            <div>{{ ans }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <hr class="section-divider">
+                <!-- <div class="two-column">
+                    <div class="column-left">
+                        <div class="recommend-title">Recommendations</div>
+                    </div>
+                    <div class="column-right">
+                        <ul>
+                   
+                        
+                    <li>
+                         {{ pysch.clinical_notes_recommendations }}
+                    </li>
+               
+                        </ul>
+                    </div>
+                
+            </div> -->
+            </div>
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>Evaluated By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Psychologist</p>
+                            <p class="name">Tarun Kumar</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+                <div class="signature-box" style="margin-left:-30px;">
+                    <h4>Verified By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Head Psychologist</p>
+                            <p class="name">Vishwa Kalyan</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                        <div>
+                            <p class="label">RCI No</p>
+                            <p class="id">1212012010</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+            </div>
+            <div class="footer">Page 4</div>
+        </div>
+        {% endif %}
+        {% if show_nutrition %}
+        <div id="nutrition" class="page nutrition">
+        
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"><img src="{{ nutrition_icon }}" alt="Nutrition" class="badge-icon">NUTRITIONAL ASSESSMENT REPORT</div>
+            </div>
+            <div class="summary-box nutrition">
+    
+                <div class="summary-left">
+                    <div class="icon"><img src="{{ nu }}" alt="Nutrition" class="badge-icon"></div>
+                    <div >Overall Summary</div>
+                </div>
+                <div class="summary-right">
+                   <div>
+    {% if status.common_status == "all_good" %}
+        <span><img src="{{ all_good }}" alt="All Good" class="summary-img2"></span>
+    {% elif status.common_status == "need_attention" %}
+        <span><img src="{{ need_attention }}" alt="Needs Attention" class="summary-img"></span>
+    {% else %}
+        <span>N/A</span>
+    {% endif %}
+</div>
+<div class="summary-text">
+    {% for sentence in status.common_summary.split('.') %}
+                            {% if sentence.strip() %}
+                                {{ sentence.strip() }}.<br>
+                            {% endif %}
+                        {% endfor %}
+</div>
+                </div>
+            </div>
+            <div class="section-title-nutritional">A. Nutrition Questionnaire Analysis</div>
+            <div class="two-column">
+                <div class="column-left">
+                    <div class="icon">
+                        <img src="{{ si }}" alt="strength Icon" class="main-strength-icon">
+                    </div>
+               <span>Strengths</span>
+                    </div>
+                <div class="column-right">
+                   {% for item in nqa.strengths %}
+        <div class="item good">
+            <div class="ico">✓</div>
+            <div>{{ item.findings }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+    <hr class="section-divider">
+    <div class="two-column">  
+    <div class="column-left">
+    <div class="icon">
+         <img src="{{ ni }}" alt="Needs Attention Icon" class="main-need-icon">
+    </div>
+    <span>Needs Attention</span>
+                    </div>
+    <div class="column-right">
+        {% for item in nqa.needs_attention %}
+        <div class="item bad">
+            <div class="ico">
+                 <img src="{{ nb }}" alt="Warning" class="warn-icon">
+            </div>
+            <div>{{ item.findings }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+            <div class="footer">Page 5</div>
+        </div>
+        {% endif %}
+        {% if show_nutrition %}
+        <div class="page nutrition">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"> <img src="{{ nutrition_icon }}" alt="Nutrition" class="badge-icon"> NUTRITIONAL ASSESSMENT REPORT</div>
+            </div>
+           
+            <div class="section-title-nutritional">B. Nutrition Screening Analysis</div>
+            <div class="two-column">
+                <div class="column-left">
+                <div class="icon">
+                    <img src="{{ si }}" alt="strength Icon" class="main-strength-icon">
+                </div>
+                <span>Strengths</span>
+                    </div>
+                <div class="column-right">
+                   {% for item in nsa.strengths %}
+                    <div class="item good">
+                        <div class="ico">✓</div>
+                        <div>{{ item.findings }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+           
+            <hr class="section-divider">
+                <div class="two-column">
+                <div class="column-left">
+                <div class="icon">
+                     <img src="{{ ni }}" alt="Needs Attention Icon" class="main-need-icon">
+                </div>
+                        <span>Needs Attention</span>
+                    </div>
+                <div class="column-right">
+                    {% for item in nsa.needs_attention %}
+                    <div class="item bad">
+                        <div class="ico">
+                             <img src="{{ nb }}" alt="Warning" class="warn-icon">
+                        </div>
+                        <div>{{ item.findings }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+
+            
+            
+            <!-- <div class="two-column">
+                    <div class="column-left">
+                        <div class="recommend-title">Recommendations</div>
+                    </div>
+                    <div class="column-right">
+                        <ul>
+                            <li>need to add new field in db.</li>
+                        </ul>
+                    </div>
+                
+            </div> -->
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>Evaluated By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Nutritional Counselor</p>
+                            <p class="name">Tarun Kumar</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+                <div class="signature-box" style="margin-left:-30px;">
+                    <h4>Verified By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Head Nutritional Counselor</p>
+                            <p class="name">Vishwa Kalyan</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                        <div>
+                            <p class="label">RCI No</p>
+                            <p class="id">1212012010</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+            </div>
+            <div class="footer">Page 6</div>
+        </div>
+        {% endif %}
+        {% if show_emotional %}
+        <div id="emotional" class="page emotional">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"> <img src="{{ emotional_icon }}" alt="Emotional" class="badge-icon"> Developmental & Emotional Assessment</div>
+            </div>    
+            <div class="summary-box emotional">
+                <div class="summary-left">
+                    <div class="icon"><img src="{{ em }}" alt="Emotional" class="badge-icon"></div>
+                    <span>Overall Summary</span>
+                </div>
+                <div class="summary-right">
+                    <div>{% if emo.status == "all_good" %}
+        <span><img src="{{ all_good }}" alt="All Good" class="summary-img2"></span>
+    {% elif emo.status == "need_attention" %}
+        <span><img src="{{ need_attention }}" alt="Needs Attention" class="summary-img"></span>
+    {% else %}
+        <span>N/A</span>
+    {% endif %}</div>
+    <div class="summary-text">
+                    {% for sentence in emo.summary.split('.') %}
+                        {% if sentence.strip() %}
+                            {{ sentence.strip() }}.<br>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            </div>
+             <div class="two-column">
+                <div class="column-left">
+                <div class="icon"><img src="{{ si }}" alt="strength Icon" class="main-strength-icon"></div>
+                <span>Strengths</span>
+                    </div>
+                <div class="column-right">
+                   {% for item in emo.findings_data %}
+                    <div class="item good">
+                        <div class="ico">✓</div>
+                         
+                        <div><span class="highlight">{{ item.remarks}}:</span> {{ item.findings }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+           
+                <hr class="section-divider">
+                <div class="two-column">
+                <div class="column-left">
+                <div class="icon"> <img src="{{ ni }}" alt="Needs Attention Icon" class="main-need-icon"></div>
+                        <span>Needs Attention</span>
+                    </div>
+                <div class="column-right">
+                   {% for item in (emo.need_attention_data or []) %}
+                    <div class="item bad">
+                        <div class="ico" > <img src="{{ nb }}" alt="Warning" class="warn-icon"></div>
+                        <div>{{ item.findings }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+                
+                <hr class="section-divider">
+                <div class="two-column">
+                    <div class="column-left">
+                        <div class="recommend-title">Recommendations</div>
+                    </div>
+                    <div class="column-right">
+                    {% if emo.clinical_notes_recommendations %}
+                        {% for sentence in emo.clinical_notes_recommendations.split('.') if sentence.strip() %}
+                        <div class="item good">
+                            <div class="icons">★</div>
+                            <div>{{ sentence.strip() }}.</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="item good">
+                        <div class="icons">★</div>
+                        <div>No recommendations available</div>
+                        </div>
+                    {% endif %}
+                    </div>
+
+                </div>
+            
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>Evaluated By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Psychologist</p>
+                            <p class="name">Tarun Kumar</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+                <div class="signature-box" style="margin-left:-40px;">
+                    <h4>Verified By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Head Psychologist</p>
+                            <p class="name">Vishwa Kalyan</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                        <div>
+                            <p class="label">RCI No</p>
+                            <p class="id">1212012010</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+            </div>
+            <div class="footer">Page 7</div>
+        </div>
+        {% endif %}
+
+        {% if show_dental %}
+        <div id="dental" class="page dental">
+        <div class="topbar">
+            <div class="brand">
+                <img src="{{ left_logo }}" alt="Logo">
+            </div>
+            <div class="report-badge"> <img src="{{ dental_icon }}" alt="Emotional" class="badge-icon"> Dental Screening</div>
+        </div>        
+        <div class="summary-box dental">
+            <div class="summary-left">
+                <div class="icon"><img src="{{ dd }}" alt="Emotional" class="badge-icon"></div>
+                <div>Overall Summary</div>
+            </div>
+            <div class="summary-right">
+                <div>{% if dental.status == "all_good" %}
+        <span><img src="{{ all_good }}" alt="All Good" class="summary-img2"></span>
+    {% elif dental.status == "need_attention" %}
+        <span><img src="{{ need_attention }}" alt="Needs Attention" class="summary-img"></span>
+    {% else %}
+        <span>N/A</span>
+    {% endif %}</div>
+                <div class="summary-text">
+                    {% for sentence in dental.report_summary.split('.') %}
+                        {% if sentence.strip() %}
+                            {{ sentence.strip() }}.<br>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        
+            <div class="two-column">
+                <div class="column-left">Patient Concern</div>
+                <div class="column-right">
+                    <div class="section-text">
+                        {% if dental_concerns %}
+    {% for concern in dental_concerns %}
+        <div class="item good">
+            <div class="ico">•</div>
+            <div>{{ concern }}</div>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No patient concerns reported.</p>
+{% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="section-divider">
+            
+            <div class="two-column">
+                <div class="column-left">Oral Examination Findings</div>
+                <div class="column-right">
+                    <div class="section-text">
+                        {% if oral_examination %}
+                            {% for item in oral_examination %}
+                                <div style="margin-bottom: 10px;">
+                                    <b>Tooth {{ item.tooth_numbers|join(', ') }}:</b> {{ item.remarks }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No oral examination findings recorded.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TOOTH DIAGRAM WITH PROPER CHECKBOX LOGIC -->
+            <div class="tooth-diagram">
+    <!-- Top row: 18-28, 11-21 -->
+    <div class="tooth-row">
+        <div class="tooth">
+            <img style="width: 25px;" src="{{ teeth18 }}">
+            <span class="num">18</span>
+            <input type="checkbox" name="tooth18" value="18"
+                   {% if highlight_teeth and '18' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 27px;" src="{{ teeth17 }}">
+            <span class="num">17</span>
+            <input type="checkbox" name="tooth17" value="17"
+                   {% if highlight_teeth and '17' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 29px;" src="{{ teeth16 }}">
+            <span class="num">16</span>
+            <input type="checkbox" name="tooth16" value="16"
+                   {% if highlight_teeth and '16' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 20px;" src="{{ teeth15 }}">
+            <span class="num">15</span>
+            <input type="checkbox" name="tooth15" value="15"
+                   {% if highlight_teeth and '15' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 21px;" src="{{ teeth14 }}">
+            <span class="num">14</span>
+            <input type="checkbox" name="tooth14" value="14"
+                   {% if highlight_teeth and '14' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 16.5px;" src="{{ teeth13 }}">
+            <span class="num">13</span>
+            <input type="checkbox" name="tooth13" value="13"
+                   {% if highlight_teeth and '13' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 17px;" src="{{ teeth12 }}">
+            <span class="num">12</span>
+            <input type="checkbox" name="tooth12" value="12"
+                   {% if highlight_teeth and '12' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 19.5px;" src="{{ teeth11 }}">
+            <span class="num">11</span>
+            <input type="checkbox" name="tooth11" value="11"
+                   {% if highlight_teeth and '11' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 20px;" src="{{ teeth21 }}">
+            <span class="num">21</span>
+            <input type="checkbox" name="tooth21" value="21"
+                   {% if highlight_teeth and '21' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 18.5px;" src="{{ teeth22 }}">
+            <span class="num">22</span>
+            <input type="checkbox" name="tooth22" value="22"
+                   {% if highlight_teeth and '22' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 16px;" src="{{ teeth23 }}">
+            <span class="num">23</span>
+            <input type="checkbox" name="tooth23" value="23"
+                   {% if highlight_teeth and '23' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 21px;" src="{{ teeth24 }}">
+            <span class="num">24</span>
+            <input type="checkbox" name="tooth24" value="24"
+                   {% if highlight_teeth and '24' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 20px;" src="{{ teeth25 }}">
+            <span class="num">25</span>
+            <input type="checkbox" name="tooth25" value="25"
+                   {% if highlight_teeth and '25' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 28px;" src="{{ teeth26 }}">
+            <span class="num">26</span>
+            <input type="checkbox" name="tooth26" value="26"
+                   {% if highlight_teeth and '26' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 28px;" src="{{ teeth27 }}">
+            <span class="num">27</span>
+            <input type="checkbox" name="tooth27" value="27"
+                   {% if highlight_teeth and '27' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 26px;" src="{{ teeth28 }}">
+            <span class="num">28</span>
+            <input type="checkbox" name="tooth28" value="28"
+                   {% if highlight_teeth and '28' in highlight_teeth %}checked{% endif %}>
+        </div>
+    </div>
+
+    <!-- Bottom row: 48-38, 41-31 -->
+    <div class="tooth-row bottom-row">
+        <div class="tooth">
+            <img style="width: 26px;" src="{{ teeth48 }}">
+            <span class="num">48</span>
+            <input type="checkbox" name="tooth48" value="48"
+                   {% if highlight_teeth and '48' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 27.5px;" src="{{ teeth47 }}">
+            <span class="num">47</span>
+            <input type="checkbox" name="tooth47" value="47"
+                   {% if highlight_teeth and '47' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 29px;" src="{{ teeth46 }}">
+            <span class="num">46</span>
+            <input type="checkbox" name="tooth46" value="46"
+                   {% if highlight_teeth and '46' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 20px;" src="{{ teeth45 }}">
+            <span class="num">45</span>
+            <input type="checkbox" name="tooth45" value="45"
+                   {% if highlight_teeth and '45' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 21px;" src="{{ teeth44 }}">
+            <span class="num">44</span>
+            <input type="checkbox" name="tooth44" value="44"
+                   {% if highlight_teeth and '44' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 17px;" src="{{ teeth43 }}">
+            <span class="num">43</span>
+            <input type="checkbox" name="tooth43" value="43"
+                   {% if highlight_teeth and '43' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 16px;" src="{{ teeth42 }}">
+            <span class="num">42</span>
+            <input type="checkbox" name="tooth42" value="42"
+                   {% if highlight_teeth and '42' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 15.5px;" src="{{ teeth41 }}">
+            <span class="num">41</span>
+            <input type="checkbox" name="tooth41" value="41"
+                   {% if highlight_teeth and '41' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 16px;" src="{{ teeth31 }}">
+            <span class="num">31</span>
+            <input type="checkbox" name="tooth31" value="31"
+                   {% if highlight_teeth and '31' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 14.5px;" src="{{ teeth32 }}">
+            <span class="num">32</span>
+            <input type="checkbox" name="tooth32" value="32"
+                   {% if highlight_teeth and '32' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 16px;" src="{{ teeth33 }}">
+            <span class="num">33</span>
+            <input type="checkbox" name="tooth33" value="33"
+                   {% if highlight_teeth and '33' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 20.5px;" src="{{ teeth34 }}">
+            <span class="num">34</span>
+            <input type="checkbox" name="tooth34" value="34"
+                   {% if highlight_teeth and '34' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 19.5px;" src="{{ teeth35 }}">
+            <span class="num">35</span>
+            <input type="checkbox" name="tooth35" value="35"
+                   {% if highlight_teeth and '35' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 28px;" src="{{ teeth36 }}">
+            <span class="num">36</span>
+            <input type="checkbox" name="tooth36" value="36"
+                   {% if highlight_teeth and '36' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 27.5px;" src="{{ teeth37 }}">
+            <span class="num">37</span>
+            <input type="checkbox" name="tooth37" value="37"
+                   {% if highlight_teeth and '37' in highlight_teeth %}checked{% endif %}>
+        </div>
+        <div class="tooth">
+            <img style="width: 27px;" src="{{ teeth38 }}">
+            <span class="num">38</span>
+            <input type="checkbox" name="tooth38" value="38"
+                   {% if highlight_teeth and '38' in highlight_teeth %}checked{% endif %}>
+        </div>
+    </div>
+</div>
+    
+
+        <hr class="section-divider">
+        
+        <div class="two-column">
+            <div class="column-left">Observations</div>
+            <div class="column-right">
+                <div class="section-text">
+                    {% if dental and dental.examination_note %}
+                        <div class="item good">
+                            <div class="ico">✓</div>
+                            <div>{{ dental.examination_note }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <hr class="section-divider">
+        
+        <div class="two-column">
+            <div class="column-left">Diagnosis</div>
+            <div class="column-right">
+                <div class="section-text">
+                    {% if diagnoses %}
+  {% for diagnosis in diagnoses %}
+    <div class="item good">
+      <div class="ico">•</div>
+      <div>{{ diagnosis }}</div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No diagnosis recorded.</p>
+{% endif %}
+
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">Page 8</div>
+    </div>
+    {% endif %}
+
+    {% if show_dental %}
+        <div class="page dental">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"> <img src="{{ dental_icon }}" alt="Dental" class="badge-icon"> Dental Screening</div>
+            </div>
+              
+                    
+            <div class="two-column">
+                <div class="column-left">
+                <div class="recommend-title">Recommendations</div>
+                </div>
+                <div class="column-right">
+                    {% for rec in treatment_recommendations %}
+        <div class="item good">
+            <div class="icons">★</div>
+           <div><span class="highlight">{{ rec.title }}:</span> {{ rec.description }}</div>
+        {% endfor %}
+            </div>
+</div>
+            </div>
+            <hr class="section-divider">
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>Evaluated By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Psychologist</p>
+                            <p class="name">Tarun Kumar</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p> 
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+                <div class="signature-box" style="margin-left:-40px;">
+                    <h4>Verified By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Head Psychologist</p>
+                            <p class="name">Vishwa Kalyan</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                        <div>
+                            <p class="label">RCI No</p>
+                            <p class="id">1212012010</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p>
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+            </div>
+            <div class="footer">Page 9</div>
+        </div>
+        {% endif %}
+
+        {% if show_eye %}
+        <div id="eye" class="page eye">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"> <img src="{{ eye_icon }}" alt="Emotional" class="badge-icon"> Vision Screening</div>
+            </div>       
+            <div class="summary-box eye">
+                <div class="summary-left">
+                    <div class="icon"><img src="{{ ee }}" alt="Emotional" class="badge-icon"></div>
+                    <div>Overall Summary</div>
+                </div>
+                <div class="summary-right">
+                    <div>{% if status.common_status == "all_good" %}
+        <span><img src="{{ all_good }}" alt="All Good" class="summary-img2"></span>
+    {% elif status.common_status == "need_attention" %}
+        <span><img src="{{ need_attention }}" alt="Needs Attention" class="summary-img"></span>
+    {% else %}
+        <span>N/A</span>
+    {% endif %}</div>
+                    <div class="summary-text">
+                        {% for sentence in eye.report_summary.split('.') %}
+                            {% if sentence.strip() %}
+                                {{ sentence.strip() }}.<br>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="two-column eye">
+                <div class="column-left">Patient Concern</div>
+                <div class="column-right">
+                   {% if eye_concerns %}
+    {% for concern in eye_concerns %}
+        <div class="item good">
+            <div class="ico">•</div>
+            <div>{{ concern }}</div>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No patient concerns reported.</p>
+{% endif %}
+                    </div>
+            </div>
+            <hr class="section-divider">
+            <div class="two-column">
+                <div class="column-left">AR Test Results
+                    <img src="{{eye2}}" alt="Eye Image" class="eye-image">
+                </div>
+                <div class="column-right">
+                    <div class="ar-wrapper">
+                        <table class="ar-table">
+                            <tr>
+                                <th>Eye</th>
+                                <th>SPH <br>(Spherical)</th>
+                                <th>CYL <br>(Cylindrical)</th>
+                                <th>Axis</th>
+                            </tr>
+                            <tr>
+   <td>Left Eye <br> (OD)</td>
+                <td>{{ (eye.left.sph if eye and eye.left else "") | default("N/A") }}</td>
+                <td>{{ (eye.left.cyl if eye and eye.left else "") | default("N/A") }}</td>
+                <td>{{ (eye.left.axis ~ "°" if eye and eye.left and eye.left.axis else "") | default("N/A") }}</td>
+        
+</tr>
+<tr>
+    <td>Right Eye <br> (OS)</td>
+                <td>{{ (eye.right.sph if eye and eye.right else "") | default("N/A") }}</td>
+                <td>{{ (eye.right.cyl if eye and eye.right else "") | default("N/A") }}</td>
+                <td>{{ (eye.right.axis ~ "°" if eye and eye.right and eye.right.axis else "") | default("N/A") }}</td>
+            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <hr class="section-divider">
+            
+            <div class="two-column">
+                <div class="column-left">
+                    <div class="recommend-title">Recommendations</div>
+                </div>
+                <div class="column-right">
+                     {% if eye.recommendations %}
+                     {% for rec in eye.recommendations %}
+                    <div class="item good">
+            <div class="icons">★</div>
+                       
+                        
+                        <div>{{ rec }}</div>
+                        {% endfor %}
+                    </div>
+{% endif %}
+                </div>
+            </div>
+            <hr class="section-divider">
+            <div class="signature-section">              <div class="signature-box">
+                    <h4>Evaluated By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Psychologist</p>
+                            <p class="name">Tarun Kumar</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p> 
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+            </div>
+            <div class="footer">Page 10</div>
+        </div>
+        {% endif %}
+
+        {% if show_lab %}
+
+        <div id="labreports" class="page lab">
+            <div class="topbar">
+                <div class="brand">
+                    <img src="{{ left_logo }}" alt="Logo">
+                </div>
+                <div class="report-badge"> <img src="{{ labreports_icon }}" alt="Emotional" class="badge-icon"> Lab Reports</div>
+            </div>           
+            <div class="summary-box lab">
+                <div class="summary-left">
+                    <div class="icon"><img src="{{ li }}" alt="Emotional" class="badge-icon"></div>
+                    <div>Overall Summary</div>
+                </div>
+                <div class="summary-right">
+                    <div>{% if lab.status == "all_good" %}
+        <span><img src="{{ all_good }}" alt="All Good" class="summary-img2"></span>
+    {% elif lab.status == "need_attention" %}
+        <span><img src="{{ need_attention }}" alt="Needs Attention" class="summary-img"></span>
+    {% else %}
+        <span>N/A</span>
+    {% endif %}</div>
+                    <div class="summary-text">
+                        {% for sentence in lab.summary.split('.') %}
+                            {% if sentence.strip() %}
+                                {{ sentence.strip() }}.<br>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="two-column">
+                <div class="column-left"><div class="icon">
+                    <img src="{{ si }}" alt="strength Icon" class="main-strength-icon"></div>
+                <span>Strengths</span>
+    </div>
+                <div class="column-right">
+                    <div class="item good">
+        {% for item in lstrength %}
+        <div class="item good">
+                        <div class="ico">✓</div>
+        <div>{{ item }}</div></div>
+        {% endfor %}
+    </div>
+            </div>
+            </div>
+            <hr class="section-divider">
+            <div class="two-column">
+                <div class="column-left"><div class="icon"> <img src="{{ ni }}" alt="Needs Attention Icon" class="main-need-icon"></div>
+                        <span>Areas of Concern</span>
+                    </div>
+                <div class="column-right">
+                    <div class="item bad">
+        {% for item in lconcern %}
+        <div class="ico" > <img src="{{ nb }}" alt="Warning" class="warn-icon"></div><div>{{ item }}</div>
+        {% endfor %}
+    </div>
+    </div>
+            </div>
+            <!-- <hr class="section-divider">
+            <div class="two-column">
+                <div class="column-left">
+                    <div class="recommend-title eye">Recommendations</div>
+                </div>
+                <div class="column-right">
+                    <ul class="recommend-list">
+                        {% if eye.recommendations %}
+                        {% for rec in eye.recommendations %}
+                        <li>{{ rec }}</li>
+                        {% endfor %}
+    </ul>
+{% endif %}
+                </div>
+            </div> -->
+            <hr class="section-divider">
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>Evaluated By</h4>
+                    <div class="role-date">
+                        <div>
+                            <p class="role">Psychologist</p>
+                            <p class="name">Tarun Kumar</p>
+                        </div>
+                        <div>
+                            <p class="label">Date</p>
+                            <p class="date">03-01-2025</p>
+                        </div>
+                    </div>
+                    <!-- <p class="role">Signature</p> 
+                    <img src="signature.png" alt="Signature" class="signature-img"> -->
+                </div>
+            </div>
+            <div class="footer">Page 11</div>
+        </div>
+        {% endif %}
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+       
+
+<script>
+/* -------------------------------
+   Gauge Needle Update (still needed
+   so gauges animate when page loads)
+----------------------------------*/
+function updateNeedle() {
+    const wrappers = document.querySelectorAll('.gauge-wrapper');
+    wrappers.forEach(wrapper => {
+        const needle = wrapper.querySelector('.needle');
+        const scoreText = wrapper.querySelector('.health-score').textContent;
+        const score = parseInt(scoreText.split('/')[0]) || 0;
+        const angle = (score / 100) * 180 - 90;
+        needle.style.transform = `rotate(${angle}deg)`;
+    });
+}
+
+async function generateAndDownloadPDF() {
+    const studentId = "{{ student.id }}";
+    const statusMsg = document.getElementById("pdf-status");
+
+    // Step 1: Start background generation
+    statusMsg.innerText = "⏳ Preparing your report...";
+    const startRes = await fetch(`/report/${studentId}/start-download-selected`);
+    if (!startRes.ok) {
+        statusMsg.innerText = "❌ Failed to start PDF generation.";
+        return;
+    }
+
+    // Step 2: Poll for readiness
+    const interval = setInterval(async () => {
+        const statusRes = await fetch(`/report/${studentId}/status-selected`);
+        const data = await statusRes.json();
+
+        if (data.ready) {
+            clearInterval(interval);
+            statusMsg.innerHTML = `
+                ✅ Report ready! 
+                <a href="/report/${studentId}/download-selected-ready" target="_blank" class="btn btn-success">
+                    Download Now
+                </a>
+            `;
+        } else {
+            statusMsg.innerText = "⏳ Still preparing...";
+        }
+    }, 3000);
+}
+
+/* ---------------------------------
+   Old direct download (still kept)
+----------------------------------*/
+function downloadServerPDF() {
+    const pdfUrl = "{{ request.url_for('download_report_pdf', student_id=student.id) }}";
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = `report_{{ student.id }}.pdf`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+/* ---------------------------------
+   Init: update gauge and bind hotkey
+----------------------------------*/
+window.onload = function () {
+    updateNeedle();
+
+    // Optional: Ctrl + D hotkey to download
+    document.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+            e.preventDefault();
+            downloadServerPDF();
+        }
+    });
+};
+</script>
+    </body>
+    </html> {% endcomment %}

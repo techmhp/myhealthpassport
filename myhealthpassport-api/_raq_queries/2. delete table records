@@ -1,0 +1,33 @@
+
+
+
+# delete all vaccines
+
+DELETE FROM vaccinations WHERE vaccine_id > 0;
+
+
+# Delete All Questions
+
+DELETE FROM questionnaire WHERE question_id > 0;
+
+
+DELETE FROM student_questionnaire WHERE  sq_id > 0;
+
+
+
+
+WITH RankedRecords AS (
+    SELECT
+        id,
+        ROW_NUMBER() OVER(
+            PARTITION BY student_id, report_type
+            ORDER BY created_at DESC
+        ) as rn
+    FROM clinical_recomendations
+)
+DELETE FROM clinical_recomendations
+WHERE id IN (
+    SELECT id
+    FROM RankedRecords
+    WHERE rn > 1
+);

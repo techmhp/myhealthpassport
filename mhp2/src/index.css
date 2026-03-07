@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+/* My Health Passport Design System
+   Friendly, warm healthcare aesthetic with playful yet professional feel
+*/
+
+@layer base {
+  :root {
+    /* Brand Blue - from logo */
+    --brand: 214 100% 50%;
+    --brand-light: 214 100% 96%;
+    --brand-dark: 214 100% 35%;
+    
+    /* Warm accent colors */
+    --coral: 12 100% 67%;
+    --mint: 158 64% 52%;
+    --sunshine: 45 100% 60%;
+    --lavender: 270 67% 75%;
+    
+    /* Core tokens */
+    --background: 210 40% 98%;
+    --foreground: 220 30% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 20%;
+
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 100% 96%;
+    --secondary-foreground: 214 100% 35%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 220 15% 45%;
+
+    --accent: 158 64% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 30% 90%;
+    --input: 214 30% 90%;
+    --ring: 214 100% 50%;
+
+    --radius: 1rem;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(214 100% 50%) 0%, hsl(240 80% 60%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(12 100% 67%) 0%, hsl(45 100% 60%) 100%);
+    --gradient-fresh: linear-gradient(135deg, hsl(158 64% 52%) 0%, hsl(190 80% 50%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(210 40% 98%) 0%, hsl(214 100% 98%) 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(214 100% 50% / 0.1);
+    --shadow-md: 0 8px 24px -8px hsl(214 100% 50% / 0.15);
+    --shadow-lg: 0 16px 48px -12px hsl(214 100% 50% / 0.2);
+    --shadow-card: 0 4px 20px -4px hsl(214 100% 50% / 0.1);
+    --shadow-glow: 0 0 40px hsl(214 100% 50% / 0.3);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 220 30% 8%;
+    --foreground: 210 40% 98%;
+    --card: 220 30% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 214 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 30% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 30% 18%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 158 64% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 214 100% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-gradient-hero {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .bg-gradient-warm {
+    background: var(--gradient-warm);
+  }
+  
+  .bg-gradient-fresh {
+    background: var(--gradient-fresh);
+  }
+  
+  .bg-gradient-soft {
+    background: var(--gradient-soft);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  /* Typing animation */
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+  
+  @keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: hsl(var(--brand)) }
+  }
+  
+  @keyframes hide-caret {
+    to { border-color: transparent }
+  }
+  
+  .animate-typing {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 3px solid hsl(var(--brand));
+    width: 0;
+    max-width: max-content;
+    animation: 
+      typing 2.5s steps(40, end) forwards,
+      blink-caret 0.75s step-end 4,
+      hide-caret 0s 3s forwards;
+  }
+}

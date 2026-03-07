@@ -81,7 +81,7 @@ if environment == "production":
     allowed_origins = ["https://your-production-domain.com"]
     app_port = 8000
 elif environment == "uat":
-    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:9000", "http://127.0.0.1:9000"]
+    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "https://staging.d31i4bwxow07s2.amplifyapp.com"]
     app_port = 9000
 else:
     allowed_origins = ["http://127.0.0.1:8000", "http://localhost:8000", "http://localhost:3000", "http://127.0.0.1:3000"]

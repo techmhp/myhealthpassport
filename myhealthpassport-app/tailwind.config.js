@@ -79,9 +79,9 @@ module.exports = {
                 lavender: "hsl(var(--lavender))",
             },
             fontFamily: {
-                inter: ["Inter", "sans-serif"],
-                display: ["Nunito", "sans-serif"],
-                body: ["Plus Jakarta Sans", "sans-serif"],
+                inter: ["var(--font-inter)", "Inter", "sans-serif"],
+                display: ["var(--font-nunito)", "Nunito", "sans-serif"],
+                body: ["var(--font-plus-jakarta-sans)", "Plus Jakarta Sans", "sans-serif"],
             },
             borderRadius: {
                 lg: "var(--radius)",

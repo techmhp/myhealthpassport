@@ -2,6 +2,30 @@ import '@/styles/globals.css';
 import 'antd/dist/reset.css'; // Import Ant Design styles
 import { ToastContainer } from "react-toastify";
 import { getCspNonce } from "@/lib/getNonce";
+import { Nunito, Plus_Jakarta_Sans, Inter } from 'next/font/google';
+
+// Nunito — used for all headings (h1-h6), matches UAT bold rounded style
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-nunito',
+  display: 'swap',
+});
+
+// Plus Jakarta Sans — used for body text, paragraphs, labels
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-plus-jakarta-sans',
+  display: 'swap',
+});
+
+// Inter — used for UI elements (tables, inputs, data)
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'My Health Passport',
@@ -14,13 +38,13 @@ export default async function RootLayout({ children }) {
   const nonce = await getCspNonce();
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${nunito.variable} ${plusJakartaSans.variable} ${inter.variable}`}>
       <head nonce={nonce}></head>
-      <body className="h-full" >
+      <body className="h-full">
         {children}
         {/* <NextTopLoader /> */}
         <ToastContainer />
       </body>
-    </html >
+    </html>
   );
 }

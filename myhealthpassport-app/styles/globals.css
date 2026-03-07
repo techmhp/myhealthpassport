@@ -2,7 +2,8 @@
 @config "../tailwind.config.js";
 @plugin "tailwindcss-animate";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Nunito:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* Fonts loaded via next/font/google in app/layout.js — self-hosted at build time.
+   CSS vars --font-nunito, --font-plus-jakarta-sans, --font-inter are injected on <html>. */
 
 @layer base {
   :root {
@@ -85,16 +86,16 @@
 }
 
 html, body {
-    font-family: "Plus Jakarta Sans", sans-serif !important;
+    font-family: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", sans-serif !important;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
     scroll-behavior: smooth;
 }
 
-/* Headings use Nunito — matches UAT rounded bold style */
+/* Headings use Nunito — matches UAT bold rounded heading style */
 h1, h2, h3, h4, h5, h6 {
-    font-family: "Nunito", sans-serif;
+    font-family: var(--font-nunito), "Nunito", sans-serif;
 }
 
 ul {

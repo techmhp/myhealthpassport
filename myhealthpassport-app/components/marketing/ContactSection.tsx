@@ -58,9 +58,14 @@ const ContactSection = () => {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="Enter your phone number"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="10-digit mobile number"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setFormData({ ...formData, phone: digits });
+                  }}
                   className="h-12 rounded-xl"
                 />
               </div>

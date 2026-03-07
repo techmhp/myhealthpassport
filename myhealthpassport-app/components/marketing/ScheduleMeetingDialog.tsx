@@ -43,6 +43,10 @@ const ScheduleMeetingDialog = ({ open, onOpenChange }: ScheduleMeetingDialogProp
       toast.error("Please fill all fields");
       return;
     }
+    if (form.phone.length !== 10) {
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
     setLoading(true);
     try {
       // TODO: Integrate with backend API to submit school lead
@@ -162,8 +166,14 @@ const ScheduleMeetingDialog = ({ open, onOpenChange }: ScheduleMeetingDialogProp
                 <Input
                   id="sm-phone"
                   type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="10-digit mobile number"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setForm({ ...form, phone: digits });
+                  }}
                   className="mt-1 bg-muted/50"
                 />
               </div>

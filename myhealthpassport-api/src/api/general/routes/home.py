@@ -316,7 +316,7 @@ async def user_login(payload: MobileNumber):
 
     cache_key = f"otp-{transaction_id}:{otp}"
     print(f"Cache key created: {cache_key}")  # DEBUG
-    
+
     data = {
         "user_id": user.id,
         "username": user.primary_mobile,
@@ -327,10 +327,14 @@ async def user_login(payload: MobileNumber):
     object_cache = ObjectCache(cache_key=cache_key)
     await object_cache.set(data, ttl=180)
 
+    response_data = {"transaction_id": transaction_id}
+    if environ != "production":
+        response_data["test_otp"] = otp
+
     data_dict = {
         "status": True,
         "message": "Please Verify OTP",
-        "data": {"transaction_id": transaction_id},
+        "data": response_data,
     }
     response_obj = StandardResponse(**data_dict)
     return response_obj

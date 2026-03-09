@@ -132,7 +132,7 @@ export default function AddTeacherForm() {
         toastMessage(errorMessage, 'error'); // Error toast
       }
     } catch (err) {
-      toastMessage(errorMessage, 'error'); // Error toast
+      toastMessage(err.message || 'An error occurred while creating teacher', 'error'); // Error toast
     } finally {
       setIsSubmitting(false);
     }

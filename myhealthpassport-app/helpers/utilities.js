@@ -130,7 +130,7 @@ export const renderMedicalOfficerStatus = student => {
     return <Image alt="Active" src="/iconx/check-circle.svg" width={20} height={20} />;
   } else if (sortedUniqueValues.length === 1 && sortedUniqueValues[0] === 'remarks') {
     return <Image alt="Remarks" src="/health-records/alert.svg" width={16} height={16} />;
-  } else if (sortedUniqueValues.length === 2 && sortedUniqueValues[0] === 'remarks' && sortedUniqueValues[0] === 'verified') {
+  } else if (sortedUniqueValues.length === 2 && sortedUniqueValues[0] === 'remarks' && sortedUniqueValues[1] === 'verified') {
     return <Image alt="Remarks" src="/health-records/alert.svg" width={16} height={16} />;
   } else {
     return <Image alt="Warning" src="/iconx/minus-circle.svg" width={20} height={20} />;

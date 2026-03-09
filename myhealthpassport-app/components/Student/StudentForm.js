@@ -192,6 +192,8 @@ export default function StudentForm() {
       }
     } catch (err) {
       toastMessage(err.message || 'An error occurred', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

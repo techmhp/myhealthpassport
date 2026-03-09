@@ -38,7 +38,10 @@ export default function ParentLogin() {
       const response = await loginWithMobile(formData);
       if (response.status === true) {
         setError(null);
-        toastMessage(response.message, 'success');
+        const msg = response.data?.test_otp
+          ? `${response.message} (Test OTP: ${response.data.test_otp})`
+          : response.message;
+        toastMessage(msg, 'success');
         setCounter(119);
         setTransactionId(response.data.transaction_id);
       } else {

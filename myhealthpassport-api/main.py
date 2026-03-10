@@ -78,7 +78,11 @@ app.include_router(invoice_router)
 environment = os.environ.get("APP_ENV", "development")
 
 if environment == "production":
-    allowed_origins = ["https://your-production-domain.com"]
+    allowed_origins = [
+        "https://main.dfccarvx799lj.amplifyapp.com",
+        "https://www.myhealthpassport.in",
+        "https://myhealthpassport.in",
+    ]
     app_port = 8000
 elif environment == "uat":
     allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "https://staging.d31i4bwxow07s2.amplifyapp.com", "https://uat.myhealthpassport.in"]

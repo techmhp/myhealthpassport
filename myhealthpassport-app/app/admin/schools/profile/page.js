@@ -88,3 +88,9 @@
 // }
 
 // export default Profile;
+
+// Placeholder export to satisfy module requirements
+// This page is currently disabled and needs to be implemented
+export default function Placeholder() {
+  return null;
+}

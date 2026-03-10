@@ -11,9 +11,9 @@ applications:
             - npm ci --legacy-peer-deps
         build:
           commands:
-            - npx open-next@latest build
+            - npm run build
       artifacts:
-        baseDirectory: .open-next
+        baseDirectory: .next
         files:
           - '**/*'
       cache:

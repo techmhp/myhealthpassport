@@ -123,8 +123,7 @@ const ViewAllStaffMembers = ({ school_Info }) => {
 
   const handleSelectChange = e => {
     setSelectedRole(e.target.value);
-    // console.log('Selected Role:', e.target.value);
-    GetUsersList(e.target.value);
+    // useEffect handles GetUsersList when selectedRole changes
   };
 
   const handleSearchChange = value => {

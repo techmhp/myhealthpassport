@@ -1497,7 +1497,7 @@ ROLE_SCREENING_MAP = {
 #     return JSONResponse(content=resp.__dict__, status_code=status.HTTP_200_OK)
 
 ## /users?team_type
-@router.get("/", response_model=StandardResponse)
+@router.get("", response_model=StandardResponse)
 async def list_users_by_team(
     team_type: TeamType = Query(..., description="Specify the team type to list users from."),
     school_id: Optional[str] = Query(None, description="Optional: Filter users assigned to this specific school. Leave empty to fetch all schools."),

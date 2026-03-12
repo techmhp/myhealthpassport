@@ -4,7 +4,7 @@ import Razorpay from "razorpay";
 export async function POST(req) {
     try {
         const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET;
 
         if (!keyId || !keySecret) {
             return new Response(

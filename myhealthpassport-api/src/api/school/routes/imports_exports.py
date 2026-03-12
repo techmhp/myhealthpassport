@@ -35,68 +35,39 @@ def clean_phone(phone):
     return phone_str
 
 def csv_columns_list():
-    # For student information
-    student_personal_suffixes = ["first_name", "middle_name", "last_name", "gender", "dob", "blood_group"]
-    student_id_suffixes = ["aadhar_no", "abha_id", "mp_uhid"]
-    student_academic_suffixes = ["class", "section", "roll_no"]
-    student_other_suffixes = ["food_preferences"]
-
-    # For address information (as per original list structure)
-    address_main_suffixes = ["address_line_1", "address_line_2", "landmark", "street_name", "state", "pincode"]
-
-    # The original list places 'country' after 'country_code' and 'phone'.
-    contact_and_country_suffixes = ["country_code", "phone", "country"]
-
-    # For parent (father/mother) information
-    parent_detail_suffixes = ["first_name", "middle_name", "last_name", "phone", "email"]
-
-    student_fields = [f"student_{s}" for s in (
-            student_personal_suffixes +
-            student_id_suffixes +
-            student_academic_suffixes +
-            student_other_suffixes
-    )]
-
-    # Address fields are mostly direct names as per your list
-    address_fields = address_main_suffixes
-    
-    parent_fields_extra = ["parent_pincode"]
-    # Contact and country fields are also direct names
-    contact_country_fields = contact_and_country_suffixes
-
-    father_fields = [f"primary_{s}" for s in parent_detail_suffixes]
-    mother_fields = [f"secondary_{s}" for s in parent_detail_suffixes]
-
-    # 3. Combine all parts to form the final list, maintaining the original order
-    required_strings_minimized_declaration = (
-            student_fields +
-            address_fields +
-            contact_country_fields +
-            father_fields +
-            mother_fields +
-            parent_fields_extra
-    )
-    return required_strings_minimized_declaration
+    # Minimal required columns
+    required_columns = [
+        "student_first_name", "student_last_name", "student_gender", "student_dob",
+        "student_class", "student_section", "student_roll_no", "phone"
+    ]
+    # Optional columns that are accepted if present
+    optional_columns = [
+        "student_middle_name", "student_blood_group",
+        "student_aadhar_no", "student_abha_id", "student_mp_uhid",
+        "student_food_preferences",
+        "address_line_1", "address_line_2", "landmark", "street_name", "state", "pincode",
+        "country_code", "country",
+        "primary_first_name", "primary_middle_name", "primary_last_name", "primary_phone", "primary_email",
+        "secondary_first_name", "secondary_middle_name", "secondary_last_name", "secondary_phone", "secondary_email",
+        "parent_pincode",
+    ]
+    return required_columns + optional_columns
 
 
 
 
 @router.post("/import-students-data", response_model=dict)
 async def import_students_data(file: UploadFile = File(...), school_id: str | None = None, current_user: dict = Depends(get_current_user)):
+    # Only these columns MUST be present as headers in the CSV
     original_required_strings = [
-        "student_first_name", "student_middle_name", "student_last_name", "student_gender", "student_dob",
-        "student_blood_group",
-        "student_aadhar_no", "student_abha_id", "student_mp_uhid",
-        "student_class", "student_section", "student_roll_no",
-        "student_food_preferences",
-        "address_line_1", "address_line_2", "landmark", "street_name", "state", "pincode",
-        "country_code", "phone", "country",
-        "primary_first_name", "primary_middle_name", "primary_last_name", "primary_phone", "primary_email",
-        "secondary_first_name", "secondary_middle_name", "secondary_last_name", "secondary_phone", "secondary_email","parent_pincode",
+        "student_first_name", "student_last_name", "student_gender", "student_dob",
+        "student_class", "student_section", "student_roll_no", "phone",
     ]
 
+    # These columns must also be non-empty for each row
     strictly_required_non_empty_columns = [
-        "student_first_name", "phone", "student_class", "student_section", "student_dob", "student_roll_no"
+        "student_first_name", "student_last_name", "student_gender", "student_dob",
+        "student_class", "student_section", "student_roll_no", "phone",
     ]
 
     allowed_roles = [SchoolRoles.SCHOOL_ADMIN, AdminTeamRoles.PROGRAM_COORDINATOR, AdminTeamRoles.SUPER_ADMIN]
@@ -193,14 +164,25 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+        # Fill in optional columns with empty string if not present in uploaded CSV
+        optional_columns = [
+            "student_middle_name", "student_blood_group",
+            "student_aadhar_no", "student_abha_id", "student_mp_uhid", "student_food_preferences",
+            "address_line_1", "address_line_2", "landmark", "street_name", "state", "pincode",
+            "country_code", "country",
+            "primary_first_name", "primary_middle_name", "primary_last_name", "primary_phone", "primary_email",
+            "secondary_first_name", "secondary_middle_name", "secondary_last_name", "secondary_phone", "secondary_email",
+            "parent_pincode",
+        ]
+        for col in optional_columns:
+            if col not in df_processed.columns:
+                df_processed[col] = ''
+
         df_processed["student_class"] = df_processed['student_class'].astype(str)
         df_processed['student_aadhar_no'] = df_processed['student_aadhar_no'].astype(str)
         df_processed['student_abha_id'] = df_processed['student_abha_id'].astype(str)
         df_processed['student_mp_uhid'] = df_processed['student_mp_uhid'].astype(str)
         df_processed['student_roll_no'] = df_processed['student_roll_no'].astype(str)
-        # df_processed['phone'] = df_processed['phone'].astype(str)
-        # df_processed['primary_phone'] = df_processed['primary_phone'].astype(str)
-        # df_processed['secondary_phone'] = df_processed['secondary_phone'].astype(str)
         df_processed['phone'] = df_processed['phone'].apply(clean_phone)
         df_processed['primary_phone'] = df_processed['primary_phone'].apply(clean_phone)
         df_processed['secondary_phone'] = df_processed['secondary_phone'].apply(clean_phone)

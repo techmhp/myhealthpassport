@@ -182,7 +182,7 @@ const StudentInfo = () => {
       case 'Lab-Reports':
         return (
           <div className="bg-white rounded-lg">
-            <LabReports />
+            <LabReports studentId={studentId} />
           </div>
         );
 

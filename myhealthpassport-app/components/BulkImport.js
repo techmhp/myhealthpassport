@@ -65,7 +65,8 @@ const BulkImport = () => {
       confirm: true,
     };
     try {
-      const response = await importStudentsDataConfirm(schoolid, JSON.stringify(data));
+      // Use school_id (from state, resolved for school-admin users) rather than schoolid (from params)
+      const response = await importStudentsDataConfirm(school_id, JSON.stringify(data));
       if (response.status === true) {
         toastMessage(response.message || 'Students imported successfully', 'success');
         if (root === 'admin') {

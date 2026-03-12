@@ -474,7 +474,7 @@ const ViewAllStaffMembers = ({ school_Info }) => {
                   } px-4 py-[10px] outline-none text-[#464646]`}
                 >
                   <option value="">Select School</option>
-                  {Object.keys(schools.items).length > 0
+                  {schools?.items?.length > 0
                     ? schools.items.map((school, index) => (
                         <option key={index} value={school.school_id}>
                           {school.school_full_name}

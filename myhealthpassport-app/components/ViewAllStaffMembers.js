@@ -199,14 +199,15 @@ const ViewAllStaffMembers = ({ school_Info }) => {
 
     try {
       const response = await assignSchool(JSON.stringify(requestBody));
-      // console.log('Assign school api res', response);
       if (response.status === true) {
-        toastMessage(response.message, 'success');
+        toastMessage(response.message || 'School assigned successfully', 'success');
         setShowAssignModal(false);
+        GetUsersList(selectedRole);
+      } else {
+        toastMessage(response.message || 'Failed to assign school. Please try again.', 'error');
       }
     } catch (err) {
-      // console.log('Assign school api error', err);
-      toastMessage(err?.message, 'error');
+      toastMessage(err?.message || 'An error occurred while assigning the school.', 'error');
     } finally {
       setLoading(false);
     }
@@ -352,7 +353,7 @@ const ViewAllStaffMembers = ({ school_Info }) => {
                   {staff_member.employee_id}
                 </td>
                 <td className="bg-white border-t border-l border-solid border-[#B5CCFF] py-2.5 px-3 font-inter font-normal text-sm leading-[130%] text-black">
-                  {staff_member.first_name}
+                  {`${staff_member.first_name || ''} ${staff_member.last_name || ''}`.trim() || staff_member.username || '—'}
                 </td>
                 <td className="bg-white border-t border-l border-solid border-[#B5CCFF] py-2.5 px-3 font-inter font-normal text-sm leading-[130%] text-black">
                   {staff_member.user_role}
@@ -473,14 +474,16 @@ const ViewAllStaffMembers = ({ school_Info }) => {
                     formErrors.school_id ? 'border-red-500' : 'border-[#D5D9E2]'
                   } px-4 py-[10px] outline-none text-[#464646]`}
                 >
-                  <option value="">Select School</option>
+                  <option value="">
+                    {schools?.items?.length > 0 ? 'Select School' : 'No schools available'}
+                  </option>
                   {schools?.items?.length > 0
                     ? schools.items.map((school, index) => (
                         <option key={index} value={school.school_id}>
                           {school.school_full_name}
                         </option>
                       ))
-                    : ''}
+                    : null}
                 </select>
                 {formErrors.school_id && <span className="text-red-500 text-xs">{formErrors.school_id}</span>}
               </div>

@@ -19,7 +19,9 @@ const StaffCardView = ({ user }) => {
               height={52}
             />
             <div className="flex flex-col gap-2">
-              <h1 className="font-inter font-semibold text-[14px] leading-[100%] tracking-[0%] text-gray-900">{`${user.first_name} ${user.last_name}`}</h1>
+              <h1 className="font-inter font-semibold text-[14px] leading-[100%] tracking-[0%] text-gray-900">
+                {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Staff Member'}
+              </h1>
               <p className="font-inter font-normal text-[10px] leading-[100%] tracking-[0%]">{formatString(user.user_role)}</p>
             </div>
           </div>

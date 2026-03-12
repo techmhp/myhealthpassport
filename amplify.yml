@@ -11,6 +11,7 @@ applications:
             - npm ci --legacy-peer-deps
         build:
           commands:
+            - echo "RAZORPAY_KEY_SECRET=$RAZORPAY_KEY_SECRET" >> .env.local
             - npm run build
       artifacts:
         baseDirectory: .next

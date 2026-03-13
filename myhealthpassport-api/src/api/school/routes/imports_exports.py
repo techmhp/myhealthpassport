@@ -2,6 +2,7 @@ import io
 from datetime import datetime
 
 import pandas as pd
+from src.whatsapp import notify_student_registered, notify_bulk_import_success
 from fastapi import Depends, File, UploadFile, status
 from fastapi.responses import JSONResponse
 
@@ -37,11 +38,12 @@ def clean_phone(phone):
 def csv_columns_list():
     # Minimal required columns
     required_columns = [
-        "student_first_name", "student_last_name", "student_gender", "student_dob",
-        "student_class", "student_section", "student_roll_no", "phone"
+        "student_first_name", "student_gender", "student_dob",
+        "student_class", "student_roll_no", "phone"
     ]
     # Optional columns that are accepted if present
     optional_columns = [
+        "student_last_name", "student_section",
         "student_middle_name", "student_blood_group",
         "student_aadhar_no", "student_abha_id", "student_mp_uhid",
         "student_food_preferences",
@@ -60,14 +62,14 @@ def csv_columns_list():
 async def import_students_data(file: UploadFile = File(...), school_id: str | None = None, current_user: dict = Depends(get_current_user)):
     # Only these columns MUST be present as headers in the CSV
     original_required_strings = [
-        "student_first_name", "student_last_name", "student_gender", "student_dob",
-        "student_class", "student_section", "student_roll_no", "phone",
+        "student_first_name", "student_gender", "student_dob",
+        "student_class", "student_roll_no", "phone",
     ]
 
     # These columns must also be non-empty for each row
     strictly_required_non_empty_columns = [
-        "student_first_name", "student_last_name", "student_gender", "student_dob",
-        "student_class", "student_section", "student_roll_no", "phone",
+        "student_first_name", "student_gender", "student_dob",
+        "student_class", "student_roll_no", "phone",
     ]
 
     allowed_roles = [SchoolRoles.SCHOOL_ADMIN, AdminTeamRoles.PROGRAM_COORDINATOR, AdminTeamRoles.SUPER_ADMIN]
@@ -104,6 +106,76 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         contents = await file.read()
         column_errors = []
         df_initial = pd.read_csv(io.StringIO(contents.decode("utf-8-sig")))
+
+        # Clean column names: remove ALL internal spaces, strip trailing dots/commas/spaces
+        # Handles cases like: "student _first_name" → "student_first_name", "phone." → "phone"
+        df_initial.columns = [
+            col.replace(' ', '').rstrip('.').rstrip(',').strip()
+            for col in df_initial.columns
+        ]
+
+        # Normalize column names — accept common naming variations from schools
+        column_name_map = {
+            # Name → student_first_name
+            "name": "student_first_name",
+            "Name": "student_first_name",
+            "NAME": "student_first_name",
+            "student_name": "student_first_name",
+            "Student Name": "student_first_name",
+            "first_name": "student_first_name",
+            "First Name": "student_first_name",
+            # Roll number → student_roll_no
+            "roll_no": "student_roll_no",
+            "Roll_no": "student_roll_no",
+            "Roll No": "student_roll_no",
+            "roll no": "student_roll_no",
+            "ROLL_NO": "student_roll_no",
+            "Roll Number": "student_roll_no",
+            "roll_number": "student_roll_no",
+            "RollNo": "student_roll_no",
+            # Gender → student_gender
+            "gender": "student_gender",
+            "Gender": "student_gender",
+            "GENDER": "student_gender",
+            # DOB → student_dob
+            "dob": "student_dob",
+            "DOB": "student_dob",
+            "Date of Birth": "student_dob",
+            "date_of_birth": "student_dob",
+            "DateOfBirth": "student_dob",
+            "Date Of Birth": "student_dob",
+            # Class → student_class
+            "class": "student_class",
+            "Class": "student_class",
+            "CLASS": "student_class",
+            "class_name": "student_class",
+            "Class Name": "student_class",
+            "standard": "student_class",
+            "Standard": "student_class",
+            # Phone → phone
+            "Phone": "phone",
+            "PHONE": "phone",
+            "phone_number": "phone",
+            "Phone Number": "phone",
+            "Mobile": "phone",
+            "mobile": "phone",
+            "Mobile Number": "phone",
+            "contact": "phone",
+            "Contact": "phone",
+            # Section → student_section
+            "section": "student_section",
+            "Section": "student_section",
+            "SECTION": "student_section",
+            # Last name → student_last_name
+            "last_name": "student_last_name",
+            "Last Name": "student_last_name",
+            "surname": "student_last_name",
+            "Surname": "student_last_name",
+        }
+        df_initial = df_initial.rename(columns={
+            k: v for k, v in column_name_map.items() if k in df_initial.columns
+        })
+
         for col in df_initial.columns:
             if col not in csv_columns_list():
                 column_errors.append(col)
@@ -119,10 +191,16 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         df_processed = df_initial.fillna('')
-        
+
+        # Ensure optional columns exist BEFORE duplicate check and further processing
+        if 'student_section' not in df_processed.columns:
+            df_processed['student_section'] = ''
+        if 'student_last_name' not in df_processed.columns:
+            df_processed['student_last_name'] = ''
+
         df_processed = df_processed[
             df_processed.apply(
-                lambda row: any(str(val).strip() for val in row), 
+                lambda row: any(str(val).strip() for val in row),
                 axis=1
             )
         ]
@@ -253,34 +331,67 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
-    students_exist = []
-    for student in list_of_students:
-        student_exist = await SchoolStudents.filter(
-            student__roll_no=student.get("student_roll_no", "").upper(),
-            school_id=int(school_id)
-        ).select_related('student').first()
-        if student_exist:
-            students_exist.append(f"student {student.get('student_roll_no')} exists in this school")
+    # Batch check for existing students (single query) — skip them with a warning
+    # rather than blocking the entire import
+    existing_school_students = await SchoolStudents.filter(
+        school_id=int(school_id)
+    ).prefetch_related('student')
+    existing_set = set()
+    for ss in existing_school_students:
+        if ss.student:
+            existing_set.add((ss.student.roll_no, ss.student.class_room))
 
-    if len(students_exist) > 0:
+    existing_student_warnings = []
+    new_students_list = []
+    for student in list_of_students:
+        roll_no = student.get("student_roll_no", "").upper()
+        class_room = student.get("student_class", "")
+        if (roll_no, class_room) in existing_set:
+            existing_student_warnings.append(
+                f"Roll {roll_no} (Class {class_room}) already exists — skipped"
+            )
+        else:
+            new_students_list.append(student)
+
+    # If ALL students already exist, return a clear error
+    if not new_students_list:
         resp = StandardResponse(
             status=False,
-            message="\n, ".join(students_exist),
-            data={
-                "students_data": students_exist,
-            },
-            errors={},
+            message="All students in the CSV already exist in this school. No new students to import.",
+            data={"existing_students": existing_student_warnings},
+            errors={"details": "All students already exist in this school."},
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_200_OK)
+
+    # Only cache NEW students (those that don't already exist)
+    list_of_students = new_students_list
 
     transaction_no = generate_transaction_number()
     cache_key = f"import_students_data-{transaction_no}"
     cache = ObjectCache(cache_key=cache_key)
-    await cache.set(data=list_of_students, ttl=3600)
+    print(f"[BulkImport] Caching {len(list_of_students)} students with key: {cache_key}")
+    set_result = await cache.set(data=list_of_students, ttl=3600)
+    print(f"[BulkImport] Cache SET result: {set_result} | transaction_no: {transaction_no}")
+    # Verify cache was actually stored
+    verify = await cache.get()
+    if not verify:
+        print(f"[BulkImport] ERROR: Cache verification failed for key {cache_key}!")
+        resp = StandardResponse(
+            status=False,
+            message="Failed to store import session. Please try again.",
+            data={},
+            errors={"details": "Cache storage failed."},
+        )
+        return JSONResponse(content=resp.__dict__, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    message = f"Uploaded Data Preview {file.filename}"
+    message = f"Uploaded Data Preview {file.filename} — {len(list_of_students)} new student(s) ready to import"
     if duplicate_errors:
         message += " (Warning: Duplicate entries detected in the uploaded file)"
+    if existing_student_warnings:
+        message += f" | {len(existing_student_warnings)} student(s) already exist and will be skipped"
+
+    # Combine all warnings
+    all_warnings = duplicate_errors + existing_student_warnings
 
     resp = StandardResponse(
         status=True,
@@ -289,7 +400,7 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             "students_data": list_of_students,
             "transaction_no": transaction_no
         },
-        errors={"details": "; ".join(duplicate_errors)} if duplicate_errors else {},
+        errors={"details": "; ".join(all_warnings)} if all_warnings else {},
     )
     return JSONResponse(content=resp.__dict__, status_code=status.HTTP_200_OK)
 
@@ -298,8 +409,10 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
     transaction_no = str(request_data.transaction_no)
     cache_key = f"import_students_data-{transaction_no}"
     cache = ObjectCache(cache_key=cache_key)
+    print(f"[BulkImport Confirm] Looking up cache key: {cache_key} | transaction_no type: {type(request_data.transaction_no)}")
 
     data = await cache.get()
+    print(f"[BulkImport Confirm] Cache GET result: {'FOUND' if data else 'NOT FOUND'} | key: {cache_key}")
     if not data:
         resp = StandardResponse(
             status=False,
@@ -437,6 +550,7 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
                 ).first()
 
                 if existing_student:
+                    print(f"[BulkImport Confirm] SKIP: Roll {roll_no} class {class_room} sec {section} already exists in school {school_id}")
                     errors.append(
                         f"Roll number {roll_no} already exists for class {class_room}, section {section} in school ID {school_id}."
                     )
@@ -549,9 +663,27 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
                     student_details["school"] = school_details
 
                     students_list.append(student_details)
+
+                    # ── WhatsApp notification to parent ──────────────────
+                    try:
+                        wa_phone = primary_mobile  # already resolved above
+                        if wa_phone:
+                            await notify_student_registered(
+                                parent_phone=wa_phone,
+                                student_name=student_data.get("first_name", ""),
+                                class_room=student_data.get("class_room", ""),
+                                school_name=school.school_name if hasattr(school, "school_name") else str(school_id),
+                                roll_no=student_data.get("roll_no", ""),
+                            )
+                    except Exception as wa_err:
+                        print(f"[WhatsApp] Notification skipped for {student.get('student_first_name', '')}: {wa_err}")
+                    # ─────────────────────────────────────────────────────
+
             except Exception as e:
+                print(f"[BulkImport Confirm] ERROR for {student.get('student_first_name', '')} roll={student.get('student_roll_no', '')}: {str(e)}")
                 errors.append(f"Failed to process student {student.get('student_first_name', '')}: {str(e)}")
 
+        print(f"[BulkImport Confirm] Done: {len(students_list)} imported, {len(errors)} failed/skipped")
         await cache.delete()
 
         resp = StandardResponse(

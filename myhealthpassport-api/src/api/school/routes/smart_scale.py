@@ -4,6 +4,7 @@ from tortoise.exceptions import IntegrityError
 
 from fastapi import Depends, Query, status
 import io
+import math
 import pandas as pd
 from datetime import datetime
 from typing import Optional
@@ -117,21 +118,27 @@ OPTIONAL_COLUMNS = {
 
 
 def validate_excel_columns(df_columns):
-    """Validate CSV columns against expected columns"""
+    """Validate file columns against expected columns. Extra/unknown columns are ignored."""
     expected_columns = set(EXCEL_COLUMN_MAPPING.keys())
     actual_columns = set(df_columns)
     required_columns = expected_columns - OPTIONAL_COLUMNS
 
     missing_columns = list(required_columns - actual_columns)
-    extra_columns = list(actual_columns - expected_columns)
 
     errors = []
     if missing_columns:
         errors.extend([f"Missing column: {col}" for col in missing_columns])
-    if extra_columns:
-        errors.extend([f"Extra column: {col}" for col in extra_columns])
 
     return errors
+
+
+def sanitize_value(value):
+    """Convert a value to a JSON-serializable type, replacing nan/inf with None."""
+    if value is None:
+        return None
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    return value
 
 def validate_data_types(df):
     """Validate data types for each column"""
@@ -221,12 +228,13 @@ async def upload_smart_scale_data(
 
     try:
         # Validate file type
-        if not file.filename.endswith((".xlsx", ".xls")):
+        filename_lower = file.filename.lower() if file.filename else ""
+        if not (filename_lower.endswith(".xlsx") or filename_lower.endswith(".xls") or filename_lower.endswith(".csv")):
             resp = StandardResponse(
                 status=False,
-                message="Invalid file type.  Please upload an Excel file (.xlsx or .xls).",
+                message="Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.",
                 data={},
-                errors={"file_type": "Only Excel  files are allowed"},
+                errors={"file_type": "Only Excel (.xlsx, .xls) and CSV (.csv) files are supported"},
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
@@ -252,16 +260,19 @@ async def upload_smart_scale_data(
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_404_NOT_FOUND)
 
-        # Read and parse CSV file
+        # Read and parse file (Excel or CSV)
         contents = await file.read()
         try:
-            df = pd.read_excel(io.BytesIO(contents))
+            if filename_lower.endswith(".csv"):
+                df = pd.read_csv(io.BytesIO(contents))
+            else:
+                df = pd.read_excel(io.BytesIO(contents))
         except Exception as e:
             resp = StandardResponse(
                 status=False,
-                message=f"Error parsing Excel  file: {str(e)}",
+                message=f"Error parsing file: {str(e)}",
                 data={},
-                errors={"excel_parsing": str(e)},
+                errors={"file_parsing": str(e)},
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
@@ -313,7 +324,7 @@ async def upload_smart_scale_data(
 
                         # Handle empty/null values
                         if pd.isna(value) or (isinstance(value, str) and value.strip() == ""):
-                            smart_scale_data[model_field] = ""
+                            smart_scale_data[model_field] = None
                         else:
                             try:
                                 if model_field == "weighing_time":
@@ -322,12 +333,13 @@ async def upload_smart_scale_data(
                                 elif model_field in ["age_years", "bmr", "heart_rate_beats_min",
                                                      "physical_score", "body_type", "physical_age",
                                                      "health_level", "obesity_level"]:
-                                    smart_scale_data[model_field] = int(float(value))
+                                    parsed_int = int(float(value))
+                                    smart_scale_data[model_field] = sanitize_value(parsed_int)
                                 elif model_field == "device_mac":
                                     smart_scale_data[model_field] = str(value).strip()
                                 else:
-                                    smart_scale_data[model_field] = float(value)
-                                    # smart_scale_data[model_field] = parse_datetime(value)
+                                    parsed_float = float(value)
+                                    smart_scale_data[model_field] = sanitize_value(parsed_float)
                             except ValueError as e:
                                 processing_errors.append({
                                     "row": index + 1,
@@ -396,14 +408,15 @@ async def upload_smart_scale_data(
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_200_OK)
     except Exception as e:
+        error_detail = f"{type(e).__name__}: {str(e)}"
         resp = StandardResponse(
             status=False,
-            message="An unexpected error occurred.",
+            message=f"An unexpected error occurred: {error_detail}",
             data={},
-            errors={"unexpected": str(e)},
+            errors={"unexpected": error_detail},
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
 @router.post("/confirm-smart-scale-data", response_model=StandardResponse, tags=["SmartScale"])
 async def confirm_smart_scale_data(
         request: Request,

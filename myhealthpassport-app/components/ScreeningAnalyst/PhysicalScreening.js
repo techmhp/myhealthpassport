@@ -50,6 +50,7 @@ const PhysicalScreening = () => {
     const selectedFile = event.target.files[0];
     if (!selectedFile) return;
     setFile(selectedFile);
+    setShowErrorMessage(null);
 
     try {
       const response = await importSmartScaleData(selectedFile, studentId, schoolid);
@@ -61,10 +62,10 @@ const PhysicalScreening = () => {
         }));
         toastMessage(response.message || 'Smart scale data imported successfully', 'success');
       } else {
-        setShowErrorMessage(response.message || 'Failed to import smart scale data', 'error');
+        setShowErrorMessage(response.message || 'Failed to import smart scale data');
       }
     } catch (err) {
-      toastMessage(err.message || 'Something went wrong', 'error');
+      setShowErrorMessage(err.message || 'Something went wrong');
     }
   };
 
@@ -102,12 +103,12 @@ const PhysicalScreening = () => {
       {userRole === 'PHYSICAL_WELLBEING' ? (
         <div className="mb-[50px] flex justify-center items-center gap-5">
           <div className="flex flex-col gap-[12px]">
-            <input id="fileInput" type="file" className="hidden" onChange={handleFileChange} />
+            <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileChange} />
             <label
               htmlFor="fileInput"
               className="cursor-pointer rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             >
-              <span className="font-medium leading-6">{file ? file.name : 'Upload Excel'}</span>
+              <span className="font-medium leading-6">{file ? file.name : 'Upload File (.xlsx, .csv)'}</span>
             </label>
           </div>
           {/* <button

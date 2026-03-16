@@ -5,6 +5,7 @@ from tortoise.exceptions import IntegrityError
 from fastapi import Depends, Query, status
 import io
 import math
+import re
 import pandas as pd
 from datetime import datetime
 from typing import Optional
@@ -140,6 +141,49 @@ def sanitize_value(value):
         return None
     return value
 
+
+def _normalize_col(col):
+    """Canonical form: remove spaces before '(', lowercase everything."""
+    col = col.strip()
+    col = re.sub(r'\s*\(', '(', col)
+    return col.lower()
+
+
+def remap_columns(df):
+    """
+    Remap dataframe columns to EXCEL_COLUMN_MAPPING keys using fuzzy normalization.
+    Handles device firmware variations like:
+      - 'Body weight(kg)' vs 'Body weight (kg)'  (space before unit)
+      - 'Inorganic salt content(kg)' vs 'Inorganic salt content (Kg)'  (case)
+      - 'Fat control quantity(kg)' vs 'Fat control quantity'  (extra unit suffix)
+    """
+    norm_to_key = {}
+    for key in EXCEL_COLUMN_MAPPING:
+        norm_to_key[_normalize_col(key)] = key
+        # Also index the key stripped of its trailing unit so files that add
+        # units to unit-less mapping keys (e.g. 'Fat control quantity(kg)')
+        # still resolve correctly.
+        stripped = re.sub(r'\s*\([^)]+\)\s*$', '', key).strip()
+        norm_stripped = _normalize_col(stripped)
+        if norm_stripped not in norm_to_key:
+            norm_to_key[norm_stripped] = key
+
+    rename_map = {}
+    for col in df.columns:
+        if col in EXCEL_COLUMN_MAPPING:
+            continue  # already an exact match
+        norm = _normalize_col(col)
+        if norm in norm_to_key:
+            rename_map[col] = norm_to_key[norm]
+        else:
+            # Try stripping trailing unit from the file column name
+            stripped = re.sub(r'\s*\([^)]+\)\s*$', '', norm).strip()
+            if stripped in norm_to_key:
+                rename_map[col] = norm_to_key[stripped]
+
+    return df.rename(columns=rename_map)
+
+
 def validate_data_types(df):
     """Validate data types for each column"""
     errors = {}
@@ -267,6 +311,7 @@ async def upload_smart_scale_data(
                 df = pd.read_csv(io.BytesIO(contents))
             else:
                 df = pd.read_excel(io.BytesIO(contents))
+            df = remap_columns(df)  # normalize column names to mapping keys
         except Exception as e:
             resp = StandardResponse(
                 status=False,

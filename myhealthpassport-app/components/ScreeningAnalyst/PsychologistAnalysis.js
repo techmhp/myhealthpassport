@@ -157,6 +157,12 @@ export default function PsychologistAnalysis() {
       if (result?.status) {
         setAutoSaveStatus('saved');
         setLastSavedAt(new Date());
+        // After a CREATE, refresh apiData so the new record's ID is available
+        // for subsequent UPDATE calls in both manual save and autosave
+        if (!currentHasExisting) {
+          apiDataRef.current = result;
+          setApiData(result);
+        }
         hasExistingDataRef.current = true;
         setHasExistingData(true);
       } else {
@@ -316,6 +322,11 @@ export default function PsychologistAnalysis() {
         toastMessage(response.message, 'success');
         setAutoSaveStatus('saved');
         setLastSavedAt(new Date());
+        // After first CREATE, store new record's ID so next save can UPDATE correctly
+        if (!hasExistingData) {
+          setApiData(response);
+          apiDataRef.current = response;
+        }
         setHasExistingData(true);
         router.refresh();
       } else {

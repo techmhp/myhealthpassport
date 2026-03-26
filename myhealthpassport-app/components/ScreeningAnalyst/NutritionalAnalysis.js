@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   nutritionalAnalystRecomendations,
@@ -92,6 +92,13 @@ export default function NutritionalAnalysis() {
   const [medicalOfficerPhysicalScreeningReport, setMedicalOfficerPhysicalScreeningReport] = useState({});
   const [medicalOfficerNutritionalReport, setMedicalOfficerNutritionalReport] = useState({});
   const [medicalOfficerLabReport, setMedicalOfficerLabReport] = useState({});
+  // Autosave state
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const autoSaveIntervalRef = useRef(null);
+  const formDataRef = useRef(null);
+  const hasExistingDataRef = useRef(false);
+  const userInfoRef = useRef(null);
 
   // Function to populate form data from API response
   const populateFormDataFromAPI = apiResponse => {
@@ -197,6 +204,60 @@ export default function NutritionalAnalysis() {
       setLoading(false);
     }
   }, [studentId]);
+
+  // Keep refs in sync with state so the autosave interval can access latest values
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { hasExistingDataRef.current = hasExistingData; }, [hasExistingData]);
+  useEffect(() => { userInfoRef.current = userInfo; }, [userInfo]);
+
+  // Autosave — 30-second interval
+  const autoSave = useCallback(async () => {
+    const currentFormData = formDataRef.current;
+    const currentUserInfo = userInfoRef.current;
+    const currentHasExisting = hasExistingDataRef.current;
+
+    // Don't create blank records when there's no existing data AND no content entered
+    if (!currentHasExisting) {
+      const hasAnyContent = currentFormData?.data?.some(report =>
+        report.report_data?.some(section => section.answers?.length > 0)
+      ) || currentFormData?.clinical_notes?.trim() || currentFormData?.common_summary?.trim();
+      if (!hasAnyContent) return;
+    }
+
+    if (!currentUserInfo) return;
+
+    setAutoSaveStatus('saving');
+    try {
+      const updatedFormData = {
+        ...currentFormData,
+        role_type: currentUserInfo.role_type,
+        role_name: currentUserInfo.user_role,
+      };
+      let result;
+      if (currentHasExisting) {
+        result = await updateNutritionalAnalystRecomendations(JSON.stringify(updatedFormData));
+      } else {
+        result = await createNutritionalAnalystRecomendations(JSON.stringify(updatedFormData));
+      }
+      if (result?.status) {
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+        hasExistingDataRef.current = true;
+        setHasExistingData(true);
+      } else {
+        setAutoSaveStatus('error');
+      }
+    } catch {
+      setAutoSaveStatus('error');
+    }
+  }, []);
+
+  // Start / stop autosave interval once loading is done
+  useEffect(() => {
+    if (loading) return;
+    autoSaveIntervalRef.current = setInterval(autoSave, 30000);
+    return () => clearInterval(autoSaveIntervalRef.current);
+  }, [loading, autoSave]);
 
   const addRemark = (reportIndex, questionIndex) => {
     const remarkKey = `${reportIndex}-${questionIndex}`;
@@ -309,6 +370,9 @@ export default function NutritionalAnalysis() {
       if (result.status) {
         const successMessage = hasExistingData ? 'Data updated successfully' : 'Data created successfully';
         toastMessage(result.message || successMessage, 'success');
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+        setHasExistingData(true);
         router.refresh();
       } else {
         // console.error('Save failed:', result.message);
@@ -544,6 +608,24 @@ export default function NutritionalAnalysis() {
 
   return (
     <div className="w-full pt-[35px] pr-[34px] pb-[60px] pl-[34px] flex flex-col gap-10">
+      {/* Autosave status banner */}
+      {autoSaveStatus === 'saving' && (
+        <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          Auto-saving…
+        </div>
+      )}
+      {autoSaveStatus === 'saved' && lastSavedAt && (
+        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+          <span className="text-green-500">●</span>
+          Auto-saved at {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
+      {autoSaveStatus === 'error' && (
+        <div className="flex items-center gap-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+          <span>⚠</span> Auto-save failed — please save manually
+        </div>
+      )}
       <div className="flex flex-col gap-10">
         {/* Render all report sections */}
         {formData.data.map((reportData, reportIndex) => renderReportSection(reportData, reportIndex))}

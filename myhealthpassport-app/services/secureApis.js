@@ -1,6 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 const BaseURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -28,8 +29,42 @@ class V1SecureApi {
       mode: this.mode,
       cache: 'no-store',
     });
+    if (result.status === 401) {
+      redirect('/login?reason=session_expired');
+    }
     const response = await result.text();
     return response;
+  };
+
+  GetCallBlob = async endpoint => {
+    try {
+      const cookieStore = await cookies();
+      const access_token = cookieStore.get('access_token')?.value;
+      this.headers['Authorization'] = 'Bearer ' + access_token;
+      const endpoint_url = this.url + endpoint;
+      const result = await fetch(endpoint_url, {
+        method: 'GET',
+        headers: this.headers,
+        cache: 'no-store',
+      });
+      if (result.status === 401) {
+        redirect('/login?reason=session_expired');
+      }
+      if (!result.ok) {
+        let message = `HTTP ${result.status}: Request failed`;
+        try {
+          const errorData = await result.json();
+          message = errorData?.detail || errorData?.message || message;
+        } catch {}
+        return { error: true, message };
+      }
+      // Return CSV as plain text so it can be serialised through server action
+      const text = await result.text();
+      const contentDisposition = result.headers.get('content-disposition') || '';
+      return { data: text, contentDisposition, status: result.status };
+    } catch (err) {
+      return { error: true, message: err?.message || 'Unexpected error' };
+    }
   };
 
   FormPostCall = async (endpoint, data) => {
@@ -59,6 +94,9 @@ class V1SecureApi {
       headers: this.headers,
       body: data,
     });
+    if (result.status === 401) {
+      redirect('/login?reason=session_expired');
+    }
     const response = await result.json();
     return response;
   };
@@ -73,6 +111,9 @@ class V1SecureApi {
       headers: this.headers,
       body: data,
     });
+    if (result.status === 401) {
+      redirect('/login?reason=session_expired');
+    }
     const response = await result.json();
     return response;
   };
@@ -1139,4 +1180,38 @@ export const thyrocareLabReports = async payload => {
   const call = new V1SecureApi();
   const response = await call.GetCall(`/thyrocare/student-orders?student_id=${payload.student_id}`);
   return response;
+};
+
+// ─── CSV EXPORT FUNCTIONS ────────────────────────────────────────────────────
+
+export const exportNutritionChecklist = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/nutrition-checklist?${params.toString()}`);
+};
+
+export const exportNutritionAnalysis = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/nutrition-analysis?${params.toString()}`);
+};
+
+export const exportPsychologyAnalysis = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/psychology-analysis?${params.toString()}`);
+};
+
+export const exportSmartScale = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/smart-scale?${params.toString()}`);
 };

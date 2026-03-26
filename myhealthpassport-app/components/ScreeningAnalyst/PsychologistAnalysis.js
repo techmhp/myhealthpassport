@@ -71,7 +71,9 @@ export default function PsychologistAnalysis() {
     return {
       goodStrengthsData: analysisData.good_strengths_data || [],
       needAttentionData: analysisData.need_attention_data || [],
-      clinicalNotes: analysisData.clinical_notes_recommendations || '',
+      clinicalNotes: Array.isArray(analysisData.clinical_notes_recommendations)
+        ? analysisData.clinical_notes_recommendations
+        : [],
       summary: analysisData.summary || '',
       status: analysisData.status || '',
     };
@@ -243,11 +245,10 @@ export default function PsychologistAnalysis() {
 
   const addRecomandations = () => {
     if (newRecomandationsValue.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.clinicalNotes.push(newRecomandationsValue.trim());
-      setFormData(updatedFormData);
-
-      // Clear the input
+      setFormData(prev => ({
+        ...prev,
+        clinicalNotes: [...(Array.isArray(prev.clinicalNotes) ? prev.clinicalNotes : []), newRecomandationsValue.trim()],
+      }));
       setNewRecomandationsValue('');
     }
   };
@@ -272,12 +273,13 @@ export default function PsychologistAnalysis() {
 
   const saveEditRecomandations = answerIndex => {
     if (editRecomandationsValue.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.clinicalNotes[answerIndex] = editRecomandationsValue.trim();
-      setFormData(updatedFormData);
+      setFormData(prev => ({
+        ...prev,
+        clinicalNotes: prev.clinicalNotes.map((note, i) =>
+          i === answerIndex ? editRecomandationsValue.trim() : note
+        ),
+      }));
     }
-
-    // Clear edit state
     setEditingRecomandations(null);
     setEditRecomandationsValue('');
   };

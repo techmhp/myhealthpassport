@@ -264,22 +264,41 @@ export default function NutritionalAnalysis() {
     const remarkText = newRemarks[remarkKey];
 
     if (remarkText && remarkText.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.data[reportIndex].report_data[questionIndex].answers.push(remarkText.trim());
-      setFormData(updatedFormData);
-
-      // Clear the input
-      setNewRemarks({
-        ...newRemarks,
-        [remarkKey]: '',
-      });
+      setFormData(prev => ({
+        ...prev,
+        data: prev.data.map((report, rIdx) =>
+          rIdx === reportIndex
+            ? {
+                ...report,
+                report_data: report.report_data.map((question, qIdx) =>
+                  qIdx === questionIndex
+                    ? { ...question, answers: [...question.answers, remarkText.trim()] }
+                    : question
+                ),
+              }
+            : report
+        ),
+      }));
+      setNewRemarks(prev => ({ ...prev, [remarkKey]: '' }));
     }
   };
 
   const removeRemark = (reportIndex, questionIndex, answerIndex) => {
-    const updatedFormData = { ...formData };
-    updatedFormData.data[reportIndex].report_data[questionIndex].answers.splice(answerIndex, 1);
-    setFormData(updatedFormData);
+    setFormData(prev => ({
+      ...prev,
+      data: prev.data.map((report, rIdx) =>
+        rIdx === reportIndex
+          ? {
+              ...report,
+              report_data: report.report_data.map((question, qIdx) =>
+                qIdx === questionIndex
+                  ? { ...question, answers: question.answers.filter((_, i) => i !== answerIndex) }
+                  : question
+              ),
+            }
+          : report
+      ),
+    }));
   };
 
   const startEditRemark = (reportIndex, questionIndex, answerIndex, currentValue) => {
@@ -290,12 +309,27 @@ export default function NutritionalAnalysis() {
 
   const saveEditRemark = (reportIndex, questionIndex, answerIndex) => {
     if (editRemarkValue.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.data[reportIndex].report_data[questionIndex].answers[answerIndex] = editRemarkValue.trim();
-      setFormData(updatedFormData);
+      setFormData(prev => ({
+        ...prev,
+        data: prev.data.map((report, rIdx) =>
+          rIdx === reportIndex
+            ? {
+                ...report,
+                report_data: report.report_data.map((question, qIdx) =>
+                  qIdx === questionIndex
+                    ? {
+                        ...question,
+                        answers: question.answers.map((ans, aIdx) =>
+                          aIdx === answerIndex ? editRemarkValue.trim() : ans
+                        ),
+                      }
+                    : question
+                ),
+              }
+            : report
+        ),
+      }));
     }
-
-    // Clear edit state
     setEditingRemark(null);
     setEditRemarkValue('');
   };

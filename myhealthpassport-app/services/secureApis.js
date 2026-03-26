@@ -1215,3 +1215,11 @@ export const exportSmartScale = async (schoolId, className, section) => {
   if (section) params.append('section', section);
   return await call.GetCallBlob(`/screening/export/smart-scale?${params.toString()}`);
 };
+
+export const exportPsychologyChecklist = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/psychology-checklist?${params.toString()}`);
+};

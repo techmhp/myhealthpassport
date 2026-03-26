@@ -12,6 +12,7 @@ import {
   exportNutritionChecklist,
   exportNutritionAnalysis,
   exportPsychologyAnalysis,
+  exportPsychologyChecklist,
   exportSmartScale,
 } from '@/services/secureApis';
 import { formatFullName, toastMessage } from '@/helpers/utilities';
@@ -23,6 +24,7 @@ import InlineSpinner from '@/components/UI/InlineSpinner';
 const EXPORT_MODULES = [
   { key: 'nutrition-checklist', label: 'Nutrition Checklist' },
   { key: 'nutrition-analysis', label: 'Nutrition Analysis' },
+  { key: 'psychology-checklist', label: 'Psychology Checklist' },
   { key: 'psychology-analysis', label: 'Psychology Analysis' },
   { key: 'smart-scale', label: 'Smart Scale Report' },
 ];
@@ -109,6 +111,7 @@ const ClassView = () => {
       let res;
       if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, classRoom, section);
       else if (moduleKey === 'nutrition-analysis') res = await exportNutritionAnalysis(schoolid, classRoom, section);
+      else if (moduleKey === 'psychology-checklist') res = await exportPsychologyChecklist(schoolid, classRoom, section);
       else if (moduleKey === 'psychology-analysis') res = await exportPsychologyAnalysis(schoolid, classRoom, section);
       else if (moduleKey === 'smart-scale') res = await exportSmartScale(schoolid, classRoom, section);
 

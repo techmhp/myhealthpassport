@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from src.core.manager import get_current_user
 from src.models.student_models import Students, SmartScaleData
-from src.models.screening_models import NutritionScreening
+from src.models.screening_models import NutritionScreening, BehaviouralScreening
 from src.models.other_models import ClinicalRecomendations, ClinicalFindings
 from . import router
 
@@ -370,6 +370,128 @@ async def export_smart_scale(
         ])
 
     filename = f"smart-scale_{_filename_suffix(class_name, section)}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. Psychology Screening Checklist
+# ─────────────────────────────────────────────────────────────────────────────
+_BS_CATEGORIES = [
+    ("socialisation",      "Socialisation"),
+    ("communication",      "Communication"),
+    ("play_behaviour",     "Play Behaviour"),
+    ("interaction",        "Interaction"),
+    ("anxiety_withdrawal", "Anxiety/Withdrawal"),
+    ("problem_behaviour",  "Problem Behaviour"),
+]
+
+_BS_RECOMMENDATIONS = [
+    ("no_immediate_concern",    "No Immediate Concern"),
+    ("continue_observation",    "Continue Observation"),
+    ("discuss_with_teacher",    "Discuss with Teacher"),
+    ("schedule_parent_meeting", "Parent Meeting"),
+    ("refer_for_counselling",   "Refer for Counselling"),
+    ("recommend_evaluation",    "Recommend Evaluation"),
+]
+
+
+def _bs_flag(mapping, key) -> str:
+    """Return 'Yes'/'No'/'' from a JSON dict (may be str or dict)."""
+    if not mapping:
+        return ""
+    if isinstance(mapping, str):
+        try:
+            mapping = json.loads(mapping)
+        except Exception:
+            return ""
+    val = mapping.get(key)
+    if val is True:
+        return "Yes"
+    if val is False:
+        return "No"
+    return str(val) if val is not None else ""
+
+
+def _bs_items(category_data) -> str:
+    """Flatten a category JSON dict into 'Item: Yes/No; ...' string."""
+    if not category_data:
+        return ""
+    if isinstance(category_data, str):
+        try:
+            category_data = json.loads(category_data)
+        except Exception:
+            return ""
+    parts = []
+    for item, val in category_data.items():
+        answer = "Yes" if val is True else ("No" if val is False else str(val))
+        parts.append(f"{item}: {answer}")
+    return "; ".join(parts)
+
+
+@router.get("/export/psychology-checklist")
+async def export_psychology_checklist(
+    school_id: int = Query(...),
+    class_name: Optional[str] = Query(None),
+    section: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    students = await _get_students(school_id, class_name, section)
+    student_ids = [s.id for s in students]
+
+    screenings = (
+        await BehaviouralScreening.filter(student_id__in=student_ids, is_deleted=False)
+        .order_by("-created_at")
+        .all()
+    )
+    # keep most-recent entry per student
+    seen: set = set()
+    screening_map: dict = {}
+    for bs in screenings:
+        if bs.student_id not in seen:
+            screening_map[bs.student_id] = bs
+            seen.add(bs.student_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    headers = ["Roll No", "Name", "Gender", "Class", "Section"]
+    for _, cat_label in _BS_CATEGORIES:
+        headers.append(f"{cat_label} - Concern")
+        headers.append(f"{cat_label} - Checklist Items")
+    for _, rec_label in _BS_RECOMMENDATIONS:
+        headers.append(rec_label)
+    headers += ["Gross Motor Skills", "Notes", "Next Followup", "Screening Status", "Saved At"]
+    writer.writerow(headers)
+
+    for student in students:
+        bs = screening_map.get(student.id)
+        row = [
+            student.roll_no,
+            _make_student_name(student),
+            student.gender,
+            student.class_room,
+            student.section,
+        ]
+        for cat_key, _ in _BS_CATEGORIES:
+            cat_data = getattr(bs, cat_key, None) if bs else None
+            row.append(_bs_flag(bs.summary_concerns if bs else None, cat_key))
+            row.append(_bs_items(cat_data))
+        for rec_key, _ in _BS_RECOMMENDATIONS:
+            row.append(_bs_flag(bs.recommendations if bs else None, rec_key))
+        row += [
+            bs.gross_motor_skills if bs else "",
+            bs.note if bs else "",
+            bs.next_followup if bs else "",
+            "Complete" if (bs and bs.screening_status) else "Incomplete",
+            bs.created_at.strftime("%Y-%m-%d %H:%M") if bs else "",
+        ]
+        writer.writerow(row)
+
+    filename = f"psychology-checklist_{_filename_suffix(class_name, section)}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv; charset=utf-8",

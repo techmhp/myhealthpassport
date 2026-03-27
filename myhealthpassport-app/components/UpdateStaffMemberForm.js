@@ -595,7 +595,7 @@ export default function UpdateStaffMemberForm({ profile }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-[5px] cursor-pointer bg-[#5465FF] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-[#4054E6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5465FF] transition-colors"
+                  className="rounded-[5px] cursor-pointer bg-[#5465FF] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-[#4054E6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5465FF] transition-colors whitespace-nowrap"
                 >
                   {isSubmitting ? 'Submitting...' : 'Save Changes'}
                 </button>

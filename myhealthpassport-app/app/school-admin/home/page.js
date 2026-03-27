@@ -41,7 +41,7 @@ export default function Home() {
           </div>
           <div className="flex gap-5">
             <Link href={'/school-admin/teachers'}>
-              <div className="flex gap-[10px] px-[20px] py-[10px] rounded-[5px] border border-[#5465FF] items-center justify-center">
+              <div className="flex gap-[10px] px-[20px] py-[10px] rounded-[5px] border border-[#5465FF] items-center justify-center whitespace-nowrap">
                 <span className="font-normal text-[14px] leading-[100%] tracking-[0%] text-center">View Teachers Status</span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#000000" className="size-5">
                   <path
@@ -53,7 +53,7 @@ export default function Home() {
               </div>
             </Link>
             <Link href={'/school-admin/students'}>
-              <div className="flex gap-[10px] px-[20px] py-[10px] rounded-[5px] bg-[#5465FF] items-center">
+              <div className="flex gap-[10px] px-[20px] py-[10px] rounded-[5px] bg-[#5465FF] items-center whitespace-nowrap">
                 <span className="font-normal text-[14px] leading-[100%] tracking-[0%] text-center text-white">View Students</span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#FFFFFF" className="size-5">
                   <path

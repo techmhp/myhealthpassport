@@ -1546,7 +1546,7 @@ const labTests = () => {
             {/* button */}
             <div className="flex justify-end mt-3 sm:mt-4 md:mt-[22px]">
               <button
-                className="rounded-[5px] py-2 sm:pt-[10px] sm:pb-[10px] px-4 sm:pr-[20px] sm:pl-[20px] bg-[#5465FF] text-white flex items-center gap-2"
+                className="rounded-[5px] py-2 sm:pt-[10px] sm:pb-[10px] px-4 sm:pr-[20px] sm:pl-[20px] bg-[#5465FF] text-white flex items-center gap-2 whitespace-nowrap"
                 onClick={handleBookLabTest}
               >
                 <span className="text-xs sm:text-sm font-normal">Book Test</span>

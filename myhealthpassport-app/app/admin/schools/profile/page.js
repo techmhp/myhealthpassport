@@ -59,7 +59,7 @@
 //                 </div>
 //               </div>
 //               <Link href="/admin/schools/1" legacyBehavior>
-//                 <button className="rounded-[5px] pt-[10px] pr-[20px] pb-[10px] pl-[20px] bg-[#5465FF] text-[#FFFFFF]">
+//                 <button className="rounded-[5px] pt-[10px] pr-[20px] pb-[10px] pl-[20px] bg-[#5465FF] text-[#FFFFFF] whitespace-nowrap">
 //                   <span className="font-normal text-sm leading-[14px] tracking-normal">View Student List</span>
 //                 </button>
 //               </Link>

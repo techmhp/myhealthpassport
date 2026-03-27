@@ -575,7 +575,7 @@ export default function ProgramCoordinatorForm() {
 
               <div className="mt-[50px] mb-[50px] flex justify-center items-center gap-5">
                 <button type="button" onClick={() => router.back()} className="font-normal cursor-pointer py-2 px-5 border border-[#5465FF] rounded-[5px] whitespace-nowrap" > Close </button>
-                <button type="submit" disabled={isSubmitting} className="rounded-[5px] cursor-pointer bg-[#5465FF] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-[#4054E6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5465FF] transition-colors" >
+                <button type="submit" disabled={isSubmitting} className="rounded-[5px] cursor-pointer bg-[#5465FF] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-[#4054E6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5465FF] transition-colors whitespace-nowrap" >
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>

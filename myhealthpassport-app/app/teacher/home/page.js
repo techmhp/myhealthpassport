@@ -85,7 +85,7 @@ export default function Home() {
               </div>
             </div>
             <Link href={'/teacher/students'}>
-              <div className="flex gap-[10px] px-[20px] py-[10px] rounded-[5px] bg-[#5465FF] items-center justify-center">
+              <div className="flex gap-[10px] px-[20px] py-[10px] rounded-[5px] bg-[#5465FF] items-center justify-center whitespace-nowrap">
                 <div className="font-normal text-[14px] leading-[100%] tracking-[0%] text-white">Fill Questionnaries</div>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#FFFFFF" className="size-5">
                   <path

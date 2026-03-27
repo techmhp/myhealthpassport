@@ -124,7 +124,7 @@ const Students = () => {
               disabled={isSubmitting}
               onClick={() => completeEvent()}
               onSubmit={() => setIsSubmitting(false)}
-              className="rounded-[5px] cursor-pointer bg-indigo-500 w-[135px] h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-[5px] cursor-pointer bg-indigo-500 h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {isSubmitting ? 'Submitting...' : 'Verify & Save'}
             </button>

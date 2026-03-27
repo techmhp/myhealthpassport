@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import {
   psychologicalAnalystRecomendations,
@@ -26,6 +26,14 @@ export default function PsychologistAnalysis() {
   });
 
   const [medicalOfficerPsychologicalReport, setMedicalOfficerPsychologicalReport] = useState({});
+  // Autosave state
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const autoSaveIntervalRef = useRef(null);
+  const formDataRef = useRef(null);
+  const hasExistingDataRef = useRef(false);
+  const userInfoRef = useRef(null);
+  const apiDataRef = useRef(null);
   const [newRecomandationsValue, setNewRecomandationsValue] = useState('');
   const [editingRecomandations, setEditingRecomandations] = useState(null);
   const [editRecomandationsValue, setEditRecomandationsValue] = useState('');
@@ -63,7 +71,9 @@ export default function PsychologistAnalysis() {
     return {
       goodStrengthsData: analysisData.good_strengths_data || [],
       needAttentionData: analysisData.need_attention_data || [],
-      clinicalNotes: analysisData.clinical_notes_recommendations || '',
+      clinicalNotes: Array.isArray(analysisData.clinical_notes_recommendations)
+        ? analysisData.clinical_notes_recommendations
+        : [],
       summary: analysisData.summary || '',
       status: analysisData.status || '',
     };
@@ -93,6 +103,82 @@ export default function PsychologistAnalysis() {
       setLoading(false);
     }
   };
+
+  // Keep refs in sync so autosave interval reads latest state
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { hasExistingDataRef.current = hasExistingData; }, [hasExistingData]);
+  useEffect(() => { userInfoRef.current = userInfo; }, [userInfo]);
+  useEffect(() => { apiDataRef.current = apiData; }, [apiData]);
+
+  // Autosave — 30-second interval
+  const autoSave = useCallback(async () => {
+    const currentFormData = formDataRef.current;
+    const currentUserInfo = userInfoRef.current;
+    const currentHasExisting = hasExistingDataRef.current;
+    const currentApiData = apiDataRef.current;
+
+    if (!currentUserInfo) return;
+
+    // Skip blank saves when no data exists yet
+    if (!currentHasExisting) {
+      const hasContent =
+        currentFormData?.goodStrengthsData?.length > 0 ||
+        currentFormData?.needAttentionData?.length > 0 ||
+        currentFormData?.clinicalNotes?.length > 0 ||
+        currentFormData?.summary?.trim();
+      if (!hasContent) return;
+    }
+
+    setAutoSaveStatus('saving');
+    try {
+      const requestData = {
+        student_id: parseInt(studentId),
+        role_type: currentUserInfo?.role_type || 'psychologist',
+        role_name: currentUserInfo?.role_name || '',
+        data: [
+          {
+            ...(currentHasExisting && currentApiData?.data?.data?.[0]?.id
+              ? { id: currentApiData.data.data[0].id }
+              : {}),
+            good_strengths_data: currentFormData.goodStrengthsData,
+            need_attention_data: currentFormData.needAttentionData,
+            clinical_notes_recommendations: currentFormData.clinicalNotes,
+            summary: currentFormData.summary,
+            status: currentFormData.status || 'all_good',
+          },
+        ],
+      };
+      let result;
+      if (currentHasExisting) {
+        result = await updatePsychologicalAnalystRecomendations(JSON.stringify(requestData));
+      } else {
+        result = await createPsychologicalAnalystRecomendations(JSON.stringify(requestData));
+      }
+      if (result?.status) {
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+        // After a CREATE, refresh apiData so the new record's ID is available
+        // for subsequent UPDATE calls in both manual save and autosave
+        if (!currentHasExisting) {
+          apiDataRef.current = result;
+          setApiData(result);
+        }
+        hasExistingDataRef.current = true;
+        setHasExistingData(true);
+      } else {
+        setAutoSaveStatus('error');
+      }
+    } catch {
+      setAutoSaveStatus('error');
+    }
+  }, [studentId]);
+
+  // Start / stop autosave interval once loading is done
+  useEffect(() => {
+    if (loading) return;
+    autoSaveIntervalRef.current = setInterval(autoSave, 30000);
+    return () => clearInterval(autoSaveIntervalRef.current);
+  }, [loading, autoSave]);
 
   useEffect(() => {
     if (localStorage.getItem('user_info')) {
@@ -165,11 +251,10 @@ export default function PsychologistAnalysis() {
 
   const addRecomandations = () => {
     if (newRecomandationsValue.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.clinicalNotes.push(newRecomandationsValue.trim());
-      setFormData(updatedFormData);
-
-      // Clear the input
+      setFormData(prev => ({
+        ...prev,
+        clinicalNotes: [...(Array.isArray(prev.clinicalNotes) ? prev.clinicalNotes : []), newRecomandationsValue.trim()],
+      }));
       setNewRecomandationsValue('');
     }
   };
@@ -194,12 +279,13 @@ export default function PsychologistAnalysis() {
 
   const saveEditRecomandations = answerIndex => {
     if (editRecomandationsValue.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.clinicalNotes[answerIndex] = editRecomandationsValue.trim();
-      setFormData(updatedFormData);
+      setFormData(prev => ({
+        ...prev,
+        clinicalNotes: prev.clinicalNotes.map((note, i) =>
+          i === answerIndex ? editRecomandationsValue.trim() : note
+        ),
+      }));
     }
-
-    // Clear edit state
     setEditingRecomandations(null);
     setEditRecomandationsValue('');
   };
@@ -234,6 +320,14 @@ export default function PsychologistAnalysis() {
 
       if (response.status) {
         toastMessage(response.message, 'success');
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+        // After first CREATE, store new record's ID so next save can UPDATE correctly
+        if (!hasExistingData) {
+          setApiData(response);
+          apiDataRef.current = response;
+        }
+        setHasExistingData(true);
         router.refresh();
       } else {
         toastMessage(response.message || 'Operation failed', 'error');
@@ -297,6 +391,24 @@ export default function PsychologistAnalysis() {
 
   return (
     <div className="w-full pt-[35px] pr-[34px] pb-[60px] pl-[34px] flex flex-col gap-10">
+      {/* Autosave status banner */}
+      {autoSaveStatus === 'saving' && (
+        <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          Auto-saving…
+        </div>
+      )}
+      {autoSaveStatus === 'saved' && lastSavedAt && (
+        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+          <span className="text-green-500">●</span>
+          Auto-saved at {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
+      {autoSaveStatus === 'error' && (
+        <div className="flex items-center gap-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+          <span>⚠</span> Auto-save failed — please save manually
+        </div>
+      )}
       {medicalOfficerPsychologicalReport?.remarks && (
         <div className="w-full space-y-5 sm:space-y-7.5 pl-5 py-5 bg-[#FFF3E5] rounded-[8px]">
           <div className="flex gap-5">

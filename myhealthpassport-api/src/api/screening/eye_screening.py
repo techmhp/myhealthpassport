@@ -50,10 +50,13 @@ async def create_eye_screening(request: EyeScreeningRequest, current_user=Depend
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_404_NOT_FOUND)
 
-    # Validate screening user
+    # Validate screening user - fall back to current user if provided ID not found
     screening_user = await ScreeningTeam.get_or_none(id=request.screening_user_id)
     if not screening_user:
-        logger.warning(f"Screening user with ID {request.screening_user_id} not found")
+        logger.warning(f"Screening user with ID {request.screening_user_id} not found, falling back to current user")
+        screening_user = await ScreeningTeam.get_or_none(id=current_user["user_id"])
+    if not screening_user:
+        logger.warning(f"Current user ID {current_user['user_id']} not found in ScreeningTeam")
         resp = StandardResponse(
             status=False,
             message="Screening user not found",
@@ -345,7 +348,10 @@ async def update_eye_screening(es_id: int, request: EyeScreeningRequest, current
 
         screening_user = await ScreeningTeam.get_or_none(id=request.screening_user_id)
         if not screening_user:
-            logger.warning(f"Screening user with ID {request.screening_user_id} not found")
+            logger.warning(f"Screening user with ID {request.screening_user_id} not found, falling back to current user")
+            screening_user = await ScreeningTeam.get_or_none(id=current_user["user_id"])
+        if not screening_user:
+            logger.warning(f"Current user ID {current_user['user_id']} not found in ScreeningTeam")
             resp = StandardResponse(
                 status=False,
                 message="Screening user not found",

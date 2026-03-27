@@ -12,3 +12,4 @@ from . import clinical_recomendations_psychological_analyst
 from . import summary
 from . import full_status
 from . import medical_officer_status
+from . import exports

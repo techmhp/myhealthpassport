@@ -93,6 +93,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'myhealth-passport.s3.ap-south-1.amazonaws.com',
+      },
+      {
+        protocol: 'https',
         hostname: 'placeholder.s3.amazonaws.com',
       },
       {

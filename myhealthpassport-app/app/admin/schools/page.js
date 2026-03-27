@@ -8,6 +8,21 @@ import PlusButton from '@/components/UI/PlusButton';
 import { schoolList } from '@/services/secureApis';
 import { toastMessage, isValidUrl } from '@/helpers/utilities';
 
+// Isolated component so each card has its own imgFailed state
+const SchoolLogo = ({ src }) => {
+  const [imgFailed, setImgFailed] = useState(false);
+  return (
+    <Image
+      src={!imgFailed && isValidUrl(src) ? src : '/iconx/school.svg'}
+      alt="school logo"
+      width={90}
+      height={90}
+      className="w-[90px] h-[90px]"
+      onError={() => setImgFailed(true)}
+    />
+  );
+};
+
 const SchoolsGrid = () => {
   const [schools, setSchools] = useState([]);
   const [totalSchools, setTotalSchools] = useState(0);
@@ -119,13 +134,7 @@ const SchoolsGrid = () => {
               <Link key={index} href={`/admin/schools/${school.school_id}`}>
                 <div className="flex gap-[15px] cursor-pointer rounded-[10px] border border-[#DCDCDC] p-[15px] items-center">
                   <div className="flex items-center justify-center rounded-[10px] bg-[#F3F7FA] w-[100px] h-[90px]">
-                    <Image
-                      src={isValidUrl(school.school_logo) ? school.school_logo : '/iconx/school.svg'}
-                      alt="school logo"
-                      width={90}
-                      height={90}
-                      className="w-[90px] h-[90px]"
-                    />
+                    <SchoolLogo src={school.school_logo} />
                   </div>
                   <div className="flex-1 flex flex-col gap-4 items-start">
                     <h3 className="font-semibold text-[14px] leading-[100%] tracking-[0]">

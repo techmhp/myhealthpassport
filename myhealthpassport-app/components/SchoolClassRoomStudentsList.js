@@ -10,7 +10,7 @@ import { toastMessage, formatFullName, renderStatusIcon, renderMedicalOfficerSta
 import ConfirmModal from './UI/ConfirmModal';
 import { updateOverallScreeningStatus, updatePaymentStatus } from '@/services/secureApis';
 
-const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentClick = null }) => {
+const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentClick = null, stickyHeader = false }) => {
   console.log('students', students);
   const router = useRouter();
   const cookies = nookies.get();
@@ -269,7 +269,7 @@ const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentC
 
   return (
     <div className="w-full flex flex-col gap-8">
-      <div className="w-full overflow-x-auto">
+      <div className={`w-full overflow-x-auto${stickyHeader ? ' overflow-y-auto max-h-[560px]' : ''}`}>
         {Object.keys(students).length > 0 ? (
           <table
             className="w-full border border-solid border-[#B5CCFF] rounded"
@@ -279,7 +279,7 @@ const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentC
               borderRadius: '4px',
             }}
           >
-            <thead>
+            <thead className={stickyHeader ? 'sticky top-0 z-10' : ''}>
               <tr className="bg-[#ECF2FF]">
                 {columns.map((column, index) => (
                   <th

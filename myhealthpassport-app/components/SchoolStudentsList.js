@@ -337,7 +337,7 @@ const SchoolStudentsList = ({ school, page = null, onStudentClick = null }) => {
           <div className="text-gray-500">{searchQuery ? `No students found matching "${searchQuery}"` : 'No students found for this section.'}</div>
         </div>
       ) : (
-        <div className="w-full overflow-x-auto">
+        <div className="w-full overflow-x-auto overflow-y-auto max-h-[600px]">
           {Object.keys(filteredStudents).length > 0 ? (
             <table
               className="w-full border border-solid border-[#B5CCFF] rounded"
@@ -347,7 +347,7 @@ const SchoolStudentsList = ({ school, page = null, onStudentClick = null }) => {
                 borderRadius: '4px',
               }}
             >
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-[#ECF2FF]">
                   {columns.map((column, index) => (
                     <th

@@ -1,3 +1,5 @@
+import json as _json
+
 from fastapi import Depends, APIRouter, status
 from fastapi.responses import JSONResponse
 from src.utils.response import StandardResponse
@@ -7,6 +9,33 @@ from datetime import datetime, timezone, timedelta
 from typing import Any
 from src.models.student_models import Students
 from src.models.user_models import AnalystTeam, AnalystRoles, Parents,ParentRoles, SchoolStaff,SchoolRoles,ConsultantRoles, ConsultantTeam
+
+
+def _parse_clinical_notes(value) -> list:
+    """Parse clinical_notes_recommendations field.
+    New format: JSON array string  e.g. '["note 1", "note 2"]'
+    Legacy format: comma-separated  e.g. 'note 1,note 2'
+    Both are handled transparently.
+    """
+    if not value:
+        return []
+    try:
+        parsed = _json.loads(value)
+        if isinstance(parsed, list):
+            return parsed
+    except (ValueError, TypeError):
+        pass
+    # Legacy fallback — comma-separated (existing records in DB)
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _serialise_clinical_notes(notes) -> str:
+    """Serialise a list of recommendation strings to JSON for DB storage."""
+    if not notes:
+        return ""
+    if isinstance(notes, list):
+        return _json.dumps(notes, ensure_ascii=False)
+    return str(notes)
 
 from tortoise.transactions import in_transaction
 from . import router
@@ -197,7 +226,7 @@ async def get_current_user(user: dict = Depends(get_current_user)):
 #                     "need_attention_data": record.need_attention_data,
 #                     # "strengths": record.strengths.split(",") if record.strengths else [],
 #                     # "need_attention": record.need_attention.split(",") if record.need_attention else [],
-#                     "clinical_notes_recommendations": record.clinical_notes_recommendations.split(",") if record.clinical_notes_recommendations else [],
+#                     "clinical_notes_recommendations": _parse_clinical_notes(record.clinical_notes_recommendations),
 #                     "summary": record.summary,
 #                     "status": record.status,
 #                     "role_type": record.role_type,
@@ -303,7 +332,7 @@ async def get_clinical_findings(
                     "id": record.id,
                     "good_strengths_data": record.findings_data,  # Map findings_data to good_strengths_data
                     "need_attention_data": record.need_attention_data,
-                    "clinical_notes_recommendations": record.clinical_notes_recommendations.split(",") if record.clinical_notes_recommendations else [],
+                    "clinical_notes_recommendations": _parse_clinical_notes(record.clinical_notes_recommendations),
                     "summary": record.summary,
                     "status": record.status,
                     "role_type": record.role_type,
@@ -468,7 +497,7 @@ async def create_clinical_findings(create_data: dict, current_analyst: Any = Dep
                     "updated_at": datetime.now(timezone(timedelta(hours=5, minutes=30))),
                     "findings_data": good_strengths_data,
                     "need_attention_data": need_attention_data,
-                    "clinical_notes_recommendations": ",".join(report_data.get("clinical_notes_recommendations", [])) if report_data.get("clinical_notes_recommendations") else "",
+                    "clinical_notes_recommendations": _serialise_clinical_notes(report_data.get("clinical_notes_recommendations", [])),
                     "summary": report_data.get("summary", ""),
                     "status": report_data.get("status", ""),
                     "created_by": current_analyst.id,
@@ -497,7 +526,7 @@ async def create_clinical_findings(create_data: dict, current_analyst: Any = Dep
                     "id": record.id,
                     "good_strengths_data": record.findings_data,
                     "need_attention_data": record.need_attention_data,
-                    "clinical_notes_recommendations": record.clinical_notes_recommendations.split(",") if record.clinical_notes_recommendations else [],
+                    "clinical_notes_recommendations": _parse_clinical_notes(record.clinical_notes_recommendations),
                     "summary": record.summary,
                     "status": record.status,
                     "role_type": record.role_type,
@@ -637,7 +666,7 @@ async def update_clinical_findings(update_data: dict, current_analyst: Any = Dep
                     "role_name": update_data.get("role_name", existing_record.role_name) or current_analyst.user_role,
                     "findings_data": good_strengths_data,
                     "need_attention_data": need_attention_data,
-                    "clinical_notes_recommendations": ",".join(report.get("clinical_notes_recommendations", [])) if report.get("clinical_notes_recommendations") else "",
+                    "clinical_notes_recommendations": _serialise_clinical_notes(report.get("clinical_notes_recommendations", [])),
                     "summary": report.get("summary", ""),
                     "status": report.get("status", ""),
                     "updated_at": datetime.now(timezone(timedelta(hours=5, minutes=30))),
@@ -669,7 +698,7 @@ async def update_clinical_findings(update_data: dict, current_analyst: Any = Dep
                     "id": record.id,
                     "good_strengths_data": record.findings_data,
                     "need_attention_data": record.need_attention_data,
-                    "clinical_notes_recommendations": record.clinical_notes_recommendations.split(",") if record.clinical_notes_recommendations else [],
+                    "clinical_notes_recommendations": _parse_clinical_notes(record.clinical_notes_recommendations),
                     "summary": record.summary,
                     "status": record.status,
                     "role_type": record.role_type,

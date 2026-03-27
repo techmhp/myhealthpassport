@@ -147,7 +147,7 @@ const AppointmentDetails = ({ appointments, children = [] }) => {
                         <div className="flex justify-center w-full">
                           <button
                             onClick={() => handleReschedule(appointment)}
-                            className="w-full px-[20px] py-[10px] rounded-[5px] border border-[#5465FF] text-[#5465FF] font-normal text-center hover:bg-[#5465FF] hover:text-white transition-colors"
+                            className="w-full px-[20px] py-[10px] rounded-[5px] border border-[#5465FF] text-[#5465FF] font-normal text-center hover:bg-[#5465FF] hover:text-white transition-colors whitespace-nowrap"
                           >
                             Reschedule Appointment
                           </button>
@@ -159,7 +159,7 @@ const AppointmentDetails = ({ appointments, children = [] }) => {
 
                       <Link
                         href={`/health-buddy/roster/${schoolid}/student/${studentId}/book-appointment/experts`}
-                        className="rounded-[5px] bg-indigo-500 w-full h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white text-center shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        className="rounded-[5px] bg-indigo-500 w-full h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white text-center shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
                         disabled={true}
                       >
                         Book New Appointment

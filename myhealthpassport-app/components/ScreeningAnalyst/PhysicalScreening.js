@@ -106,14 +106,14 @@ const PhysicalScreening = () => {
             <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileChange} />
             <label
               htmlFor="fileInput"
-              className="cursor-pointer rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              className="cursor-pointer rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
             >
               <span className="font-medium leading-6">{file ? file.name : 'Upload File (.xlsx, .csv)'}</span>
             </label>
           </div>
           {/* <button
             type="button"
-            className="rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+            className="rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
             disabled={true}
           >
             Upload PDF
@@ -548,7 +548,7 @@ const PhysicalScreening = () => {
           <button
             type="submit"
             onClick={SmartScaleDataConfirm}
-            className="rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+            className="rounded-[5px] bg-indigo-500  h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
           >
             Save Changes
           </button>

@@ -20,23 +20,26 @@ AWS_USE_PRESIGNED = os.getenv("AWS_USE_PRESIGNED", "false").lower() == "true"
 
 DEFAULT_FOLDER = "uploads/general"
 
-if not all([AWS_S3_BUCKET_NAME, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]):
-    import warnings
-    warnings.warn("Missing AWS credentials or config. S3 file operations will not work.")
-    AWS_S3_BUCKET_NAME = AWS_S3_BUCKET_NAME or "placeholder"
-    AWS_REGION = AWS_REGION or "ap-south-1"
-    AWS_ACCESS_KEY_ID = AWS_ACCESS_KEY_ID or "placeholder"
-    AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY or "placeholder"
+APP_ENV = os.getenv("APP_ENV", "development")
+
+# Only require AWS credentials for production environment
+if APP_ENV == "production":
+    if not all([AWS_S3_BUCKET_NAME, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]):
+        raise EnvironmentError("Missing AWS credentials or config.")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-s3_client = boto3.client(
-    "s3",
-    region_name=AWS_REGION,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-)
+# Initialize S3 client only if AWS credentials are available
+if all([AWS_S3_BUCKET_NAME, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]):
+    s3_client = boto3.client(
+        "s3",
+        region_name=AWS_REGION,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
+else:
+    s3_client = None  # S3 not configured (e.g., UAT environment)
 
 ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"]
 ALLOWED_MIME_TYPES = {
@@ -52,6 +55,9 @@ def generate_s3_url(s3_key: str) -> str:
 
 def generate_presigned_url(s3_key: str, expires_in: int = 3600) -> Optional[str]:
     """Generate a presigned URL to access a private S3 object."""
+    if s3_client is None:
+        logger.warning("S3 client not initialized (missing credentials). Cannot generate presigned URL.")
+        return None
     try:
         url = s3_client.generate_presigned_url(
             "get_object",

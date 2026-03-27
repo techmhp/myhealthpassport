@@ -302,7 +302,8 @@ async def update_nutrition_screening(student_id: int, payload: dict, current_use
         )
         return JSONResponse(content=response_obj.__dict__, status_code=status.HTTP_404_NOT_FOUND)  # Fix status here too
 
-    nutrition_screening = await NutritionScreening.get_or_none(student_id=student_id)
+    year_filter = build_academic_year_filter(get_current_academic_year())
+    nutrition_screening = await NutritionScreening.filter(year_filter, student_id=student_id).first()
 
     doctor_id = payload.get("doctor_id")
     doctor = None

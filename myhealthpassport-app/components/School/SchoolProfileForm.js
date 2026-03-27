@@ -101,7 +101,7 @@ export default function SchoolProfileForm() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    // setIsSubmitting(true);
+    setIsSubmitting(true);
     const newErrors = {};
     let hasErrors = false;
 
@@ -116,11 +116,13 @@ export default function SchoolProfileForm() {
     setErrors(newErrors);
     if (hasErrors) {
       toastMessage('Please fill in all required fields correctly', 'error');
+      setIsSubmitting(false);
       return;
     }
 
     if (formData.school_logo === '') {
       toastMessage('Please choose the school logo', 'error');
+      setIsSubmitting(false);
       return;
     }
     try {

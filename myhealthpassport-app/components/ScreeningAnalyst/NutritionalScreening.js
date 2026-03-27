@@ -11,7 +11,7 @@ export default function NutritionalScreening() {
   const router = useRouter();
   const { studentId } = useParams();
   const [results, setResults] = useState({});
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitMessage, setSubmitMessage] = useState('');
@@ -105,8 +105,8 @@ export default function NutritionalScreening() {
     </div>
   )
 
-  if (error && !formData) return <div className="text-center p-[20px] text-red-500">Error: {error.message}</div>;
-  if (!formData) return <div className="text-center p-[20px]">No data to display.</div>;
+  if (error && (!formData || Object.keys(formData).length === 0)) return <div className="text-center p-[20px] text-red-500">Error loading nutrition data. Please refresh the page.</div>;
+  if (!formData || Object.keys(formData).length === 0) return <div className="text-center p-[20px]">No nutrition screening data available.</div>;
 
   return (
     <div className="w-full">

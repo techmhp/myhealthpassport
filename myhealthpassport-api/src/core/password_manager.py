@@ -13,5 +13,5 @@ def verify_password_hash(hash: str, password: str) -> bool:
     """Verify a password against the given Argon2id hash."""
     try:
         return ph.verify(hash, password)
-    except exceptions.VerifyMismatchError:
+    except (exceptions.VerifyMismatchError, exceptions.InvalidHashError, exceptions.VerificationError):
         return False

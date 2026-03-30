@@ -83,8 +83,8 @@ export default function Login() {
         setError(response.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
-      // console.log(err);
-      setError('An error occurred during login. Please try again later.');
+      console.error('Login error:', err);
+      setError(err.message || 'An error occurred during login. Please try again later.');
     } finally {
       setLoading(false);
     }

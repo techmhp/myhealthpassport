@@ -32,6 +32,9 @@ class V1AuthApi {
       body: data,
       mode: this.mode,
     });
+    if (!result.ok) {
+      throw new Error(`Server error (${result.status}). Please try again later.`);
+    }
     const response = await result.json();
     return response;
   };
@@ -43,6 +46,9 @@ class V1AuthApi {
       headers: this.headers,
       body: data,
     });
+    if (!result.ok) {
+      throw new Error(`Server error (${result.status}). Please try again later.`);
+    }
     const response = await result.json();
     return response;
   };
@@ -74,6 +80,9 @@ class UatAuthApi {
       body: data,
       mode: this.mode,
     });
+    if (!result.ok) {
+      throw new Error(`Server error (${result.status}). Please try again later.`);
+    }
     const response = await result.json();
     return response;
   };
@@ -85,6 +94,9 @@ class UatAuthApi {
       headers: this.headers,
       body: data,
     });
+    if (!result.ok) {
+      throw new Error(`Server error (${result.status}). Please try again later.`);
+    }
     const response = await result.json();
     return response;
   };

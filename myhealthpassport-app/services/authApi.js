@@ -27,30 +27,36 @@ class V1AuthApi {
 
   FormPostCall = async (endpoint, data) => {
     const endpoint_url = this.url + endpoint;
-    const result = await fetch(endpoint_url, {
-      method: 'POST',
-      body: data,
-      mode: this.mode,
-    });
-    if (!result.ok) {
-      throw new Error(`Server error (${result.status}). Please try again later.`);
+    try {
+      const result = await fetch(endpoint_url, {
+        method: 'POST',
+        body: data,
+        mode: this.mode,
+      });
+      if (!result.ok) {
+        return { status: false, message: `Login service temporarily unavailable (${result.status}). Please try again later.` };
+      }
+      return await result.json();
+    } catch (e) {
+      return { status: false, message: 'Network error. Please check your connection and try again.' };
     }
-    const response = await result.json();
-    return response;
   };
 
   PostCall = async (endpoint, data) => {
     const endpoint_url = this.url + endpoint;
-    const result = await fetch(endpoint_url, {
-      method: 'POST',
-      headers: this.headers,
-      body: data,
-    });
-    if (!result.ok) {
-      throw new Error(`Server error (${result.status}). Please try again later.`);
+    try {
+      const result = await fetch(endpoint_url, {
+        method: 'POST',
+        headers: this.headers,
+        body: data,
+      });
+      if (!result.ok) {
+        return { status: false, message: `Service temporarily unavailable (${result.status}). Please try again later.` };
+      }
+      return await result.json();
+    } catch (e) {
+      return { status: false, message: 'Network error. Please check your connection and try again.' };
     }
-    const response = await result.json();
-    return response;
   };
 }
 
@@ -75,30 +81,36 @@ class UatAuthApi {
 
   FormPostCall = async (endpoint, data) => {
     const endpoint_url = this.url + endpoint;
-    const result = await fetch(endpoint_url, {
-      method: 'POST',
-      body: data,
-      mode: this.mode,
-    });
-    if (!result.ok) {
-      throw new Error(`Server error (${result.status}). Please try again later.`);
+    try {
+      const result = await fetch(endpoint_url, {
+        method: 'POST',
+        body: data,
+        mode: this.mode,
+      });
+      if (!result.ok) {
+        return { status: false, message: `Login service temporarily unavailable (${result.status}). Please try again later.` };
+      }
+      return await result.json();
+    } catch (e) {
+      return { status: false, message: 'Network error. Please check your connection and try again.' };
     }
-    const response = await result.json();
-    return response;
   };
 
   PostCall = async (endpoint, data) => {
     const endpoint_url = this.url + endpoint;
-    const result = await fetch(endpoint_url, {
-      method: 'POST',
-      headers: this.headers,
-      body: data,
-    });
-    if (!result.ok) {
-      throw new Error(`Server error (${result.status}). Please try again later.`);
+    try {
+      const result = await fetch(endpoint_url, {
+        method: 'POST',
+        headers: this.headers,
+        body: data,
+      });
+      if (!result.ok) {
+        return { status: false, message: `Service temporarily unavailable (${result.status}). Please try again later.` };
+      }
+      return await result.json();
+    } catch (e) {
+      return { status: false, message: 'Network error. Please check your connection and try again.' };
     }
-    const response = await result.json();
-    return response;
   };
 }
 

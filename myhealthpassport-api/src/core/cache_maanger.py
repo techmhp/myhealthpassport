@@ -1,6 +1,9 @@
 import json
+import logging
 
 from src.db import redis_db  # Assuming this is already the async redis client
+
+logger = logging.getLogger(__name__)
 
 
 class DbCache:
@@ -11,10 +14,18 @@ class DbCache:
         self._conn = redis_db
 
     async def set(self, key, value, ttl):
-        return await self._conn.set(key, value, ex=ttl)
+        try:
+            return await self._conn.set(key, value, ex=ttl)
+        except Exception as e:
+            logger.error(f"Redis set error for key '{key}': {e}")
+            raise
 
     async def get(self, key):
-        return await self._conn.get(key)
+        try:
+            return await self._conn.get(key)
+        except Exception as e:
+            logger.error(f"Redis get error for key '{key}': {e}")
+            return None
 
 
 class ObjectCache:
@@ -26,17 +37,29 @@ class ObjectCache:
         self.cache_string = cache_key
 
     async def set(self, data, ttl):
-        data = json.dumps(data)
-        return await self._conn.set(self.cache_string, data, ex=ttl)
+        try:
+            data = json.dumps(data)
+            return await self._conn.set(self.cache_string, data, ex=ttl)
+        except Exception as e:
+            logger.error(f"Redis set error for key '{self.cache_string}': {e}")
+            raise
 
     async def get(self):
-        result = await self._conn.get(self.cache_string)
-        if result:
-            if isinstance(result, str):
-                return json.loads(result)
-            else:
-                return json.loads(result.decode())
-        return None
+        try:
+            result = await self._conn.get(self.cache_string)
+            if result:
+                if isinstance(result, str):
+                    return json.loads(result)
+                else:
+                    return json.loads(result.decode())
+            return None
+        except Exception as e:
+            logger.error(f"Redis get error for key '{self.cache_string}': {e}")
+            return None
 
     async def delete(self):
-        return await self._conn.delete(self.cache_string)
+        try:
+            return await self._conn.delete(self.cache_string)
+        except Exception as e:
+            logger.error(f"Redis delete error for key '{self.cache_string}': {e}")
+            return None

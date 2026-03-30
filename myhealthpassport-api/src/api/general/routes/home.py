@@ -116,8 +116,16 @@ async def user_login(form_data: GeneralLoginFormSchema = Depends(get_login_form_
         data["specialty"] = user.specialty or ""
         data["education"] = user.education or ""
 
-    object_cache = ObjectCache(cache_key=access_token)
-    await object_cache.set(data, ttl=86400)
+    try:
+        object_cache = ObjectCache(cache_key=access_token)
+        await object_cache.set(data, ttl=86400)
+    except Exception as e:
+        data_dict = {
+            "status": False,
+            "message": "Login service temporarily unavailable. Please try again in a moment.",
+        }
+        response = StandardResponse(**data_dict)
+        return JSONResponse(content=response.__dict__, status_code=200)
 
     data_dict = {
         "status": True,

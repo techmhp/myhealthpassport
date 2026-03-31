@@ -825,13 +825,20 @@ async def update_clinical_recommendations(update_data: dict, current_analyst: An
 
             for report in update_data["data"]:
                 report_id = report.get("id")
-                if not report_id:
-                    errors.append(f"Missing ID for one of the reports")
-                    continue
+                clinical_data = None
 
-                clinical_data = await ClinicalRecomendations.get_or_none(id=report_id).prefetch_related("student")
+                if report_id:
+                    clinical_data = await ClinicalRecomendations.get_or_none(id=report_id).prefetch_related("student")
+
+                # Fallback: look up by student_id + report_type if id is missing or not found
+                if not clinical_data and student_id and report.get("report_type"):
+                    clinical_data = await ClinicalRecomendations.filter(
+                        student_id=student_id,
+                        report_type__iexact=report.get("report_type").strip()
+                    ).prefetch_related("student").first()
+
                 if not clinical_data:
-                    errors.append(f"Clinical recommendation with ID {report_id} not found")
+                    errors.append(f"Clinical recommendation not found for report_type '{report.get('report_type')}'")
                     continue
 
                 if not isinstance(clinical_data, ClinicalRecomendations):

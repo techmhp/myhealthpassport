@@ -10,7 +10,7 @@ on:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # GUARD: Only proceed if manually confirmed or code changed
+  # GUARD: Only proceed if manually confirmed
   # ─────────────────────────────────────────────────────────────
   guard:
     name: 🛡️ Production Deploy Guard
@@ -59,12 +59,30 @@ jobs:
         run: python -m py_compile main.py && echo "Syntax OK"
 
       # ─────────────────────────────────────────────
-      # 3. Rsync API files to Production EC2
+      # 3. Whitelist runner IP in EC2 Security Group
+      # ─────────────────────────────────────────────
+      - name: 🔓 Whitelist runner IP in EC2 Security Group
+        run: |
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          echo "Runner IP: $RUNNER_IP"
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr "$RUNNER_IP/32" \
+            --region ${{ secrets.AWS_REGION }}
+          echo "✅ IP whitelisted"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # ─────────────────────────────────────────────
+      # 4. Rsync API files to Production EC2
       # ─────────────────────────────────────────────
       - name: 🔑 Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY_PROD }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.EC2_SSH_KEY_PROD }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.EC2_HOST_PROD }} >> ~/.ssh/known_hosts 2>/dev/null || true
           echo "SSH key and known_hosts configured"
@@ -84,7 +102,7 @@ jobs:
             ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_PROD }}:${{ secrets.API_DIR_PROD }}/
 
       # ─────────────────────────────────────────────
-      # 4. Install deps & restart service on server
+      # 5. Install deps & restart service on server
       # ─────────────────────────────────────────────
       - name: 🚀 Install deps & restart Production service
         uses: appleboy/ssh-action@v1.0.3
@@ -118,7 +136,23 @@ jobs:
             echo "✅ Production deployment complete!"
 
       # ─────────────────────────────────────────────
-      # 5. Health check
+      # 6. Revoke runner IP from Security Group
+      # ─────────────────────────────────────────────
+      - name: 🔒 Revoke runner IP from EC2 Security Group
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr "$RUNNER_IP/32" \
+            --region ${{ secrets.AWS_REGION }} || true
+          echo "✅ IP revoked"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # ─────────────────────────────────────────────
+      # 7. Health check
       # ─────────────────────────────────────────────
       - name: 🏥 Health Check — Production API
         run: |
@@ -133,7 +167,7 @@ jobs:
           fi
 
       # ─────────────────────────────────────────────
-      # 6. Deployment Summary
+      # 8. Deployment Summary
       # ─────────────────────────────────────────────
       - name: 📢 Deployment Summary
         if: always()

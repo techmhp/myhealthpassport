@@ -120,7 +120,7 @@ export default function NutritionalAnalysis() {
       // Map API data to form structure
       if (data && Array.isArray(data)) {
         data.forEach(apiReport => {
-          const formReportIndex = newFormData.data.findIndex(formReport => formReport.report_type === apiReport.report_type);
+          const formReportIndex = newFormData.data.findIndex(formReport => formReport.report_type.trim().toLowerCase() === (apiReport.report_type || '').trim().toLowerCase());
 
           if (formReportIndex !== -1) {
             newFormData.data[formReportIndex].id = apiReport.id;

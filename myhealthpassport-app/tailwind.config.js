@@ -19,8 +19,9 @@ module.exports = {
         extend: {
             colors: {
                 indigo: {
-                    500: "#FF0000", // Replace Tailwind's indigo-500 with your custom color
-                    600: "#FF0000", // Optional: Adjust shades as needed
+                    400: "#80AAFF", // lighter brand blue — used for hover states
+                    500: "#5389FF", // brand blue — primary button colour
+                    600: "#5389FF", // brand blue — primary button colour (Get OTP, Login)
                 },
                 gray: {
                     900: "#1a1a1a", // Custom dark gray

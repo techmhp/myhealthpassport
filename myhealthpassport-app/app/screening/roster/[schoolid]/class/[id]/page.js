@@ -159,9 +159,9 @@ const ClassView = () => {
     const matchesAbsent = hideAbsent ? student.registration_status !== false : true;
 
     // Date filter: if filterDate set, match student screening date
-    const matchesDate = filterDate
-      ? (student.screening_date || student.registered_date || student.created_at || '').startsWith(filterDate)
-      : true;
+    // If student has no date field, don't hide them (show by default)
+    const studentDate = student.screening_date || student.registered_date || student.created_at;
+    const matchesDate = filterDate ? (studentDate ? studentDate.startsWith(filterDate) : true) : true;
 
     return matchesSearch && matchesAbsent && matchesDate;
   });

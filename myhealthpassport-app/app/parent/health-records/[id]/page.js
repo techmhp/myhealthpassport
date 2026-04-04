@@ -24,8 +24,8 @@ const tabs = [
   { name: 'Students Response', href: '#', id: 'Students Response' },
 ];
 
-// Mobile view hides Vaccination Records, Prescription and Lab Reports
-const mobileTabs = tabs.filter(t => !['Vaccination Records', 'Prescription', 'Lab Reports'].includes(t.id));
+// Mobile view hides Vaccination Records, Prescription, Lab Reports and Students Response
+const mobileTabs = tabs.filter(t => !['Vaccination Records', 'Prescription', 'Lab Reports', 'Students Response'].includes(t.id));
 
 const reportOptions = [
   // { id: 'overall-summary', label: 'Overall Summary' },

@@ -11,7 +11,6 @@ import ConfirmModal from './UI/ConfirmModal';
 import { updateOverallScreeningStatus, updatePaymentStatus } from '@/services/secureApis';
 
 const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentClick = null, stickyHeader = false }) => {
-  console.log('students', students);
   const router = useRouter();
   const cookies = nookies.get();
   const { schoolid, id } = useParams();

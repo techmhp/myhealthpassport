@@ -21,7 +21,11 @@ const tabs = [
   { name: 'Vaccination Records', href: '#', id: 'Vaccination Records' },
   { name: 'Prescription', href: '#', id: 'Prescription' },
   { name: 'Lab Reports', href: '#', id: 'Lab Reports' },
+  { name: 'Students Response', href: '#', id: 'Students Response' },
 ];
+
+// Mobile view hides Vaccination Records, Prescription and Lab Reports
+const mobileTabs = tabs.filter(t => !['Vaccination Records', 'Prescription', 'Lab Reports'].includes(t.id));
 
 const reportOptions = [
   // { id: 'overall-summary', label: 'Overall Summary' },
@@ -117,6 +121,13 @@ const HealthRecords = () => {
             <LabReports studentId={id} />
           </div>
         );
+      case 'Students Response':
+        return (
+          <div className="bg-white rounded-lg p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Students Response</h3>
+            <p className="text-sm text-gray-500">Student questionnaire responses will be displayed here.</p>
+          </div>
+        );
       default:
         return null;
     }
@@ -153,7 +164,7 @@ const HealthRecords = () => {
               <div className="block sm:hidden">
                 <div className="relative flex items-center justify-center">
                   <div className="flex space-x-1 overflow-x-auto gap-2.5 rounded-lg border border-[#ECF2FF] p-1.5 mb-3">
-                    {tabs.map(tab => (
+                    {mobileTabs.map(tab => (
                       <button
                         key={tab.name}
                         onClick={() => setActiveTab(tab.id)}

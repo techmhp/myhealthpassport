@@ -37,6 +37,8 @@ const ClassView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [hideAbsent, setHideAbsent] = useState(false);
   // Download dropdown state
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [downloadingModule, setDownloadingModule] = useState(null);
@@ -144,18 +146,24 @@ const ClassView = () => {
     setSearchQuery(value);
   };
 
-  // Filter the student list based on the search term
+  // Filter the student list based on search, date, and absentee status
   const filteredStudents = students.filter(student => {
-    // Convert search term to lowercase for case-insensitive search
     const lowerCaseSearchTerm = searchQuery.toLowerCase();
-
-    // Check if the search term is found in any of the relevant fields
-    return (
+    const matchesSearch =
       student.roll_no.toLowerCase().includes(lowerCaseSearchTerm) ||
       formatFullName(student).toLowerCase().includes(lowerCaseSearchTerm) ||
       student.gender.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.age.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+      student.age.toLowerCase().includes(lowerCaseSearchTerm);
+
+    // Absentee filter: hide students with registration_status === false
+    const matchesAbsent = hideAbsent ? student.registration_status !== false : true;
+
+    // Date filter: if filterDate set, match student screening date
+    const matchesDate = filterDate
+      ? (student.screening_date || student.registered_date || student.created_at || '').startsWith(filterDate)
+      : true;
+
+    return matchesSearch && matchesAbsent && matchesDate;
   });
 
   const renderTabContent = () => {
@@ -288,8 +296,36 @@ const ClassView = () => {
             )}
           </div>
         </div>
-        <div className="mb-[33px]">
+        <div className="mb-[33px] flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <FilterSection searchQuery={searchQuery} onSearchChange={handleSearchChange} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 whitespace-nowrap">Filter by Date:</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={e => setFilterDate(e.target.value)}
+                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+              {filterDate && (
+                <button
+                  onClick={() => setFilterDate('')}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={hideAbsent}
+                onChange={e => setHideAbsent(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+              />
+              Hide absent students
+            </label>
+          </div>
         </div>
         {renderTabContent()}
       </div>

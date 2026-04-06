@@ -379,7 +379,7 @@ async def user_login(payload: MobileNumber):
     await object_cache.set(data, ttl=180)
 
     response_data = {"transaction_id": transaction_id}
-    if environ != "production" or is_test_number:
+    if environ != "production" or is_br_ambedkar_parent:
         response_data["test_otp"] = otp
 
     data_dict = {

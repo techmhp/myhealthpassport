@@ -144,17 +144,22 @@ async def parent_childrens(
 
 
 # --- TEMPORARY: Link parent to student for testing (remove after testing) ---
+_TEMP_LINK_SECRET = "mhp-temp-2026"
+
 @router.post("/temp-link-student")
 async def temp_link_parent_student(
     mobile: str,
     student_id: int,
-    current_user: dict = Depends(get_current_user)
+    secret: str = ""
 ):
     """
     TEMPORARY endpoint: Link a parent (by mobile) to a student (by ID).
     Used for testing PDF download on Live with test account.
     Remove after testing is complete.
     """
+    if secret != _TEMP_LINK_SECRET:
+        return JSONResponse({"status": False, "message": "Unauthorized"}, status_code=403)
+
     parent = await Parents.filter(primary_mobile=mobile).first()
     if not parent:
         return JSONResponse({"status": False, "message": f"Parent with mobile {mobile} not found"}, status_code=404)

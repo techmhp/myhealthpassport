@@ -48,21 +48,28 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
     try {
       setDownloadProgress('downloading');
 
-      // Extract key + academic_year so we can request a short-lived download token.
+      // Extract key + academic_year from the backend-provided URL.
       const urlObj = new URL(url);
       const key = urlObj.searchParams.get('key');
       const academicYear = urlObj.searchParams.get('academic_year');
 
-      // createPDFDownloadToken is a server action — calls BE with the user's auth
-      // cookie and returns a UUID token valid for 60 seconds.
+      // Get a short-lived one-time token (server action handles auth).
       const token = await createPDFDownloadToken(studentId, key, academicYear);
 
-      // Navigate the browser directly to the tokenized BE download URL.
-      // The BE validates the token and serves the PDF as an attachment,
-      // bypassing AWS Amplify Lambda's 6 MB response size limit (HTTP 413).
-      const tokenizedUrl = `${url}&download_token=${token}`;
+      // Build the download URL from NEXT_PUBLIC_API_URL instead of using the
+      // backend-provided URL directly — the backend URL has a doubled /api/v1/
+      // prefix when behind a reverse proxy, which causes a 404.
+      const baseApiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const params = new URLSearchParams({
+        key,
+        academic_year: academicYear || '',
+        direct: 'true',
+        download_token: token,
+      });
+      const directUrl = `${baseApiUrl}/report/${studentId}/download-selected?${params.toString()}`;
+
       const link = document.createElement('a');
-      link.href = tokenizedUrl;
+      link.href = directUrl;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();

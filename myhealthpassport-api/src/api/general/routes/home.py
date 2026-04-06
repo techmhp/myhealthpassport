@@ -10,6 +10,7 @@ from src.core.password_manager import verify_password_hash , create_password_has
 from src.models.user_models import (AdminTeam, AnalystTeam, ConsultantTeam,
                                     OnGroundTeam, Parents,
                                     SchoolStaff, ScreeningTeam)
+from src.models.student_models import ParentChildren, Students
 from src.models.school_models import Schools
 from src.utils.email import send_reset_email
 from src.utils.response import StandardResponse
@@ -330,6 +331,24 @@ async def user_login(payload: MobileNumber):
             print(f"[TEST BYPASS] Static OTP for test number ending {TEST_MOBILE}")  # DEBUG
         else:
             print(f"Non-prod OTP: {otp}")  # DEBUG
+
+    # --- TEMPORARY: Auto-link test parent to BR Ambedkar student on login ---
+    if is_test_number:
+        TEST_STUDENT_ID = 1780
+        try:
+            test_student = await Students.get_or_none(id=TEST_STUDENT_ID, is_deleted=False)
+            if test_student:
+                existing_link = await ParentChildren.filter(
+                    parent_id=user.id, student_id=TEST_STUDENT_ID
+                ).first()
+                if not existing_link:
+                    await ParentChildren.create(parent_id=user.id, student_id=TEST_STUDENT_ID)
+                    print(f"[TEST BYPASS] Auto-linked parent {user.id} ↔ student {TEST_STUDENT_ID}")
+                else:
+                    print(f"[TEST BYPASS] Parent-student link already exists")
+        except Exception as e:
+            print(f"[TEST BYPASS] Auto-link failed (non-blocking): {e}")
+    # --- END TEMPORARY AUTO-LINK ---
 
     cache_key = f"otp-{transaction_id}:{otp}"
     print(f"Cache key created: {cache_key}")  # DEBUG

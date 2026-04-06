@@ -1,15 +1,18 @@
 import asyncio
 import time
 import json
+import uuid
 from typing import Optional, Any, Dict, Tuple, List
 from pathlib import Path
 from datetime import datetime
 
 import anyio
-from fastapi import APIRouter, Request, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, Request, HTTPException, BackgroundTasks, Query, Depends
 from fastapi.responses import HTMLResponse, Response, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from tortoise.expressions import Q
+from src.core.manager import get_current_user
+from src.core.cache_maanger import ObjectCache
 
 from src.models.other_models import ClinicalFindings, ClinicalRecomendations
 from src.models.screening_models import EyeScreening, DentalScreening, BehaviouralScreening
@@ -1238,15 +1241,42 @@ async def start_download_selected(
 #             "message": f"Error generating download link: {str(e)}"
 #         })
 
-@router.get("/{student_id}/download-selected")
-async def download_selected_report(
-    request: Request, 
-    student_id: int, 
+@router.post("/{student_id}/create-download-token")
+async def create_pdf_download_token(
+    student_id: int,
     key: str,
     academic_year: Optional[str] = None,
-    direct: bool = False  # ✅ Flag to trigger direct download
+    current_user: dict = Depends(get_current_user),
+):
+    """Issue a short-lived (60s) one-time download token for direct browser download."""
+    token = str(uuid.uuid4())
+    cache = ObjectCache(cache_key=f"pdf-dl-token:{token}")
+    await cache.set({"student_id": student_id, "key": key, "academic_year": academic_year}, ttl=60)
+    return JSONResponse({"status": True, "token": token})
+
+
+@router.get("/{student_id}/download-selected")
+async def download_selected_report(
+    request: Request,
+    student_id: int,
+    key: str,
+    academic_year: Optional[str] = None,
+    direct: bool = False,
+    download_token: Optional[str] = None,  # one-time token for direct browser download
 ):
     """Check PDF availability and return download URL, or serve file directly if direct=true."""
+    # Validate one-time download token (used for direct browser downloads)
+    if download_token:
+        token_cache = ObjectCache(cache_key=f"pdf-dl-token:{download_token}")
+        token_data = await token_cache.get()
+        if not token_data:
+            return JSONResponse(
+                {"status": False, "message": "Download link expired or invalid. Please try again."},
+                status_code=401
+            )
+        # Consume the token (delete it so it can't be reused)
+        await token_cache.delete()
+
     # ✅ Try with academic_year first, then fallback to 'default'
     cache_key_with_year = f"{student_id}_{key}_{academic_year}" if academic_year else None
     cache_key_default = f"{student_id}_{key}_default"

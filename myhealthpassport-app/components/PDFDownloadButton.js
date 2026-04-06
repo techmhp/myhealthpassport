@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { downloadPDFSelected, startPDFGenerationSelected } from '@/services/secureApis';
+import { downloadPDFSelected, startPDFGenerationSelected, createPDFDownloadToken } from '@/services/secureApis';
 import { toastMessage } from '@/helpers/utilities';
 
 const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, onDownloadEnd, children, className = '', academicYear = null }) => {
@@ -48,13 +48,21 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
     try {
       setDownloadProgress('downloading');
 
-      // Navigate the browser directly to the backend download URL.
-      // The backend endpoint returns Content-Disposition: attachment which
-      // causes the browser to download the file without navigating away.
-      // This avoids routing the binary PDF through AWS Amplify Lambda, which
-      // has a 6 MB response size limit and returns HTTP 413 for large reports.
+      // Extract key + academic_year so we can request a short-lived download token.
+      const urlObj = new URL(url);
+      const key = urlObj.searchParams.get('key');
+      const academicYear = urlObj.searchParams.get('academic_year');
+
+      // createPDFDownloadToken is a server action — calls BE with the user's auth
+      // cookie and returns a UUID token valid for 60 seconds.
+      const token = await createPDFDownloadToken(studentId, key, academicYear);
+
+      // Navigate the browser directly to the tokenized BE download URL.
+      // The BE validates the token and serves the PDF as an attachment,
+      // bypassing AWS Amplify Lambda's 6 MB response size limit (HTTP 413).
+      const tokenizedUrl = `${url}&download_token=${token}`;
       const link = document.createElement('a');
-      link.href = url;
+      link.href = tokenizedUrl;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();

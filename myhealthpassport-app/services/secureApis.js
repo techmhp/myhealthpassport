@@ -1260,3 +1260,21 @@ export const exportPsychologyChecklist = async (schoolId, className, section) =>
   if (section) params.append('section', section);
   return await call.GetCallBlob(`/screening/export/psychology-checklist?${params.toString()}`);
 };
+
+export const createPDFDownloadToken = async (studentId, key, academicYear) => {
+  const cookieStore = await cookies();
+  const access_token = cookieStore.get('access_token')?.value;
+  const params = new URLSearchParams({ key });
+  if (academicYear) params.append('academic_year', academicYear);
+  const res = await fetch(
+    `${BaseURL}/report/${studentId}/create-download-token?${params.toString()}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    }
+  );
+  const data = await res.json();
+  if (!data.status || !data.token) throw new Error('Failed to create download token');
+  return data.token;
+};

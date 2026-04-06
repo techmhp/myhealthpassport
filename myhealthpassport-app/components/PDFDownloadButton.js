@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { downloadPDFSelected, startPDFGenerationSelected, downloadPDFFileAsBase64 } from '@/services/secureApis';
+import { downloadPDFSelected, startPDFGenerationSelected } from '@/services/secureApis';
 import { toastMessage } from '@/helpers/utilities';
 
 const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, onDownloadEnd, children, className = '', academicYear = null }) => {
@@ -48,27 +48,25 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
     try {
       setDownloadProgress('downloading');
 
-      // Parse key + academic_year from the download URL so we can proxy
-      // the request through the Next.js server action (avoids cross-origin
-      // navigation which causes the browser to GET the API domain directly
-      // and results in a 404 / navigation instead of a file download).
+      // Parse key + academic_year from the backend download URL.
+      // We route through our own Next.js API proxy (/api/download-pdf) instead
+      // of using a cross-origin <a> click (which browsers navigate to rather
+      // than download) or a server action (which has payload-size limits on
+      // AWS Amplify Lambda for large binary files).
       const urlObj = new URL(url);
       const key = urlObj.searchParams.get('key');
       const academicYear = urlObj.searchParams.get('academic_year');
 
-      const result = await downloadPDFFileAsBase64(parseInt(studentId), key, academicYear);
+      const proxyUrl = `/api/download-pdf?studentId=${studentId}&key=${encodeURIComponent(key)}&academicYear=${encodeURIComponent(academicYear || '')}`;
 
-      if (result.error) {
-        throw new Error(result.message || 'Failed to fetch PDF');
+      const response = await fetch(proxyUrl, { cache: 'no-store' });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || `Download failed (HTTP ${response.status})`);
       }
 
-      // Convert base64 → Uint8Array → Blob → same-origin object URL → click
-      const binaryString = atob(result.data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
 
       const link = document.createElement('a');

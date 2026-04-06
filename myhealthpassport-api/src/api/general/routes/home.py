@@ -10,7 +10,7 @@ from src.core.password_manager import verify_password_hash , create_password_has
 from src.models.user_models import (AdminTeam, AnalystTeam, ConsultantTeam,
                                     OnGroundTeam, Parents,
                                     SchoolStaff, ScreeningTeam)
-from src.models.student_models import ParentChildren, Students
+from src.models.student_models import ParentChildren, Students, SchoolStudents
 from src.models.school_models import Schools
 from src.utils.email import send_reset_email
 from src.utils.response import StandardResponse
@@ -307,13 +307,48 @@ async def user_login(payload: MobileNumber):
     
     print(f"Environment: {environ}")  # DEBUG
 
-    # --- TEMPORARY TEST BYPASS (BR Ambedkar school) ---
-    # Static OTP for test number. Remove after testing is done.
-    TEST_MOBILE = "8074531686"
-    is_test_number = str(payload.mobile).strip().endswith(TEST_MOBILE)
-    # --- END TEMPORARY TEST BYPASS ---
+    # =========================================================
+    # TEMPORARY: BR Ambedkar school-wide static OTP bypass
+    # All parents of students at school_id=17 get OTP 123456.
+    # Real phone numbers are used — only SMS is disabled.
+    # Revert this entire block once testing is complete.
+    # =========================================================
+    BR_AMBEDKAR_SCHOOL_ID = 17
 
-    if environ == "production" and not is_test_number:
+    # Step 1: Auto-link test account (8074531686) to student 1780
+    # so it falls into the BR Ambedkar parent set below.
+    TEST_MOBILE_SUFFIX = "8074531686"
+    if str(payload.mobile).strip().endswith(TEST_MOBILE_SUFFIX):
+        TEST_STUDENT_ID = 1780
+        try:
+            test_student = await Students.get_or_none(id=TEST_STUDENT_ID, is_deleted=False)
+            if test_student:
+                existing_link = await ParentChildren.filter(
+                    parent_id=user.id, student_id=TEST_STUDENT_ID
+                ).first()
+                if not existing_link:
+                    await ParentChildren.create(parent_id=user.id, student_id=TEST_STUDENT_ID)
+                    print(f"[BR AMBEDKAR BYPASS] Auto-linked test parent {user.id} ↔ student {TEST_STUDENT_ID}")
+        except Exception as e:
+            print(f"[BR AMBEDKAR BYPASS] Auto-link failed (non-blocking): {e}")
+
+    # Step 2: Check if this parent has any child enrolled at BR Ambedkar school
+    is_br_ambedkar_parent = False
+    try:
+        br_link = await SchoolStudents.filter(
+            school_id=BR_AMBEDKAR_SCHOOL_ID,
+            student__parent_children_rel__parent_id=user.id
+        ).first()
+        is_br_ambedkar_parent = br_link is not None
+        if is_br_ambedkar_parent:
+            print(f"[BR AMBEDKAR BYPASS] Parent {user.id} (mobile: {payload.mobile}) → static OTP applied")
+    except Exception as e:
+        print(f"[BR AMBEDKAR BYPASS] School check failed (non-blocking): {e}")
+    # =========================================================
+    # END TEMPORARY BR Ambedkar bypass
+    # =========================================================
+
+    if environ == "production" and not is_br_ambedkar_parent:
         otp = generate_otp()
         print(f"Generated OTP: {otp}")  # DEBUG
         response = send_otp_sms(payload.mobile, otp)
@@ -327,28 +362,8 @@ async def user_login(payload: MobileNumber):
             return response_obj
     else:
         otp = "123456"
-        if is_test_number:
-            print(f"[TEST BYPASS] Static OTP for test number ending {TEST_MOBILE}")  # DEBUG
-        else:
+        if not is_br_ambedkar_parent:
             print(f"Non-prod OTP: {otp}")  # DEBUG
-
-    # --- TEMPORARY: Auto-link test parent to BR Ambedkar student on login ---
-    if is_test_number:
-        TEST_STUDENT_ID = 1780
-        try:
-            test_student = await Students.get_or_none(id=TEST_STUDENT_ID, is_deleted=False)
-            if test_student:
-                existing_link = await ParentChildren.filter(
-                    parent_id=user.id, student_id=TEST_STUDENT_ID
-                ).first()
-                if not existing_link:
-                    await ParentChildren.create(parent_id=user.id, student_id=TEST_STUDENT_ID)
-                    print(f"[TEST BYPASS] Auto-linked parent {user.id} ↔ student {TEST_STUDENT_ID}")
-                else:
-                    print(f"[TEST BYPASS] Parent-student link already exists")
-        except Exception as e:
-            print(f"[TEST BYPASS] Auto-link failed (non-blocking): {e}")
-    # --- END TEMPORARY AUTO-LINK ---
 
     cache_key = f"otp-{transaction_id}:{otp}"
     print(f"Cache key created: {cache_key}")  # DEBUG

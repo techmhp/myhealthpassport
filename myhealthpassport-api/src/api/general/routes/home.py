@@ -306,7 +306,13 @@ async def user_login(payload: MobileNumber):
     
     print(f"Environment: {environ}")  # DEBUG
 
-    if environ == "production":
+    # --- TEMPORARY TEST BYPASS (BR Ambedkar school) ---
+    # Static OTP for test number. Remove after testing is done.
+    TEST_MOBILE = "8074531686"
+    is_test_number = str(payload.mobile).strip().endswith(TEST_MOBILE)
+    # --- END TEMPORARY TEST BYPASS ---
+
+    if environ == "production" and not is_test_number:
         otp = generate_otp()
         print(f"Generated OTP: {otp}")  # DEBUG
         response = send_otp_sms(payload.mobile, otp)
@@ -320,7 +326,10 @@ async def user_login(payload: MobileNumber):
             return response_obj
     else:
         otp = "123456"
-        print(f"Non-prod OTP: {otp}")  # DEBUG
+        if is_test_number:
+            print(f"[TEST BYPASS] Static OTP for test number ending {TEST_MOBILE}")  # DEBUG
+        else:
+            print(f"Non-prod OTP: {otp}")  # DEBUG
 
     cache_key = f"otp-{transaction_id}:{otp}"
     print(f"Cache key created: {cache_key}")  # DEBUG
@@ -336,7 +345,7 @@ async def user_login(payload: MobileNumber):
     await object_cache.set(data, ttl=180)
 
     response_data = {"transaction_id": transaction_id}
-    if environ != "production":
+    if environ != "production" or is_test_number:
         response_data["test_otp"] = otp
 
     data_dict = {

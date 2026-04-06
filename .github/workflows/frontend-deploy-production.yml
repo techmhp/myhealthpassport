@@ -1,0 +1,83 @@
+name: 🌐 Frontend — Deploy to Production (Amplify)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        default: ''
+
+jobs:
+  guard:
+    name: 🛡️ Production Deploy Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation input
+        run: |
+          if [ "${{ github.event.inputs.confirm_deploy }}" != "deploy" ]; then
+            echo "❌ Confirmation failed. You must type 'deploy' to proceed."
+            exit 1
+          fi
+          echo "✅ Frontend deployment confirmed by ${{ github.actor }}"
+
+  deploy-frontend-production:
+    name: Trigger Amplify Build → Production
+    runs-on: ubuntu-latest
+    needs: guard
+
+    steps:
+      - name: 🚀 Start Amplify job for main branch
+        run: |
+          JOB=$(aws amplify start-job \
+            --app-id dfccarvx799lj \
+            --branch-name main \
+            --job-type RELEASE \
+            --region ap-south-1 \
+            --query 'jobSummary.jobId' \
+            --output text)
+          echo "✅ Amplify build triggered — Job ID: $JOB"
+          echo "JOB_ID=$JOB" >> $GITHUB_ENV
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: ⏳ Wait for Amplify build to complete
+        run: |
+          echo "Waiting for Amplify build $JOB_ID to finish..."
+          for i in $(seq 1 40); do
+            sleep 30
+            STATUS=$(aws amplify get-job \
+              --app-id dfccarvx799lj \
+              --branch-name main \
+              --job-id "$JOB_ID" \
+              --region ap-south-1 \
+              --query 'job.summary.status' \
+              --output text)
+            echo "[$i] Status: $STATUS"
+            if [ "$STATUS" = "SUCCEED" ]; then
+              echo "✅ Amplify build succeeded!"
+              exit 0
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "CANCELLING" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Amplify build failed with status: $STATUS"
+              exit 1
+            fi
+          done
+          echo "⚠️ Timed out waiting for build — check Amplify console"
+          exit 1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: 📢 Deployment Summary
+        if: always()
+        run: |
+          echo "============================="
+          echo "Environment : PRODUCTION"
+          echo "App ID      : dfccarvx799lj"
+          echo "Branch      : main"
+          echo "Job ID      : $JOB_ID"
+          echo "Status      : ${{ job.status }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Commit      : ${{ github.sha }}"
+          echo "============================="

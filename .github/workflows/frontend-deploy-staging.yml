@@ -13,7 +13,7 @@ jobs:
         run: |
           JOB=$(aws amplify start-job \
             --app-id d31i4bwxow07s2 \
-            --branch-name main \
+            --branch-name staging \
             --job-type RELEASE \
             --region ap-south-1 \
             --query 'jobSummary.jobId' \
@@ -31,7 +31,7 @@ jobs:
             sleep 30
             STATUS=$(aws amplify get-job \
               --app-id d31i4bwxow07s2 \
-              --branch-name main \
+              --branch-name staging \
               --job-id "$JOB_ID" \
               --region ap-south-1 \
               --query 'job.summary.status' \

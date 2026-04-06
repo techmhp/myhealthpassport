@@ -11,7 +11,6 @@ import ConfirmModal from './UI/ConfirmModal';
 import { updateOverallScreeningStatus, updatePaymentStatus } from '@/services/secureApis';
 
 const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentClick = null, stickyHeader = false }) => {
-  console.log('students', students);
   const router = useRouter();
   const cookies = nookies.get();
   const { schoolid, id } = useParams();
@@ -321,6 +320,32 @@ const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentC
                 </>
               ))}
             </tbody>
+            {/* Column count footer — only for CAMP_COORDINATOR status columns */}
+            {columns.some(c => c.key === 'registration_status' && c.type === 'status') && students.length > 0 && (
+              <tfoot>
+                <tr className="bg-[#ECF2FF]">
+                  {columns.map((column, index) => {
+                    if (column.type === 'status' || column.type === 'complete_status') {
+                      const count = students.filter(s => s[column.key]).length;
+                      return (
+                        <td
+                          key={column.key || index}
+                          className="bg-[#ECF2FF] border-t border-l border-solid border-[#B5CCFF] py-2 px-3 text-center font-inter font-semibold text-sm text-[#5389FF]"
+                        >
+                          {count}/{students.length}
+                        </td>
+                      );
+                    }
+                    return (
+                      <td
+                        key={column.key || index}
+                        className="bg-[#ECF2FF] border-t border-l border-solid border-[#B5CCFF] py-2 px-3"
+                      />
+                    );
+                  })}
+                </tr>
+              </tfoot>
+            )}
           </table>
         ) : (
           <div className="text-center py-8 text-gray-500 text-sm/6"> No student data available </div>

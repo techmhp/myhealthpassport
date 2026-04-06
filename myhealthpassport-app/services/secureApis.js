@@ -36,6 +36,38 @@ class V1SecureApi {
     return response;
   };
 
+  GetCallBinary = async endpoint => {
+    try {
+      const cookieStore = await cookies();
+      const access_token = cookieStore.get('access_token')?.value;
+      this.headers['Authorization'] = 'Bearer ' + access_token;
+      const endpoint_url = this.url + endpoint;
+      const result = await fetch(endpoint_url, {
+        method: 'GET',
+        headers: this.headers,
+        cache: 'no-store',
+      });
+      if (result.status === 401) {
+        redirect('/login?reason=session_expired');
+      }
+      if (!result.ok) {
+        let message = `HTTP ${result.status}: Request failed`;
+        try {
+          const errorData = await result.json();
+          message = errorData?.detail || errorData?.message || message;
+        } catch {}
+        return { error: true, message };
+      }
+      const arrayBuffer = await result.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const contentType = result.headers.get('content-type') || 'application/pdf';
+      const contentDisposition = result.headers.get('content-disposition') || '';
+      return { data: base64, contentType, contentDisposition };
+    } catch (err) {
+      return { error: true, message: err?.message || 'Unexpected error' };
+    }
+  };
+
   GetCallBlob = async endpoint => {
     try {
       const cookieStore = await cookies();
@@ -1051,6 +1083,11 @@ export const downloadPDFSelected = async (studentId, queryParameter, academicYea
   const call = new V1SecureApi();
   const response = await call.GetCall(`/report/${studentId}/download-selected?key=${queryParameter}&academic_year=${academicYear}`);
   return response;
+};
+
+export const downloadPDFFileAsBase64 = async (studentId, key, academicYear) => {
+  const call = new V1SecureApi();
+  return await call.GetCallBinary(`/report/${studentId}/download-selected?key=${key}&academic_year=${academicYear}&direct=true`);
 };
 
 // Add new function for downloading the actual PDF file

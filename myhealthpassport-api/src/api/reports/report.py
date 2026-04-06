@@ -69,18 +69,21 @@ def safe_json_load(val: Any, default: Any = None) -> Any:
 # Build report context (optimized & fixed validation)
 # =========================================================
 async def build_report_context(
-    request: Request, 
-    student_id: int, 
+    request: Request,
+    student_id: int,
     required_sections: List[str] = None,
-    academic_year: Optional[str] = None
+    academic_year: Optional[str] = None,
+    strict: bool = True
 ) -> dict:
     """
     Builds a complete report context asynchronously.
-    
-    :param required_sections: List of section keys (e.g. ['emotional', 'dental']). 
+
+    :param required_sections: List of section keys (e.g. ['emotional', 'dental']).
                               If provided, only these sections are validated for existence.
                               If None, ALL sections must be present (strict full report).
     :param academic_year: Academic year in format 'YYYY-YYYY'. Defaults to current year.
+    :param strict: If False, missing sections are logged as warnings but don't raise errors.
+                   PDF will be generated with whatever data is available.
     """
     
     # Determine academic year
@@ -215,10 +218,13 @@ async def build_report_context(
         missing_sections = [key for key, value in required_strict.items() if not value]
 
     if missing_sections:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Report not completed for academic year {academic_year}: missing data for {', '.join(missing_sections)}"
-        )
+        if strict:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Report not completed for academic year {academic_year}: missing data for {', '.join(missing_sections)}"
+            )
+        else:
+            print(f"⚠️ [PDF Debug] Partial data — missing sections (non-strict mode): {missing_sections}. Generating PDF with available data.")
 
     # -------------------------------------------------------------------------
     # Parsing Logic (Unchanged)
@@ -1102,13 +1108,14 @@ async def start_download_selected(
             "download": f"{base_url}/api/v1/report/{student_id}/download-selected?key={selected_key}&academic_year={academic_year}&direct=true"  # ✅ CHANGED: Added &direct=true
         })
 
-    # Validation
+    # Validation — non-strict: generate PDF with whatever data is available
     try:
         print(f"🔍 [PDF Debug] Validating report context for {student_id} ({selected_key})...")
-        await build_report_context(request, student_id, required_sections=selected)
+        await build_report_context(request, student_id, required_sections=selected, strict=False)
         print(f"✅ [PDF Debug] Validation passed for {cache_key}")
     except HTTPException as e:
-        print(f"❌ [PDF Debug] Validation failed for {cache_key}: {e.detail}")
+        # Only abort for hard errors (student not found, bad academic year, etc.)
+        print(f"❌ [PDF Debug] Hard validation error for {cache_key}: {e.detail}")
         async with pdf_status_lock:
             pdf_status[cache_key] = {"ready": False, "status": "error", "error": e.detail}
         return JSONResponse({"status": "error", "message": e.detail})
@@ -1121,7 +1128,7 @@ async def start_download_selected(
     async def generate_selected_pdf():
         try:
             print(f"🧠 [PDF Debug] Building context for {cache_key}...")
-            context = await build_report_context(request, student_id, required_sections=selected)
+            context = await build_report_context(request, student_id, required_sections=selected, strict=False)
             
             context.update({
                 "show_profile": True,

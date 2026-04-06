@@ -48,35 +48,17 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
     try {
       setDownloadProgress('downloading');
 
-      // Parse key + academic_year from the backend download URL.
-      // We route through our own Next.js API proxy (/api/download-pdf) instead
-      // of using a cross-origin <a> click (which browsers navigate to rather
-      // than download) or a server action (which has payload-size limits on
-      // AWS Amplify Lambda for large binary files).
-      const urlObj = new URL(url);
-      const key = urlObj.searchParams.get('key');
-      const academicYear = urlObj.searchParams.get('academic_year');
-
-      const proxyUrl = `/api/download-pdf?studentId=${studentId}&key=${encodeURIComponent(key)}&academicYear=${encodeURIComponent(academicYear || '')}`;
-
-      const response = await fetch(proxyUrl, { cache: 'no-store' });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || `Download failed (HTTP ${response.status})`);
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-
+      // Navigate the browser directly to the backend download URL.
+      // The backend endpoint returns Content-Disposition: attachment which
+      // causes the browser to download the file without navigating away.
+      // This avoids routing the binary PDF through AWS Amplify Lambda, which
+      // has a 6 MB response size limit and returns HTTP 413 for large reports.
       const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = `student-report-${studentId}-${Date.now()}.pdf`;
+      link.href = url;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 
       return true;
     } catch (error) {

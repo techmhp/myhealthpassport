@@ -9,7 +9,7 @@ from src.core.manager import get_current_user
 from src.models.user_models import ParentRoles, Parents
 from src.utils.response import StandardResponse
 from src.models.screening_models import DentalScreening,EyeScreening,BehaviouralScreening,NutritionScreening
-from src.models.student_models import SchoolStudents, ParentChildren, Students
+from src.models.student_models import SchoolStudents
 from . import router
 
 
@@ -142,80 +142,6 @@ async def parent_childrens(
     response_obj = StandardResponse(**data_dict)
     return JSONResponse(content=response_obj.__dict__, status_code=status.HTTP_200_OK)
 
-
-# --- TEMPORARY: Link parent to student for testing (remove after testing) ---
-_TEMP_LINK_SECRET = "mhp-temp-2026"
-
-@router.post("/temp-link-student")
-async def temp_link_parent_student(
-    mobile: str,
-    student_id: int,
-    secret: str = ""
-):
-    """
-    TEMPORARY endpoint: Link a parent (by mobile) to a student (by ID).
-    Used for testing PDF download on Live with test account.
-    Remove after testing is complete.
-    """
-    if secret != _TEMP_LINK_SECRET:
-        return JSONResponse({"status": False, "message": "Unauthorized"}, status_code=403)
-
-    parent = await Parents.filter(primary_mobile=mobile).first()
-    if not parent:
-        return JSONResponse({"status": False, "message": f"Parent with mobile {mobile} not found"}, status_code=404)
-
-    student = await Students.get_or_none(id=student_id, is_deleted=False)
-    if not student:
-        return JSONResponse({"status": False, "message": f"Student {student_id} not found"}, status_code=404)
-
-    existing = await ParentChildren.filter(parent_id=parent.id, student_id=student_id).first()
-    if existing:
-        return JSONResponse({"status": True, "message": f"Link already exists: parent {parent.id} ↔ student {student_id}"})
-
-    await ParentChildren.create(parent_id=parent.id, student_id=student_id)
-    return JSONResponse({"status": True, "message": f"Linked parent {parent.id} (mobile: {mobile}) ↔ student {student_id}"})
-
-
-@router.get("/temp-list-links")
-async def temp_list_parent_links(
-    mobile: str,
-    secret: str = ""
-):
-    """TEMPORARY: List all student links for a parent (by mobile)."""
-    if secret != _TEMP_LINK_SECRET:
-        return JSONResponse({"status": False, "message": "Unauthorized"}, status_code=403)
-
-    parent = await Parents.filter(primary_mobile=mobile).first()
-    if not parent:
-        return JSONResponse({"status": False, "message": f"Parent with mobile {mobile} not found"}, status_code=404)
-
-    links = await ParentChildren.filter(parent_id=parent.id).prefetch_related("student")
-    result = [
-        {"link_id": lnk.id, "student_id": lnk.student_id, "student_name": f"{lnk.student.first_name} {lnk.student.last_name}"}
-        for lnk in links
-    ]
-    return JSONResponse({"status": True, "parent_id": parent.id, "links": result})
-
-
-@router.delete("/temp-unlink-student")
-async def temp_unlink_parent_student(
-    mobile: str,
-    student_id: int,
-    secret: str = ""
-):
-    """TEMPORARY: Remove a specific parent-student link (by mobile + student_id)."""
-    if secret != _TEMP_LINK_SECRET:
-        return JSONResponse({"status": False, "message": "Unauthorized"}, status_code=403)
-
-    parent = await Parents.filter(primary_mobile=mobile).first()
-    if not parent:
-        return JSONResponse({"status": False, "message": f"Parent with mobile {mobile} not found"}, status_code=404)
-
-    deleted_count = await ParentChildren.filter(parent_id=parent.id, student_id=student_id).delete()
-    if deleted_count:
-        return JSONResponse({"status": True, "message": f"Removed link: parent {parent.id} ↔ student {student_id}"})
-    return JSONResponse({"status": False, "message": f"No link found for parent {parent.id} ↔ student {student_id}"})
-# --- END TEMPORARY ---
 
 
 # @router.get("/childrens")

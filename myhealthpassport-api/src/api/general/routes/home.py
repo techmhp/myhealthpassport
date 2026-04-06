@@ -316,7 +316,7 @@ async def user_login(payload: MobileNumber):
     BR_AMBEDKAR_SCHOOL_ID = 17
 
     # Step 1: Auto-link test account (8074531686) to student 1780
-    # so it falls into the BR Ambedkar parent set below.
+    # AND remove any stale dummy/test student links not at BR Ambedkar school.
     TEST_MOBILE_SUFFIX = "8074531686"
     if str(payload.mobile).strip().endswith(TEST_MOBILE_SUFFIX):
         TEST_STUDENT_ID = 1780
@@ -329,8 +329,21 @@ async def user_login(payload: MobileNumber):
                 if not existing_link:
                     await ParentChildren.create(parent_id=user.id, student_id=TEST_STUDENT_ID)
                     print(f"[BR AMBEDKAR BYPASS] Auto-linked test parent {user.id} ↔ student {TEST_STUDENT_ID}")
+
+            # Remove any parent-child links where the student is NOT enrolled at BR Ambedkar school
+            all_links = await ParentChildren.filter(parent_id=user.id).all()
+            for lnk in all_links:
+                enrolled = await SchoolStudents.filter(
+                    student_id=lnk.student_id,
+                    school_id=BR_AMBEDKAR_SCHOOL_ID,
+                    status=True,
+                    is_deleted=False
+                ).exists()
+                if not enrolled:
+                    await lnk.delete()
+                    print(f"[BR AMBEDKAR BYPASS] Removed stale link: parent {user.id} ↔ student {lnk.student_id}")
         except Exception as e:
-            print(f"[BR AMBEDKAR BYPASS] Auto-link failed (non-blocking): {e}")
+            print(f"[BR AMBEDKAR BYPASS] Auto-link/cleanup failed (non-blocking): {e}")
 
     # Step 2: Check if this parent has any child enrolled at BR Ambedkar school
     is_br_ambedkar_parent = False

@@ -1,0 +1,64 @@
+name: 🚀 Frontend — Deploy to Staging (Amplify)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-frontend-staging:
+    name: Trigger Amplify Build → Staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Start Amplify job for staging branch
+        run: |
+          JOB=$(aws amplify start-job \
+            --app-id d31i4bwxow07s2 \
+            --branch-name main \
+            --job-type RELEASE \
+            --region ap-south-1 \
+            --query 'jobSummary.jobId' \
+            --output text)
+          echo "✅ Amplify staging build triggered — Job ID: $JOB"
+          echo "JOB_ID=$JOB" >> $GITHUB_ENV
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: ⏳ Wait for Amplify build to complete
+        run: |
+          echo "Waiting for Amplify staging build $JOB_ID to finish..."
+          for i in $(seq 1 40); do
+            sleep 30
+            STATUS=$(aws amplify get-job \
+              --app-id d31i4bwxow07s2 \
+              --branch-name main \
+              --job-id "$JOB_ID" \
+              --region ap-south-1 \
+              --query 'job.summary.status' \
+              --output text)
+            echo "[$i] Status: $STATUS"
+            if [ "$STATUS" = "SUCCEED" ]; then
+              echo "✅ Amplify staging build succeeded!"
+              exit 0
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "CANCELLING" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Amplify staging build failed with status: $STATUS"
+              exit 1
+            fi
+          done
+          echo "⚠️ Timed out waiting for build — check Amplify console"
+          exit 1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: 📢 Deployment Summary
+        if: always()
+        run: |
+          echo "============================="
+          echo "Environment : STAGING (UAT)"
+          echo "App ID      : d31i4bwxow07s2"
+          echo "Branch      : main"
+          echo "Job ID      : $JOB_ID"
+          echo "Status      : ${{ job.status }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "============================="

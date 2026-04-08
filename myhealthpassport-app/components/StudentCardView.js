@@ -48,6 +48,7 @@ const StudentCardView = ({ student }) => {
               className="rounded-full border-2 border-gray-300 w-[102px] h-[102px]"
               width={102}
               height={102}
+              unoptimized={!imgFailed && isValidUrl(student?.profile_image)}
               onError={() => setImgFailed(true)}
             />
             {/* Name */}

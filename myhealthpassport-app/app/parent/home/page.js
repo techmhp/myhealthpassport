@@ -53,6 +53,7 @@ export default function Home() {
                               className="rounded-full border-2 border-gray-300"
                               width={102}
                               height={102}
+                              unoptimized={isValidUrl(child.image)}
                             />
                             <h3 className="font-semibold text-[18px] leading-[100%] tracking-[0%] text-center mt-3">{`${child.first_name} ${child.middle_name}  ${child.last_name}`}</h3>
                           </div>

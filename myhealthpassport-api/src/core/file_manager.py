@@ -150,6 +150,10 @@ async def save_base64_image(
             logger.error("Decoded image is empty.")
             return None
 
+        if s3_client is None:
+            logger.error("S3 client is not initialized. Check AWS credentials (AWS_BUCKET_NAME, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY).")
+            return None
+
         folder = destination_folder or f"uploads/{user_role or 'unknown'}/{role_type or 'misc'}"
         s3_key = get_s3_key(ext, folder)
 

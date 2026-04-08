@@ -60,6 +60,7 @@ const ProfileHeader = ({ details, school }) => {
                 className="size-16 sm:size-20 md:size-24 rounded-full mx-auto sm:mx-0"
                 width={102}
                 height={102}
+                unoptimized={isValidUrl(profile.image)}
               />
               {/* Name and breadcrumbs */}
               <div className="flex flex-col gap-y-1.5 text-center sm:text-left w-full">

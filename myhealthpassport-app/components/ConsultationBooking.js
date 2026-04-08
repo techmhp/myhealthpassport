@@ -418,6 +418,7 @@ const ConsultationBooking = ({
                             className="size-10 sm:size-12 rounded-full"
                             width={70}
                             height={70}
+                            unoptimized={isValidUrl(child.image)}
                           />
                           <div>
                             <h3 className="text-sm tracking-tight text-gray-900">{formatFullName(child)}</h3>
@@ -540,6 +541,7 @@ const ConsultationBooking = ({
                     className="rounded-full size-10"
                     width={36}
                     height={36}
+                    unoptimized={isValidUrl(selectedPatient.image)}
                   />
                   <p className="text-xs sm:text-sm m-0 whitespace-wrap">{selectedPatient.name}</p>
                 </div>
@@ -555,6 +557,7 @@ const ConsultationBooking = ({
                     className="rounded-full size-10"
                     width={36}
                     height={36}
+                    unoptimized={isValidUrl(expertDetails?.profile_image_url)}
                   />
                   <p className="text-xs sm:text-sm m-0 whitespace-wrap">{formatFullName(expertDetails)}</p>
                 </div>

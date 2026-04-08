@@ -350,6 +350,7 @@ export default function UpdateExpertForm({ data }) {
                       className="size-16 sm:size-20 md:size-24 rounded-full mx-auto sm:mx-0"
                       width={102}
                       height={102}
+                      unoptimized={file !== null || isValidUrl(data.profile_image_url)}
                     />
                     {/* Name and breadcrumbs */}
                     <div className="flex flex-col gap-y-1.5 text-center sm:text-left w-full">

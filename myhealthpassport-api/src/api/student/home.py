@@ -741,6 +741,14 @@ async def update_student_details_basic(
                 )
                 if image_key:
                     student.profile_image = image_key
+                else:
+                    resp = StandardResponse(
+                        status=False,
+                        message="Profile image upload failed. Please check the file and try again.",
+                        data={},
+                        errors={"profile_image": "Failed to upload image to storage. Ensure the file is a valid JPEG, PNG, or WebP image under 500KB."},
+                    )
+                    return JSONResponse(content=resp.model_dump(), status_code=status.HTTP_400_BAD_REQUEST)
 
             # Update Student Details
             if student_data_from_request.first_name is not None:

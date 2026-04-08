@@ -1141,18 +1141,6 @@ async def start_download_selected(
             "download": f"{base_url}/api/v1/report/{student_id}/download-selected?key={selected_key}&academic_year={academic_year}&direct=true"  # ✅ CHANGED: Added &direct=true
         })
 
-    # Validation — non-strict: generate PDF with whatever data is available
-    try:
-        print(f"🔍 [PDF Debug] Validating report context for {student_id} ({selected_key})...")
-        await build_report_context(request, student_id, required_sections=selected, strict=False)
-        print(f"✅ [PDF Debug] Validation passed for {cache_key}")
-    except HTTPException as e:
-        # Only abort for hard errors (student not found, bad academic year, etc.)
-        print(f"❌ [PDF Debug] Hard validation error for {cache_key}: {e.detail}")
-        async with pdf_status_lock:
-            pdf_status[cache_key] = {"ready": False, "status": "error", "error": e.detail}
-        return JSONResponse({"status": "error", "message": e.detail})
-
     async with pdf_status_lock:
         pdf_status[cache_key] = {"ready": False, "status": "generating", "path": ""}
     print(f"🚀 [PDF Debug] Background generation scheduled for {cache_key}")
@@ -1331,6 +1319,21 @@ async def download_selected_report(
             final_academic_year = "default"
 
     print(f"⬇️ [PDF Debug] Download request received for {final_cache_key or cache_key_with_year or cache_key_default}, direct={direct}")
+
+    # Check in-memory status for errors (background task may have failed)
+    possible_cache_keys = [k for k in [cache_key_with_year, cache_key_default] if k]
+    async with pdf_status_lock:
+        status_info = None
+        for ck in possible_cache_keys:
+            if ck in pdf_status:
+                status_info = pdf_status[ck]
+                break
+    if status_info and status_info.get("status") == "error":
+        print(f"❌ [PDF Debug] Error status detected for {possible_cache_keys}: {status_info.get('error')}")
+        return JSONResponse({
+            "status": "error",
+            "message": status_info.get("error", "PDF generation failed. Please try again.")
+        })
 
     # Not found
     if not pdf_path or not pdf_path.exists():

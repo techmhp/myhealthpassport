@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadPDFSelected, startPDFGenerationSelected, createPDFDownloadToken } from '@/services/secureApis';
 import { toastMessage } from '@/helpers/utilities';
 
@@ -7,6 +7,27 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(0);
+
+  // Pre-warm: silently kick off PDF generation when the button mounts so the
+  // PDF is cached (or nearly ready) by the time the user clicks download.
+  useEffect(() => {
+    if (!studentId) return;
+    const prewarm = async () => {
+      try {
+        const data = JSON.stringify({
+          reports:
+            selectedReports && selectedReports.length > 0
+              ? selectedReports
+              : ['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'],
+        });
+        await startPDFGenerationSelected(parseInt(studentId), data, academicYear);
+      } catch {
+        // Silent fail — pre-warm is best-effort only
+      }
+    };
+    prewarm();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, academicYear]);
 
   const pollPDFStatus = async (queryParameter) => {
     // Poll up to 5 minutes: first 10 polls every 3s, then every 5s after that
@@ -36,6 +57,9 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
 
           if (data.status === true && data.download) {
             resolve(data.download);
+          } else if (data.status === 'error') {
+            // Background generation failed — stop polling immediately
+            reject(new Error(data.message || 'PDF generation failed. Please try again.'));
           } else {
             const interval = attempt <= 10 ? FAST_INTERVAL : SLOW_INTERVAL;
             setTimeout(poll, interval);

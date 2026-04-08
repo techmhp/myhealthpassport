@@ -8,31 +8,36 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
   const [downloadProgress, setDownloadProgress] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(0);
 
-  const pollPDFStatus = async (maxAttempts = 30, interval = 3000, queryParameter) => {
-    let attempts = 0;
-    const maxTimeSeconds = Math.ceil((maxAttempts * interval) / 1000);
+  const pollPDFStatus = async (queryParameter) => {
+    // Poll up to 5 minutes: first 10 polls every 3s, then every 5s after that
+    const FAST_INTERVAL = 3000;   // 3s for first 10 attempts
+    const SLOW_INTERVAL = 5000;   // 5s after that
+    const MAX_WAIT_MS = 5 * 60 * 1000; // 5 minute hard cap
+    const startTime = Date.now();
 
     return new Promise((resolve, reject) => {
+      let attempt = 0;
       const poll = async () => {
-        attempts++;
+        attempt++;
+        const elapsed = Date.now() - startTime;
 
-        if (attempts > maxAttempts) {
+        if (elapsed >= MAX_WAIT_MS) {
           reject(new Error('PDF generation timeout. Please try again.'));
           toastMessage('PDF generation timeout. Please try again.', 'error');
           return;
         }
 
-        try {
-          const elapsedTime = attempts * (interval / 1000);
-          const remainingTime = Math.max(maxTimeSeconds - elapsedTime, 3);
-          setEstimatedTime(Math.ceil(remainingTime));
+        const remainingSeconds = Math.ceil((MAX_WAIT_MS - elapsed) / 1000);
+        setEstimatedTime(remainingSeconds);
 
+        try {
           const response = await downloadPDFSelected(parseInt(studentId), queryParameter, academicYear);
           const data = JSON.parse(response);
 
           if (data.status === true && data.download) {
             resolve(data.download);
           } else {
+            const interval = attempt <= 10 ? FAST_INTERVAL : SLOW_INTERVAL;
             setTimeout(poll, interval);
           }
         } catch (error) {
@@ -85,7 +90,7 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
   const handleSaveAsPDF = async () => {
     setIsDownloading(true);
     setDownloadProgress('checking');
-    setEstimatedTime(90);
+    setEstimatedTime(300);
 
     if (onDownloadStart) onDownloadStart();
 
@@ -153,7 +158,7 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
         setDownloadProgress('generating');
 
         try {
-          const downloadUrl = await pollPDFStatus(30, 3000, queryParameter);
+          const downloadUrl = await pollPDFStatus(queryParameter);
           await downloadPDFFromURL(downloadUrl);
           toastMessage('PDF downloaded successfully', 'success');
         } catch (pollError) {

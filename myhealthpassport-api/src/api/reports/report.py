@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import time
 import json
 import uuid
@@ -51,6 +52,32 @@ async def cached_get_new_url(path: str, ttl: int = DEFAULT_URL_CACHE_TTL) -> str
         _url_cache[path] = (signed, now + ttl)
 
     return signed
+
+# =========================================================
+# Fetch S3 image as base64 data URI (avoids WeasyPrint making external HTTP calls)
+# =========================================================
+async def get_s3_image_as_data_uri(s3_key: str) -> Optional[str]:
+    """
+    Download an image directly from S3 and return it as a base64 data URI.
+    When passed to WeasyPrint, this eliminates the need for WeasyPrint to make
+    external HTTP requests to fetch presigned S3 URLs during PDF rendering —
+    which was the primary cause of PDF generation timeouts.
+    """
+    if not s3_key or s3_client is None:
+        return None
+    try:
+        def _download():
+            resp = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_key)
+            body = resp["Body"].read()
+            content_type = resp.get("ContentType", "image/png")
+            b64 = base64.b64encode(body).decode("utf-8")
+            return f"data:{content_type};base64,{b64}"
+
+        return await anyio.to_thread.run_sync(_download)
+    except Exception as e:
+        print(f"⚠️ [PDF] Failed to embed S3 image as base64 (key={s3_key}): {e}")
+        return None
+
 
 # =========================================================
 # Safe JSON loader
@@ -181,7 +208,8 @@ async def build_report_context(
         if school.school_logo.startswith("data:"):
             school_logo_url = school.school_logo
         else:
-            school_logo_url = await cached_get_new_url(school.school_logo)
+            # Embed as base64 so WeasyPrint doesn't make an external HTTP request to S3
+            school_logo_url = await get_s3_image_as_data_uri(school.school_logo)
 
     # -------------------------------------------------------------------------
     # FIXED DATA INTEGRITY CHECK (Dynamic Validation)
@@ -355,15 +383,17 @@ async def build_report_context(
             elif entry.get("question_type") == "Areas of Concern":
                 lneed_attention.extend(entry.get("answers", []))
 
-    # Image URLs
+    # Image URLs — use base64 data URIs to avoid WeasyPrint making external HTTP requests
     profile_url: Optional[str] = None
     if getattr(student, "profile_image", None):
         if student.profile_image.startswith("data:"):
             profile_url = student.profile_image
         else:
-            profile_url = await cached_get_new_url(student.profile_image)
+            profile_url = await get_s3_image_as_data_uri(student.profile_image)
 
     REPORTS_DIR = Path(__file__).resolve().parent
+    # Profile fallback: use local file:// to avoid an HTTP request from WeasyPrint
+    profile_fallback = f"file://{REPORTS_DIR / 'Profile_icon1.png'}"
     left_logo_url = f"file://{REPORTS_DIR / 'logo-left.png'}"
     right_logo_url = school_logo_url
     gauge_url = f"file://{REPORTS_DIR / 'gauge.png'}"
@@ -408,7 +438,7 @@ async def build_report_context(
         "student": student,
         "smart": smart_data,
         "school": school,
-        "profile_url": profile_url or "/static/default-photo.jpg",
+        "profile_url": profile_url or profile_fallback,
         "left_logo": left_logo_url,
         "right_logo": right_logo_url,
         "gauge": gauge_url,

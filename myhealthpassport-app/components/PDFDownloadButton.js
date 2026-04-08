@@ -59,7 +59,11 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
             resolve(data.download);
           } else if (data.status === 'error') {
             // Background generation failed — stop polling immediately
-            reject(new Error(data.message || 'PDF generation failed. Please try again.'));
+            // Sanitize raw Python/server errors so users see a friendly message
+            const rawMsg = data.message || '';
+            const isInternalError = rawMsg.includes('has no attribute') || rawMsg.includes('Traceback') || rawMsg.includes('TypeError') || rawMsg.includes('Exception') || rawMsg.includes('Error:');
+            const userMsg = isInternalError ? 'PDF generation failed. Please try again later.' : (rawMsg || 'PDF generation failed. Please try again.');
+            reject(new Error(userMsg));
           } else {
             const interval = attempt <= 10 ? FAST_INTERVAL : SLOW_INTERVAL;
             setTimeout(poll, interval);

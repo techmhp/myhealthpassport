@@ -845,7 +845,7 @@
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
-                                        {% for sentence in pstatus.summary.split('.') %}
+                                        {% for sentence in ((pstatus.summary if pstatus and pstatus.summary else '') ).split('.') %}
                                         {% if sentence.strip() %}
                                         {{ sentence.strip() }}.<br>
                                         {% endif %}
@@ -1106,7 +1106,7 @@
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
-                                        {% for sentence in status.common_summary.split('.') %}
+                                        {% for sentence in ((status.common_summary if status and status.common_summary else '') ).split('.') %}
                                         {% if sentence.strip() %}
                                         {{ sentence.strip() }}.<br>
                                         {% endif %}
@@ -1252,7 +1252,7 @@
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
-                                        {% for sentence in emo.summary.split('.') %}
+                                        {% for sentence in ((emo.summary if emo and emo.summary else '') ).split('.') %}
                                         {% if sentence.strip() %}
                                         {{ sentence.strip() }}.<br>
                                         {% endif %}
@@ -1411,7 +1411,7 @@
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
-                                        {% for sentence in dental.report_summary.split('.') %}
+                                        {% for sentence in ((dental.report_summary if dental and dental.report_summary else '') ).split('.') %}
                                         {% if sentence.strip() %}
                                         {{ sentence.strip() }}.<br>
                                         {% endif %}
@@ -1930,7 +1930,7 @@
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
-                                        {% for sentence in lab.summary.split('.') %}
+                                        {% for sentence in ((lab.summary if lab and lab.summary else '') ).split('.') %}
                                         {% if sentence.strip() %}
                                         {{ sentence.strip() }}.<br>
                                         {% endif %}

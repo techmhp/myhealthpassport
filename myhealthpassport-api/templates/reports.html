@@ -839,9 +839,9 @@
                                     <span>Overall Summary</span>
                                 </div>
                                 <div class="summary-right">
-                                    {% if pstatus.status == "all_good" %}
+                                    {% if pstatus and pstatus.status == "all_good" %}
                                     <img src="{{ all_good }}" alt="All Good">
-                                    {% elif pstatus.status == "need_attention" %}
+                                    {% elif pstatus and pstatus.status == "need_attention" %}
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
@@ -1100,9 +1100,9 @@
                                     <span>Overall Summary</span>
                                 </div>
                                 <div class="summary-right">
-                                    {% if status.common_status == "all_good" %}
+                                    {% if status and status.common_status == "all_good" %}
                                     <img src="{{ all_good }}" alt="All Good">
-                                    {% elif status.common_status == "need_attention" %}
+                                    {% elif status and status.common_status == "need_attention" %}
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
@@ -1246,9 +1246,9 @@
                                     <span>Overall Summary</span>
                                 </div>
                                 <div class="summary-right">
-                                    {% if emo.status == "all_good" %}
+                                    {% if emo and emo.status == "all_good" %}
                                     <img src="{{ all_good }}" alt="All Good">
-                                    {% elif emo.status == "need_attention" %}
+                                    {% elif emo and emo.status == "need_attention" %}
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
@@ -1306,7 +1306,7 @@
                                     <div class="recommend-title">Recommendations</div>
                                 </div>
                                <div class="column-right">
-    {% if emo.clinical_notes_recommendations %}
+    {% if emo and emo.clinical_notes_recommendations %}
         {# 1. Ensure it is a string and remove the outer curly braces {} #}
         {% set raw_text = emo.clinical_notes_recommendations|string %}
         {% set cleaned_raw_text = raw_text.strip('{}') %}
@@ -1405,9 +1405,9 @@
                                     <span>Overall Summary</span>
                                 </div>
                                 <div class="summary-right">
-                                    {% if dental.status == "all_good" %}
+                                    {% if dental and dental.status == "all_good" %}
                                     <img src="{{ all_good }}" alt="All Good">
-                                    {% elif dental.status == "need_attention" %}
+                                    {% elif dental and dental.status == "need_attention" %}
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
@@ -1924,9 +1924,9 @@
                                     <span>Overall Summary</span>
                                 </div>
                                 <div class="summary-right">
-                                    {% if lab.status == "all_good" %}
+                                    {% if lab and lab.status == "all_good" %}
                                     <img src="{{ all_good }}" alt="All Good">
-                                    {% elif lab.status == "need_attention" %}
+                                    {% elif lab and lab.status == "need_attention" %}
                                     <img src="{{ need_attention }}" alt="Needs Attention">
                                     {% endif %}
                                     <div class="summary-text">
@@ -1982,7 +1982,7 @@
                                     <div class="recommend-title">Recommendations</div>
                                 </div>
                                 <div class="column-right">
-                                    {% if emo.clinical_notes_recommendations %}
+                                    {% if emo and emo.clinical_notes_recommendations %}
                                     {% for sentence in emo.clinical_notes_recommendations.split('.') if sentence.strip() %}
                                     <div class="item good">
                                         <div class="icons">★</div>

@@ -1359,11 +1359,26 @@ async def download_selected_report(
     # ✅ If direct=true, serve the PDF file
     if direct:
         print(f"📄 [PDF Debug] Serving PDF file directly: {final_cache_key}")
+        # Build a friendly filename: "First Last - Class 5A.pdf"
+        try:
+            student_obj = await Students.get_or_none(id=student_id)
+            if student_obj:
+                student_name = f"{student_obj.first_name or ''} {student_obj.last_name or ''}".strip()
+                school_student = await SchoolStudents.get_or_none(student_id=student_id)
+                if school_student and school_student.class_room:
+                    class_section = f"Class {school_student.class_room}{school_student.section or ''}".strip()
+                    pdf_filename = f"{student_name} - {class_section}.pdf"
+                else:
+                    pdf_filename = f"{student_name}.pdf" if student_name else f"report_{student_id}.pdf"
+            else:
+                pdf_filename = f"report_{student_id}_{final_academic_year}.pdf"
+        except Exception:
+            pdf_filename = f"report_{student_id}_{final_academic_year}.pdf"
         return FileResponse(
             pdf_path,
             media_type="application/pdf",
-            filename=f"report_{student_id}_{final_academic_year}.pdf",
-            headers={"Content-Disposition": f'attachment; filename="report_{student_id}_{final_academic_year}.pdf"'}
+            filename=pdf_filename,
+            headers={"Content-Disposition": f'attachment; filename="{pdf_filename}"'}
         )
 
     # ✅ Otherwise, return JSON with download URL (add &direct=true)

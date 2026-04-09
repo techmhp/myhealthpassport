@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   nutritionalAnalystRecomendations,
   createNutritionalAnalystRecomendations,
@@ -11,7 +11,6 @@ import InlineSpinner from '../UI/InlineSpinner';
 
 export default function NutritionalAnalysis() {
   const { studentId } = useParams();
-  const router = useRouter();
 
   // Initialize form data with proper structure
   const initializeFormData = () => ({
@@ -348,15 +347,21 @@ export default function NutritionalAnalysis() {
   };
 
   const updateSummary = (reportIndex, value) => {
-    const updatedFormData = { ...formData };
-    updatedFormData.data[reportIndex].summary = value;
-    setFormData(updatedFormData);
+    setFormData(prev => ({
+      ...prev,
+      data: prev.data.map((report, idx) =>
+        idx === reportIndex ? { ...report, summary: value } : report
+      ),
+    }));
   };
 
   const updateStatus = (reportIndex, value) => {
-    const updatedFormData = { ...formData };
-    updatedFormData.data[reportIndex].status = value;
-    setFormData(updatedFormData);
+    setFormData(prev => ({
+      ...prev,
+      data: prev.data.map((report, idx) =>
+        idx === reportIndex ? { ...report, status: value } : report
+      ),
+    }));
   };
 
   const updateCommonSummary = value => {
@@ -407,7 +412,8 @@ export default function NutritionalAnalysis() {
         setAutoSaveStatus('saved');
         setLastSavedAt(new Date());
         setHasExistingData(true);
-        router.refresh();
+        // Re-fetch from API so the form always reflects exactly what was saved
+        await fetchData();
       } else {
         // console.error('Save failed:', result.message);
         toastMessage(result.message || 'Failed to save data', 'error');

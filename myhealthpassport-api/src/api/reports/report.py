@@ -1114,6 +1114,10 @@ async def start_download_selected(
     """
     Start background PDF generation for selected sections.
     """
+    # JS null becomes the string "null" in query params — treat it as absent
+    if academic_year == "null":
+        academic_year = None
+
     selected = [r.strip().lower() for r in payload.get("reports", []) if isinstance(r, str) and r.strip()]
     if not selected:
         raise HTTPException(status_code=400, detail="No sections selected")
@@ -1283,6 +1287,10 @@ async def download_selected_report(
     download_token: Optional[str] = None,  # one-time token for direct browser download
 ):
     """Check PDF availability and return download URL, or serve file directly if direct=true."""
+    # JS null becomes the string "null" in query params — treat it as absent
+    if academic_year == "null":
+        academic_year = None
+
     # Validate one-time download token (used for direct browser downloads)
     if download_token:
         token_cache = ObjectCache(cache_key=f"pdf-dl-token:{download_token}")
@@ -1360,20 +1368,23 @@ async def download_selected_report(
     if direct:
         print(f"📄 [PDF Debug] Serving PDF file directly: {final_cache_key}")
         # Build a friendly filename: "First Last - Class 5A.pdf"
+        # class_room and section live on the Students model directly
         try:
             student_obj = await Students.get_or_none(id=student_id)
             if student_obj:
                 student_name = f"{student_obj.first_name or ''} {student_obj.last_name or ''}".strip()
-                school_student = await SchoolStudents.get_or_none(student_id=student_id)
-                if school_student and school_student.class_room:
-                    class_section = f"Class {school_student.class_room}{school_student.section or ''}".strip()
+                class_room = student_obj.class_room or ''
+                section = student_obj.section or ''
+                if class_room:
+                    class_section = f"Class {class_room}{section}".strip()
                     pdf_filename = f"{student_name} - {class_section}.pdf"
                 else:
                     pdf_filename = f"{student_name}.pdf" if student_name else f"report_{student_id}.pdf"
             else:
-                pdf_filename = f"report_{student_id}_{final_academic_year}.pdf"
-        except Exception:
-            pdf_filename = f"report_{student_id}_{final_academic_year}.pdf"
+                pdf_filename = f"report_{student_id}.pdf"
+        except Exception as e:
+            print(f"❌ [PDF Debug] Error building filename for student {student_id}: {e}")
+            pdf_filename = f"report_{student_id}.pdf"
         return FileResponse(
             pdf_path,
             media_type="application/pdf",

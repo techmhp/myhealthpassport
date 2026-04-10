@@ -8,18 +8,24 @@ const foundationalPillars = [
     title: "Physical Health",
     description: "Height, weight, body composition",
     color: "from-brand to-blue-400",
+    bgColor: "bg-brand/8",
+    iconColor: "bg-brand/15 text-brand",
   },
   {
     icon: SmilePlus,
     title: "Dental Health",
     description: "Cavity detection, gum health, hygiene",
     color: "from-sunshine to-amber-400",
+    bgColor: "bg-sunshine/10",
+    iconColor: "bg-sunshine/20 text-sunshine",
   },
   {
     icon: Eye,
     title: "Vision",
     description: "Visual acuity, colour vision, depth perception",
     color: "from-brand to-indigo-400",
+    bgColor: "bg-indigo-50",
+    iconColor: "bg-indigo-100 text-indigo-600",
   },
 ];
 
@@ -37,6 +43,9 @@ const corePillars = [
     ],
     color: "from-mint to-emerald-400",
     tagColor: "bg-mint/10 text-mint",
+    bgColor: "bg-mint/10",
+    iconColor: "bg-mint/20 text-mint",
+    borderColor: "border-mint/20",
   },
   {
     icon: Brain,
@@ -50,6 +59,9 @@ const corePillars = [
     ],
     color: "from-lavender to-purple-400",
     tagColor: "bg-lavender/10 text-lavender",
+    bgColor: "bg-lavender/8",
+    iconColor: "bg-lavender/15 text-lavender",
+    borderColor: "border-lavender/20",
   },
   {
     icon: Heart,
@@ -63,12 +75,15 @@ const corePillars = [
     ],
     color: "from-coral to-orange-400",
     tagColor: "bg-coral/10 text-coral",
+    bgColor: "bg-coral/8",
+    iconColor: "bg-coral/15 text-coral",
+    borderColor: "border-coral/20",
   },
 ];
 
 const PillarsSection = () => {
   return (
-    <section className="py-16 sm:py-20 lg:py-32 bg-card relative overflow-hidden">
+    <section className="py-16 sm:py-20 lg:py-32 bg-gradient-soft relative overflow-hidden">
       <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-brand/5 rounded-full blur-3xl" />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -92,11 +107,11 @@ const PillarsSection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {foundationalPillars.map((pillar, index) => (
             <AnimatedSection key={index} delay={index * 100}>
-              <div className="group relative bg-background p-5 sm:p-6 rounded-2xl border border-border hover:border-transparent transition-all duration-300 hover:shadow-lg h-full">
+              <div className={`group relative ${pillar.bgColor} p-5 sm:p-6 rounded-2xl border border-border hover:border-transparent transition-all duration-300 hover:shadow-lg h-full`}>
                 <div className={`absolute inset-0 bg-gradient-to-br ${pillar.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl`} />
                 <div className="relative z-10">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-brand/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-colors">
-                    <pillar.icon className="w-6 h-6 sm:w-7 sm:h-7 text-brand group-hover:text-white transition-colors" />
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 ${pillar.iconColor} group-hover:bg-white/20 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-colors`}>
+                    <pillar.icon className="w-6 h-6 sm:w-7 sm:h-7 group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="text-base sm:text-lg font-bold mb-1.5 sm:mb-2 group-hover:text-white transition-colors">{pillar.title}</h3>
                   <p className="text-xs sm:text-sm text-muted-foreground group-hover:text-white/80 transition-colors">{pillar.description}</p>
@@ -111,12 +126,12 @@ const PillarsSection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {corePillars.map((pillar, index) => (
             <AnimatedSection key={index} delay={index * 150}>
-              <div className="group relative bg-background p-6 sm:p-8 rounded-2xl border-2 border-brand/20 hover:border-transparent transition-all duration-300 hover:shadow-xl h-full flex flex-col">
+              <div className={`group relative ${pillar.bgColor} p-6 sm:p-8 rounded-2xl border-2 ${pillar.borderColor} hover:border-transparent transition-all duration-300 hover:shadow-xl h-full flex flex-col`}>
                 <div className={`absolute inset-0 bg-gradient-to-br ${pillar.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl`} />
                 <div className="relative z-10 flex flex-col h-full">
                   <div className="flex items-start justify-between mb-4 sm:mb-5">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center transition-colors">
-                      <pillar.icon className="w-7 h-7 sm:w-8 sm:h-8 text-brand group-hover:text-white transition-colors" />
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${pillar.iconColor} group-hover:bg-white/20 rounded-2xl flex items-center justify-center transition-colors`}>
+                      <pillar.icon className="w-7 h-7 sm:w-8 sm:h-8 group-hover:text-white transition-colors" />
                     </div>
                     {pillar.ageTag && (
                       <span className={`text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full ${pillar.tagColor} group-hover:bg-white/20 group-hover:text-white transition-colors`}>

@@ -60,7 +60,7 @@ const programs = [
 
 const colorMap: Record<string, { bg: string; text: string; border: string; gradient: string; solid: string }> = {
   brand: { bg: "bg-brand/10", text: "text-brand", border: "border-brand/20", gradient: "from-brand/10 via-brand/5 to-lavender/5", solid: "bg-primary" },
-  mint: { bg: "bg-mint/10", text: "text-mint", border: "border-mint/20", gradient: "from-mint/10 via-mint/5 to-brand/5", solid: "bg-accent" },
+  mint: { bg: "bg-mint/10", text: "text-mint", border: "border-mint/20", gradient: "from-mint/10 via-mint/5 to-brand/5", solid: "bg-mint" },
 };
 
 const ProgramCard = ({ program }: { program: typeof programs[0] }) => {
@@ -197,7 +197,7 @@ const ProgramCard = ({ program }: { program: typeof programs[0] }) => {
 };
 
 const CareProgramsSection = () => (
-  <section id="programs" className="py-20 lg:py-28 relative overflow-hidden">
+  <section id="programs" className="py-20 lg:py-28 bg-gradient-soft relative overflow-hidden">
     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand/5 rounded-full blur-3xl -translate-y-1/2" />
     <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-mint/5 rounded-full blur-3xl translate-y-1/2" />
 

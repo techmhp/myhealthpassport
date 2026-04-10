@@ -41,7 +41,7 @@ export default function ParentPage() {
                   Explore Our Programs
                 </a>
               </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-xl" onClick={() => setTalkOpen(true)}>
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-xl hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-colors" onClick={() => setTalkOpen(true)}>
                 Talk to Our Team
               </Button>
             </div>
@@ -52,17 +52,17 @@ export default function ParentPage() {
         <ConcernCardsSection onTalkToTeam={() => setTalkOpen(true)} />
         <TalkToTeamDialog open={talkOpen} onOpenChange={setTalkOpen} />
 
-        <section className="py-16 lg:py-20">
+        <section className="pt-24 pb-16 lg:pt-32 lg:pb-20">
           <div className="container mx-auto px-4 text-center">
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button size="lg" className="text-lg px-10 py-6 rounded-xl shadow-glow" onClick={() => setBookingOpen(true)}>
                 Book Passport Screening
               </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-xl" onClick={() => setTalkOpen(true)}>
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-xl hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-colors" onClick={() => setTalkOpen(true)}>
                 Talk to Our Team
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-4">
+            <p className="text-sm text-muted-foreground mt-6">
               Screening first. Decisions next. Support only if needed.
             </p>
           </div>

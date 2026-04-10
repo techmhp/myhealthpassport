@@ -62,7 +62,7 @@ export default function ParentPage() {
                 👉 Talk to Our Team
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-8">
+            <p className="text-sm text-muted-foreground" style={{ marginTop: '2rem' }}>
               Screening first. Decisions next. Support only if needed.
             </p>
           </div>

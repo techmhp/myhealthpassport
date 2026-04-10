@@ -59,8 +59,8 @@ const services = [
 ];
 
 const colorMap: Record<string, { bg: string; text: string; border: string; gradient: string; iconBg: string; payBg: string }> = {
-  lavender: { bg: "bg-lavender/10", text: "text-lavender", border: "border-lavender/20", gradient: "from-lavender/10 via-lavender/5 to-brand/5", iconBg: "bg-lavender/15", payBg: "bg-lavender" },
-  mint: { bg: "bg-mint/10", text: "text-mint", border: "border-mint/20", gradient: "from-mint/10 via-mint/5 to-brand/5", iconBg: "bg-mint/15", payBg: "bg-mint" },
+  lavender: { bg: "bg-lavender/10", text: "text-lavender", border: "border-lavender/20", gradient: "from-lavender/10 via-lavender/5 to-brand/5", iconBg: "bg-lavender", payBg: "bg-lavender" },
+  mint: { bg: "bg-mint/10", text: "text-mint", border: "border-mint/20", gradient: "from-mint/10 via-mint/5 to-brand/5", iconBg: "bg-mint", payBg: "bg-mint" },
 };
 
 const ServiceCard = ({ service }: { service: typeof services[0] }) => {
@@ -83,8 +83,8 @@ const ServiceCard = ({ service }: { service: typeof services[0] }) => {
     <div className={`rounded-3xl border ${c.border} bg-background overflow-hidden hover:shadow-xl transition-all duration-300`}>
       <div className={`bg-gradient-to-br ${c.gradient} p-6 lg:p-8`}>
         <div className="flex items-center gap-4 mb-4">
-          <div className={`w-14 h-14 ${c.iconBg} rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-            <service.icon className={`w-7 h-7 ${c.text}`} />
+          <div className={`w-14 h-14 ${c.iconBg} rounded-2xl flex items-center justify-center shrink-0 shadow-md`}>
+            <service.icon className="w-7 h-7 text-white" />
           </div>
           <div>
             <h3 className="text-2xl font-extrabold">{service.title}</h3>

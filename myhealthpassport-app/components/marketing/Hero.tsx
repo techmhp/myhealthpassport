@@ -7,9 +7,9 @@ const Hero = () => {
   return (
     <section id="home" className="relative min-h-screen lg:h-screen lg:max-h-screen flex items-center pt-24 sm:pt-28 pb-8 sm:pb-6 overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-soft" />
+      <div className="absolute inset-0 bg-background" />
       <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-brand/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-mint/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand/5 rounded-full blur-3xl" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-6 xl:gap-12 items-center">

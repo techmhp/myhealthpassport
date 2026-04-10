@@ -54,7 +54,7 @@ export default function ParentPage() {
 
         <section className="pt-24 pb-16 lg:pt-32 lg:pb-20 bg-gradient-soft">
           <div className="container mx-auto px-4 text-center">
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Button size="lg" className="text-lg px-10 py-6 rounded-xl shadow-glow" onClick={() => setBookingOpen(true)}>
                 👉 Book Passport Screening
               </Button>
@@ -62,7 +62,7 @@ export default function ParentPage() {
                 👉 Talk to Our Team
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-6">
+            <p className="text-sm text-muted-foreground mt-8">
               Screening first. Decisions next. Support only if needed.
             </p>
           </div>

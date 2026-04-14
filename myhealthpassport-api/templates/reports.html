@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=794">
     <title>Health Screening Report</title>
     <style>
         * {
@@ -111,11 +110,9 @@
 
         /* Profile Section */
         .profile-section {
-            display: -webkit-flex;
-            display: flex;
-            -webkit-align-items: center;
             align-items: center;
             margin-top: 250px;
+            gap: 20px;
             margin-left: 100px;
         }
 
@@ -123,9 +120,6 @@
             position: relative;
             width: 160px;
             height: 160px;
-            margin-right: 20px;
-            -webkit-flex-shrink: 0;
-            flex-shrink: 0;
         }
 
         .profile-bg {
@@ -174,22 +168,20 @@
         }
 
         .profile-details {
-            display: -webkit-flex;
             display: flex;
-            -webkit-align-items: center;
             align-items: center;
+            gap: 20px;
             font-size: 14px;
             color: #000;
-            margin-top: 8px;
         }
 
         .profile-details span {
-            display: inline-block;
-            margin-right: 20px;
+            display: inline-flex;
+            align-items: center;
         }
 
-        .profile-details span:last-child {
-            margin-right: 0;
+        .profile-details span:first-child {
+            padding-left: 0;
         }
 
         /* Sidebar */
@@ -197,14 +189,9 @@
             position: absolute;
             bottom: 350px;
             right: 0;
-            display: -webkit-flex;
             display: flex;
-            -webkit-flex-direction: column;
             flex-direction: column;
-        }
-
-        .sidebar-button {
-            margin-bottom: 15px;
+            gap: 15px;
         }
 
         .sidebar-button {
@@ -280,21 +267,16 @@
 
         /* Summary Box */
         .summary-box {
-            display: -webkit-flex;
             display: flex;
+            gap: 14px;
             width: 95%;
             height: auto;
             margin-left: 20px;
             border-radius: 10px;
             padding: 10px;
             margin-bottom: 20px;
-            -webkit-align-items: center;
             align-items: center;
             page-break-inside: avoid;
-        }
-
-        .summary-left {
-            margin-right: 14px;
         }
 
         .summary-box.physical { background: #FFF3F5; }
@@ -429,23 +411,18 @@
             page-break-after: avoid;
         }
 
-        /* Grid Layout — flex-based for wkhtmltopdf compatibility (no CSS Grid support) */
+        /* Grid Layout */
         .grid {
-            display: -webkit-box;
-            display: -webkit-flex;
-            display: flex;
-            -webkit-flex-wrap: wrap;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
             font-size: 12px;
             margin-left: 13px;
             text-align: center;
         }
 
-        .grid > div {
-            width: 16.6667%;
-            -webkit-box-sizing: border-box;
-            box-sizing: border-box;
-            padding: 2px 4px;
+        .grid div {
+            padding: 2px 2px;
         }
 
         .grid .value {
@@ -461,15 +438,11 @@
 
         /* Two Column Layout */
         .two-column {
-            display: -webkit-flex;
             display: flex;
+            gap: 20px;
             margin-top: 8px;
             margin-bottom: 15px;
             page-break-inside: avoid;
-        }
-
-        .two-column > * + * {
-            margin-left: 20px;
         }
 
         .column-left {
@@ -504,15 +477,11 @@
 
         /* Items */
         .item {
-            display: -webkit-flex;
             display: flex;
+            gap: 8px;
             margin-left: 10px;
             margin-bottom: 12px;
             line-height: 1.4;
-        }
-
-        .item > * + * {
-            margin-left: 8px;
         }
 
         .item .ico {
@@ -554,57 +523,33 @@
 
         /* Tooth Diagram */
         .tooth-diagram {
-            display: -webkit-flex;
             display: flex;
-            -webkit-flex-direction: column;
             flex-direction: column;
-            -webkit-align-items: center;
             align-items: center;
+            gap: 15px;
             margin: 20px 0;
             page-break-inside: avoid;
         }
 
-        .tooth-diagram > * + * {
-            margin-top: 15px;
-        }
-
         .tooth-row {
-            display: -webkit-flex;
             display: flex;
+            gap: 8px;
             margin-top: 2px;
-            -webkit-justify-content: center;
             justify-content: center;
             page-break-inside: avoid;
         }
-
-        .tooth-row > * + * {
-            margin-left: 8px;
-        }
-
-        .tooth-row.bottom-row {
-            display: -webkit-flex;
+                .tooth-row.bottom-row {
             display: flex;
+            gap: 8px;
             margin-top: 10px;
-            -webkit-justify-content: center;
             justify-content: center;
             page-break-inside: avoid;
-        }
-
-        .tooth-row.bottom-row > * + * {
-            margin-left: 8px;
-        }
-
+                }
         .tooth {
-            display: -webkit-flex;
             display: flex;
-            -webkit-flex-direction: column;
             flex-direction: column;
-            -webkit-align-items: center;
             align-items: center;
-        }
-
-        .tooth > * + * {
-            margin-top: 4px;
+            gap: 4px;
         }
 
         .tooth img {
@@ -677,16 +622,11 @@
 
         /* Signature Section */
         .signature-section {
-            display: -webkit-flex;
             display: flex;
-            -webkit-justify-content: space-between;
             justify-content: space-between;
+            gap: 30px;
             margin-top: 40px;
             page-break-inside: avoid;
-        }
-
-        .signature-box + .signature-box {
-            margin-left: 30px;
         }
 
         .signature-box {
@@ -701,12 +641,8 @@
         }
 
         .role-date {
-            display: -webkit-flex;
             display: flex;
-        }
-
-        .role-date > * + * {
-            margin-left: 20px;
+            gap: 20px;
         }
 
         .role-date div {
@@ -775,30 +711,26 @@
             }
 
             .sidebar {
-                position: absolute;
-                top: 350px;
-                right: 50px;
-                display: -webkit-flex;
-                display: flex;
-                -webkit-flex-direction: column;
-                flex-direction: column;
-                z-index: 10;
-            }
+        position: absolute;
+        top: 350px;  /* adjust as needed */
+        right: 50px;     /* align to right edge of the page */
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 10;
+    }
 
-            .sidebar-button {
-                width: 100px;
-                height: 50px;
-                padding: 15px;
-                border-radius: 8px;
-                display: -webkit-flex;
-                display: flex;
-                text-decoration: none;
-                -webkit-justify-content: flex-start;
-                justify-content: flex-start;
-                font-size: 24px;
-                color: #fff;
-                margin-bottom: 20px;
-            }
+    .sidebar-button {
+        width: 100px;
+        height: 50px;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        text-decoration: none;
+        justify-content:flex-start;
+        font-size: 24px;
+        color: #fff;
+    }
     .sidebar-button img.sidebar-img {
         width: 32px;  /* icon size */
         height: 32px;
@@ -1067,7 +999,6 @@
                             {% else %}
                             <div style="text-align:center;color:#999;padding:30px 20px;font-size:14px;">No SmartScale data recorded for this student.</div>
                             {% endif %}
-
 
                             <div class="two-column">
                                 <div class="column-left">
@@ -2160,20 +2091,6 @@
                 }
             });
         };
-    </script>
-    <script>
-    /* Fix: ensure each .report-section is a multiple of one page height so
-       the coloured right-border always fills the full last page of each section */
-    (function() {
-        var pageHeight = 1123;
-        var sections = document.querySelectorAll('.report-section');
-        for (var i = 0; i < sections.length; i++) {
-            var h = sections[i].offsetHeight;
-            var pages = Math.ceil(h / pageHeight);
-            if (pages < 1) pages = 1;
-            sections[i].style.minHeight = (pages * pageHeight) + 'px';
-        }
-    })();
     </script>
 </body>
 </html>

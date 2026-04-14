@@ -835,7 +835,7 @@
                 <h2>{{ student.first_name }} {{ student.last_name }}</h2>
                 <p>Health Screening Report {{ ongoing_year }}</p>
                 <div class="profile-details">
-                    <span>Age: {{ smart.age_years }}</span>
+                    <span>Age: {{ smart.age_years if smart else '' }}</span>
                     <span>Gender: {{ student.gender }}</span>
                     {% if student.blood_group %}
                     <span>Blood Group: {{ student.blood_group }}</span>
@@ -921,6 +921,7 @@
                                 </div>
                             </div>
 
+                            {% if smart %}
                             <div class="score-section">
                                 <div class="score-chart">
                                     <div class="score-info">
@@ -1060,6 +1061,9 @@
                                     <div><div class="value">{{ smart.health_level }}</div><div class="label">Health Level</div></div>
                                 </div>
                             </div>
+                            {% else %}
+                            <div style="text-align:center;color:#999;padding:30px 20px;font-size:14px;">No SmartScale data recorded for this student.</div>
+                            {% endif %}
 
 
                             <div class="two-column">

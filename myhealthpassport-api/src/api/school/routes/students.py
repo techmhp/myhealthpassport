@@ -3266,9 +3266,9 @@ async def get_students_by_class(
     ).prefetch_related("student")
 
     if classroom:
-        query = query.filter(student__class_room=classroom)
+        query = query.filter(student__class_room__iexact=classroom.strip())
     if section:
-        query = query.filter(student__section=section)
+        query = query.filter(student__section__iexact=section.strip())
     if search:
         query = query.filter(
             Q(student__first_name__icontains=search) |

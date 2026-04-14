@@ -448,7 +448,7 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         df_processed['student_last_name'] = df_processed['student_last_name'].astype(str)
         df_processed['student_dob'] = df_processed['student_dob'].astype(str)
         df_processed['student_blood_group'] = df_processed['student_blood_group'].astype(str)
-        df_processed['student_section'] = df_processed['student_section'].astype(str)
+        df_processed['student_section'] = df_processed['student_section'].astype(str).str.strip()
         df_processed['student_food_preferences'] = df_processed['student_food_preferences'].astype(str)
 
         df_processed['address_line_1'] = df_processed['address_line_1'].astype(str)
@@ -696,7 +696,7 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
                 "gender": student.get("student_gender", "").upper(),
                 "dob": dob,
                 "class_room": student.get("student_class", ""),
-                "section": student.get("student_section", "").upper(),
+                "section": student.get("student_section", "").strip().upper(),
                 "roll_no": student.get("student_roll_no", "").upper(),
                 "aadhaar_no": str(student.get("student_aadhar_no", "")).strip(),
                 "abha_id": str(student.get("student_abha_id", "")).strip(),

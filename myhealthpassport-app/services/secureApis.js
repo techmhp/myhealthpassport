@@ -565,11 +565,11 @@ export const studentList = async (schoolId, search = '') => {
 // 8.2. Students List by class & section
 export const studentListByClassAndSection = async (schoolId, classroom = null, section = null, search = null) => {
   const call = new V1SecureApi();
-  const params = new URLSearchParams();
-  if (classroom) params.append('classroom', classroom);
-  if (section) params.append('section', section);
-  if (search) params.append('search', search);
-  const response = await call.GetCall(`/school/${schoolId}/students-list-by-class?${params.toString()}`);
+  const parts = [];
+  if (classroom) parts.push(`classroom=${encodeURIComponent(classroom)}`);
+  if (section) parts.push(`section=${encodeURIComponent(section)}`);
+  if (search) parts.push(`search=${encodeURIComponent(search)}`);
+  const response = await call.GetCall(`/school/${schoolId}/students-list-by-class?${parts.join('&')}`);
   return response;
 };
 

@@ -494,11 +494,82 @@ def is_pdf_fresh(path: Path) -> bool:
     """Check if existing PDF is still within TTL window."""
     return path.exists() and (time.time() - path.stat().st_mtime) < PDF_TTL_SECONDS
 
+# =========================================================
+# Fast PDF renderer: Playwright/Chromium → WeasyPrint fallback
+# =========================================================
+async def render_html_to_pdf(html_content: str) -> bytes:
+    """
+    Render HTML → PDF using Playwright/Chromium (~3-7s).
+    Automatically falls back to WeasyPrint (~60-75s) if Playwright is
+    not installed or Chromium is unavailable.
+
+    Playwright is preferred because:
+    - Full modern CSS support (Grid, custom properties, flexbox)
+    - Same rendering engine as Chrome — matches browser preview exactly
+    - 10-15x faster than WeasyPrint for complex multi-page reports
+    """
+    import tempfile, os
+    t0 = time.time()
+
+    # --- Try Playwright first ---
+    try:
+        from playwright.async_api import async_playwright
+
+        # Write HTML to a temp file so that file:// image references resolve correctly
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", delete=False, encoding="utf-8", dir="/tmp"
+        ) as f:
+            f.write(html_content)
+            tmp_html = f.name
+
+        try:
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                    ]
+                )
+                page = await browser.new_page()
+                # Use goto() with file:// so that all file:// image paths resolve
+                await page.goto(f"file://{tmp_html}", wait_until="networkidle", timeout=60000)
+                pdf_bytes = await page.pdf(
+                    format="A4",
+                    margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
+                    print_background=True,
+                )
+                await browser.close()
+
+            print(f"✅ [PDF] Playwright render complete in {time.time()-t0:.1f}s")
+            return pdf_bytes
+        finally:
+            try:
+                os.unlink(tmp_html)
+            except Exception:
+                pass
+
+    except ImportError:
+        print("⚠️ [PDF] Playwright not installed — falling back to WeasyPrint")
+    except Exception as e:
+        print(f"⚠️ [PDF] Playwright failed ({e}) — falling back to WeasyPrint")
+
+    # --- WeasyPrint fallback ---
+    def _weasyprint():
+        import weasyprint
+        return weasyprint.HTML(string=html_content).write_pdf()
+
+    pdf_bytes = await anyio.to_thread.run_sync(_weasyprint)
+    print(f"✅ [PDF] WeasyPrint render complete in {time.time()-t0:.1f}s")
+    return pdf_bytes
+
+
 async def generate_pdf(student_id: int, request: Request, academic_year: Optional[str] = None):
     """Background PDF generation with status updates (Full Report)."""
     if academic_year is None:
         academic_year = get_current_academic_year()
-    
+
     key = f"{student_id}_{academic_year}"
     async with pdf_status_lock:
         pdf_status[key] = {"ready": False, "status": "generating", "path": ""}
@@ -508,11 +579,7 @@ async def generate_pdf(student_id: int, request: Request, academic_year: Optiona
         context = await build_report_context(request, student_id, academic_year=academic_year)
         html_content = templates.get_template("reports.html").render(context)
 
-        def render_pdf():
-            import weasyprint
-            return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
-
-        pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
+        pdf_bytes = await render_html_to_pdf(html_content)
         pdf_path = TEMP_DIR / f"report_{student_id}_{academic_year}.pdf"
         pdf_path.write_bytes(pdf_bytes)
 
@@ -568,11 +635,7 @@ async def download_report_pdf(
     context = await build_report_context(request, student_id, academic_year=academic_year)
     html_content = templates.get_template("reports.html").render(context)
 
-    def render_pdf():
-        import weasyprint
-        return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
-
-    pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
+    pdf_bytes = await render_html_to_pdf(html_content)
     pdf_path.write_bytes(pdf_bytes)
 
     key = f"{student_id}_{academic_year}"
@@ -1169,11 +1232,7 @@ async def start_download_selected(
             html_content = templates.get_template("reports.html").render(context)
             print(f"🖨️ [PDF Debug] Converting HTML → PDF...")
 
-            def render_pdf():
-                import weasyprint
-                return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
-
-            pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
+            pdf_bytes = await render_html_to_pdf(html_content)
             pdf_path.write_bytes(pdf_bytes)
             print(f"💾 [PDF Debug] PDF written successfully → {pdf_path}")
 

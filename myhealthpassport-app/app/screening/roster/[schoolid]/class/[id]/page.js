@@ -72,7 +72,7 @@ const ClassView = () => {
     setLoading(true);
     setError(null);
     try {
-      const [classRoom, section] = classSection.split('-');
+      const dashIdx = classSection.indexOf('-'); const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection; const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
       const allStudentsResponse = await studentListByClassAndSection(schoolid, classRoom, section, searchQuery);
       const allStudentsResults = JSON.parse(allStudentsResponse);
       if (allStudentsResults.status === true) {
@@ -110,7 +110,7 @@ const ClassView = () => {
     setShowDownloadMenu(false);
     setDownloadingModule(moduleKey);
     try {
-      const [classRoom, section] = classSection.split('-');
+      const dashIdx = classSection.indexOf('-'); const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection; const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
       let res;
       if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, classRoom, section);
       else if (moduleKey === 'nutrition-analysis') res = await exportNutritionAnalysis(schoolid, classRoom, section);

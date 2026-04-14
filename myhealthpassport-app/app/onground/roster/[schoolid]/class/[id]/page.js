@@ -96,7 +96,7 @@ const ClassView = () => {
         setError('Invalid class found in URL parameter');
         return;
       }
-      const [classRoom, section] = classSection.split('-');
+      const dashIdx = classSection.indexOf('-'); const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection; const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
       const allStudentsResponse = await studentListByClassAndSection(schoolid, classRoom, section, searchQuery);
       const allStudentsResults = JSON.parse(allStudentsResponse);
       if (allStudentsResults.status === true) {

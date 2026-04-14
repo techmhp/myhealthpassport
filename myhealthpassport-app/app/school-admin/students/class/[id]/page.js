@@ -40,7 +40,7 @@ const ClassView = () => {
         setError('Invalid class found in URL parameter');
         return;
       }
-      const [classRoom, section] = classSection.split('-');
+      const dashIdx = classSection.indexOf('-'); const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection; const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
       const base64_user = localStorage.getItem('user_info');
       const userJson = JSON.parse(atob(base64_user));
       setSchool(userJson);

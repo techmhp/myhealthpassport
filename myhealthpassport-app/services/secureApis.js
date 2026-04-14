@@ -565,7 +565,11 @@ export const studentList = async (schoolId, search = '') => {
 // 8.2. Students List by class & section
 export const studentListByClassAndSection = async (schoolId, classroom = null, section = null, search = null) => {
   const call = new V1SecureApi();
-  const response = await call.GetCall(`/school/${schoolId}/students-list-by-class?classroom=${classroom}&section=${section}&search=${search}`);
+  const params = new URLSearchParams();
+  if (classroom) params.append('classroom', classroom);
+  if (section) params.append('section', section);
+  if (search) params.append('search', search);
+  const response = await call.GetCall(`/school/${schoolId}/students-list-by-class?${params.toString()}`);
   return response;
 };
 

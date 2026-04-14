@@ -116,7 +116,7 @@ const SectionalView = ({ school = [] }) => {
           const studentCount = sectionData.studnets_count || sectionData.students?.length || 0;
 
           return (
-            <Link key={`${classNumber}-${sectionLetter}`} href={`${href}/class/${encodeURI(classNumber)}-${sectionLetter}`}>
+            <Link key={`${classNumber}-${sectionLetter}`} href={`${href}/class/${encodeURIComponent(classNumber)}-${encodeURIComponent(sectionLetter)}`}>
               <div
                 className={`p-4 rounded-lg cursor-pointer flex flex-col items-center gap-4 border ${
                   selectedSection === `${classNumber}${sectionLetter}` ? 'border-blue-400 ring-2 ring-blue-400' : 'border-[#DCDCDC]'

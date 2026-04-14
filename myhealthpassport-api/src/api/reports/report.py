@@ -479,6 +479,17 @@ async def build_report_context(
         "si": strength_icon,
         **{f"teeth{num}": path for num, path in teeth.items()},
         **sidebar_icons,
+        # ── Section visibility flags ─────────────────────────────────────────
+        # These control {% if show_* %} blocks in the template.
+        # For the full report, show a section whenever its data exists.
+        # The selected-sections endpoint overrides these with its own .update().
+        "show_profile":   True,
+        "show_physical":  bool(smart_data),
+        "show_nutrition": bool(nutritional_questionaire),
+        "show_emotional": bool(emo_data),
+        "show_dental":    bool(dental_data),
+        "show_eye":       bool(eye_screening),
+        "show_lab":       bool(lab_data),
     }
 
 # =========================================================

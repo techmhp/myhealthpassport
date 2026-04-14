@@ -48,8 +48,8 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
           return;
         }
 
-        const remainingSeconds = Math.ceil((MAX_WAIT_MS - elapsed) / 1000);
-        setEstimatedTime(remainingSeconds);
+        const elapsedSeconds = Math.ceil(elapsed / 1000);
+        setEstimatedTime(elapsedSeconds);
 
         try {
           const response = await downloadPDFSelected(parseInt(studentId), queryParameter, academicYear);
@@ -118,7 +118,7 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
   const handleSaveAsPDF = async () => {
     setIsDownloading(true);
     setDownloadProgress('checking');
-    setEstimatedTime(300);
+    setEstimatedTime(0);
 
     if (onDownloadStart) onDownloadStart();
 
@@ -215,7 +215,9 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
       case 'checking':
         return 'Checking for existing PDF...';
       case 'generating':
-        return `Generating your PDF report...(Est. ${estimatedTime}s remaining)`;
+        return estimatedTime > 0
+          ? `Generating your PDF report... (${estimatedTime}s)`
+          : 'Generating your PDF report...';
       case 'downloading':
         return 'Downloading your PDF...';
       default:

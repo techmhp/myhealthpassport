@@ -490,6 +490,46 @@ pdf_status: Dict[str, Dict[str, Any]] = {}
 pdf_status_lock = asyncio.Lock()
 PDF_TTL_SECONDS = 24 * 3600  # 24 hours
 
+
+def render_pdf_wkhtmltopdf(html_content: str) -> bytes:
+    """
+    Render HTML → PDF using wkhtmltopdf (much faster than WeasyPrint on this server).
+    wkhtmltopdf v0.12.6 is pre-installed. Falls back to WeasyPrint if not found.
+    """
+    import subprocess
+    try:
+        result = subprocess.run(
+            [
+                "wkhtmltopdf",
+                "--quiet",
+                "--enable-local-file-access",   # needed for file:// teeth SVGs
+                "--page-size", "A4",
+                "--margin-top", "0",
+                "--margin-bottom", "0",
+                "--margin-left", "0",
+                "--margin-right", "0",
+                "--print-media-type",
+                "--disable-smart-shrinking",
+                "--encoding", "utf-8",
+                "-", "-",                        # stdin → stdout
+            ],
+            input=html_content.encode("utf-8"),
+            capture_output=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.decode("utf-8", errors="replace")
+            # wkhtmltopdf exits non-zero on warnings too — still check we got PDF bytes
+            if result.stdout and result.stdout[:4] == b"%PDF":
+                return result.stdout  # output is valid PDF despite exit code
+            raise RuntimeError(f"wkhtmltopdf failed (exit {result.returncode}): {stderr[:500]}")
+        return result.stdout
+    except FileNotFoundError:
+        # wkhtmltopdf not on PATH — fall back to WeasyPrint
+        print("⚠️ [PDF] wkhtmltopdf not found, falling back to WeasyPrint")
+        import weasyprint
+        return weasyprint.HTML(string=html_content).write_pdf()
+
 def is_pdf_fresh(path: Path) -> bool:
     """Check if existing PDF is still within TTL window."""
     return path.exists() and (time.time() - path.stat().st_mtime) < PDF_TTL_SECONDS
@@ -509,8 +549,7 @@ async def generate_pdf(student_id: int, request: Request, academic_year: Optiona
         html_content = templates.get_template("reports.html").render(context)
 
         def render_pdf():
-            import weasyprint
-            return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
+            return render_pdf_wkhtmltopdf(html_content)
 
         pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
         pdf_path = TEMP_DIR / f"report_{student_id}_{academic_year}.pdf"
@@ -569,8 +608,7 @@ async def download_report_pdf(
     html_content = templates.get_template("reports.html").render(context)
 
     def render_pdf():
-        import weasyprint
-        return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
+        return render_pdf_wkhtmltopdf(html_content)
 
     pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
     pdf_path.write_bytes(pdf_bytes)
@@ -1170,8 +1208,7 @@ async def start_download_selected(
             print(f"🖨️ [PDF Debug] Converting HTML → PDF...")
 
             def render_pdf():
-                import weasyprint
-                return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
+                return render_pdf_wkhtmltopdf(html_content)
 
             pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
             pdf_path.write_bytes(pdf_bytes)

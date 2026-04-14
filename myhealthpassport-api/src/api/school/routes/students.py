@@ -3259,36 +3259,49 @@ async def get_students_by_class(
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
-    # Debug: log received parameters
-    print(f"[DEBUG students-list-by-class] school_id={school_id!r} classroom={classroom!r} section={section!r}")
+    # Helper: normalize any class format to canonical numeric string
+    # e.g. 'Class VII' → '7', '7th Class' → '7', 'VII' → '7', '7' → '7'
+    _ROMAN = {"I":"1","II":"2","III":"3","IV":"4","V":"5","VI":"6",
+              "VII":"7","VIII":"8","IX":"9","X":"10","XI":"11","XII":"12"}
+    def _norm_class(val):
+        if not val:
+            return ""
+        v = re.sub(r'(?i)^\s*class\s*', '', str(val).strip()).strip()
+        if v.upper() in _ROMAN:
+            return _ROMAN[v.upper()]
+        v = re.sub(r'(?i)(st|nd|rd|th)\b', '', v).strip()
+        v = re.sub(r'(?i)\s*(class|grade|std|standard)\s*$', '', v).strip()
+        if v.isdigit():
+            return v
+        if v.upper() in _ROMAN:
+            return _ROMAN[v.upper()]
+        return str(val).strip()
 
-    # Step 1: Check total students in this school (no filters)
-    all_ss = await SchoolStudents.filter(school_id=school_id, student__is_deleted=False).prefetch_related("student")
-    print(f"[DEBUG] Total SchoolStudents for school {school_id}: {len(all_ss)}")
-    sample_classes = list(set(str(ss.student.class_room) for ss in all_ss[:50]))
-    sample_sections = list(set(str(ss.student.section) for ss in all_ss[:50]))
-    print(f"[DEBUG] Sample class_rooms: {sample_classes}")
-    print(f"[DEBUG] Sample sections: {sample_sections}")
-
-    # Base students query (no year filter)
-    query = SchoolStudents.filter(
+    # Fetch all students for this school, then filter in Python
+    # (needed because DB may store 'Class VII' while URL passes '7')
+    all_school_students = await SchoolStudents.filter(
         school_id=school_id,
         student__is_deleted=False
     ).prefetch_related("student")
 
-    if classroom:
-        query = query.filter(student__class_room__iexact=classroom.strip())
-    if section:
-        query = query.filter(student__section__iexact=section.strip())
-    if search:
-        query = query.filter(
-            Q(student__first_name__icontains=search) |
-            Q(student__middle_name__icontains=search) |
-            Q(student__last_name__icontains=search)
-        )
+    filtered = list(all_school_students)
 
-    students = await query.distinct()
-    print(f"[DEBUG] After filter: {len(students)} students found")
+    if classroom:
+        classroom_norm = _norm_class(classroom)
+        filtered = [s for s in filtered if _norm_class(s.student.class_room) == classroom_norm]
+
+    if section:
+        section_upper = section.strip().upper()
+        filtered = [s for s in filtered if s.student.section.strip().upper() == section_upper]
+
+    if search:
+        search_lower = search.lower()
+        filtered = [s for s in filtered if
+            search_lower in (s.student.first_name or "").lower() or
+            search_lower in (s.student.middle_name or "").lower() or
+            search_lower in (s.student.last_name or "").lower()]
+
+    students = filtered
     students.sort(
         key=lambda s: (
             0 if not s.student.roll_no or not str(s.student.roll_no).strip().isdigit()

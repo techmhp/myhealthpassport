@@ -257,11 +257,16 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
 
         missing_expected_columns = [col for col in original_required_strings if col not in df_initial.columns]
         if missing_expected_columns:
+            found_cols = [c for c in df_initial.columns if c]
             resp = StandardResponse(
                 status=False,
-                message=f"Missing required columns in CSV: {', '.join(missing_expected_columns)}.",
+                message=f"Missing required columns in CSV: {', '.join(missing_expected_columns)}. Columns detected in your file: {', '.join(found_cols)}.",
                 data={},
-                errors={"details": f"Missing columns: {', '.join(missing_expected_columns)}."},
+                errors={
+                    "missing_columns": missing_expected_columns,
+                    "found_columns": found_cols,
+                    "details": f"Missing columns: {', '.join(missing_expected_columns)}. Detected: {', '.join(found_cols)}.",
+                },
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 

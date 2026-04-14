@@ -299,7 +299,9 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         # Keep only the first occurrence of each unique combination
         df_processed = df_processed.drop_duplicates(subset=['student_roll_no', 'student_class', 'student_section'], keep='first')
 
+        # Validate required fields per row — skip invalid rows, don't block the upload
         row_errors = []
+        valid_indices = []
         for index, row in df_processed.iterrows():
             empty_required_fields_in_row = []
             for col in strictly_required_non_empty_columns:
@@ -310,15 +312,21 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
                 row_errors.append({
                     "row_number": index + 2,
                     "missing_fields": empty_required_fields_in_row,
-                    "message": f"Row {index + 2}: The following fields cannot be empty: {', '.join(empty_required_fields_in_row)}."
+                    "message": f"Row {index + 2}: Skipped — required fields empty: {', '.join(empty_required_fields_in_row)}."
                 })
+            else:
+                valid_indices.append(index)
 
-        if row_errors:
+        # Keep only rows that passed validation
+        df_processed = df_processed.loc[valid_indices]
+
+        # If NO rows are valid at all, then return an error
+        if df_processed.empty:
             resp = StandardResponse(
                 status=False,
-                message="Validation Error: Some required fields are empty. Please check the highlighted rows and fields.",
+                message="No valid rows found. All rows have missing required fields. Please check the file and try again.",
                 data={"row_errors": row_errors},
-                errors={"details": "Required fields are missing in some rows."},
+                errors={"details": "All rows failed validation."},
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
@@ -469,9 +477,12 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         message += " (Warning: Duplicate entries detected in the uploaded file)"
     if existing_student_warnings:
         message += f" | {len(existing_student_warnings)} student(s) already exist and will be skipped"
+    if row_errors:
+        message += f" | {len(row_errors)} row(s) skipped due to missing required fields"
 
     # Combine all warnings
-    all_warnings = duplicate_errors + existing_student_warnings
+    skipped_row_warnings = [e["message"] for e in row_errors]
+    all_warnings = duplicate_errors + existing_student_warnings + skipped_row_warnings
 
     resp = StandardResponse(
         status=True,

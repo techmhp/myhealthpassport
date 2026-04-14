@@ -142,6 +142,24 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             "AdmissionNo": "student_roll_no",
             "Admission No.": "student_roll_no",
             "admission_no": "student_roll_no",
+            # Serial / Sl number used as roll number when no Roll No column exists
+            "S.No": "student_roll_no",
+            "SNo": "student_roll_no",
+            "S.No.": "student_roll_no",
+            "SNO": "student_roll_no",
+            "sno": "student_roll_no",
+            "s.no": "student_roll_no",
+            "Sr.No": "student_roll_no",
+            "SrNo": "student_roll_no",
+            "Sr No": "student_roll_no",
+            "sr_no": "student_roll_no",
+            "Sl.No": "student_roll_no",
+            "SlNo": "student_roll_no",
+            "Sl No": "student_roll_no",
+            "sl_no": "student_roll_no",
+            "Serial No": "student_roll_no",
+            "SerialNo": "student_roll_no",
+            "serial_no": "student_roll_no",
             # Gender → student_gender
             "gender": "student_gender",
             "Gender": "student_gender",
@@ -298,6 +316,8 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         df_processed = df_initial.fillna('')
+        # Replace any literal "NaN", "nan", "None" strings left by pandas with empty string
+        df_processed = df_processed.replace({'nan': '', 'NaN': '', 'None': '', 'none': '', 'NULL': '', 'null': ''})
 
         # Ensure optional columns exist BEFORE duplicate check and further processing
         if 'student_section' not in df_processed.columns:
@@ -613,16 +633,19 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
             student["created_role_type"] = str(current_user.get("role_type", ""))
 
             dob = None
-            dob_str = student.get("student_dob", "").strip()
+            dob_str = str(student.get("student_dob", "") or "").strip()
+            # Treat pandas NaN artifacts and placeholder values as empty
+            if dob_str.lower() in ("nan", "none", "null", "n/a", "na", "-", ""):
+                dob_str = ""
             if dob_str:
-                for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d"):
+                for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d"):
                     try:
                         dob = datetime.strptime(dob_str, fmt).date()
                         break
                     except ValueError:
                         continue
                 if dob is None:
-                    errors.append(f"Invalid date format for student_dob: {dob_str}. Expected mm/dd/yyyy, dd/mm/yyyy, dd-mm-yyyy, or yyyy-mm-dd.")
+                    errors.append(f"Invalid date format for student_dob: {dob_str}. Expected dd-mm-yyyy or yyyy-mm-dd.")
                     continue
 
             student_data = {

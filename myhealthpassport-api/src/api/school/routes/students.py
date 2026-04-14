@@ -3259,6 +3259,17 @@ async def get_students_by_class(
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
+    # Debug: log received parameters
+    print(f"[DEBUG students-list-by-class] school_id={school_id!r} classroom={classroom!r} section={section!r}")
+
+    # Step 1: Check total students in this school (no filters)
+    all_ss = await SchoolStudents.filter(school_id=school_id, student__is_deleted=False).prefetch_related("student")
+    print(f"[DEBUG] Total SchoolStudents for school {school_id}: {len(all_ss)}")
+    sample_classes = list(set(str(ss.student.class_room) for ss in all_ss[:50]))
+    sample_sections = list(set(str(ss.student.section) for ss in all_ss[:50]))
+    print(f"[DEBUG] Sample class_rooms: {sample_classes}")
+    print(f"[DEBUG] Sample sections: {sample_sections}")
+
     # Base students query (no year filter)
     query = SchoolStudents.filter(
         school_id=school_id,
@@ -3277,6 +3288,7 @@ async def get_students_by_class(
         )
 
     students = await query.distinct()
+    print(f"[DEBUG] After filter: {len(students)} students found")
     students.sort(
         key=lambda s: (
             0 if not s.student.roll_no or not str(s.student.roll_no).strip().isdigit()

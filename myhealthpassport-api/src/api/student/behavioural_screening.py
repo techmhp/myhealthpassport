@@ -92,7 +92,22 @@ async def get_behavioural_screening(
         )
         return JSONResponse(content=response_obj.__dict__, status_code=404)
 
-    valid_classes = ["Play group", "PP-I", "PP-II", "Nursery", "LKG", "UKG", "Play school", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12","1","2","3","4","5","6","7","8","9","10","11","12"]
+    valid_classes = [
+        # Standard numeric
+        "1","2","3","4","5","6","7","8","9","10","11","12",
+        # "Class N" format
+        "Class 1","Class 2","Class 3","Class 4","Class 5","Class 6",
+        "Class 7","Class 8","Class 9","Class 10","Class 11","Class 12",
+        # Roman numeral formats
+        "Class I","Class II","Class III","Class IV","Class V","Class VI",
+        "Class VII","Class VIII","Class IX","Class X","Class XI","Class XII",
+        "I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII",
+        # Ordinal formats (e.g. from class_values_dict)
+        "1st Class","2nd Class","3rd Class","4th Class","5th Class","6th Class",
+        "7th Class","8th Class","9th Class","10th Class","11th Class","12th Class",
+        # Pre-primary
+        "Play group","PP-I","PP-II","Nursery","LKG","UKG","Play school",
+    ]
     class_room = student.class_room
     if class_room not in valid_classes:
         response_obj = StandardResponse(
@@ -301,7 +316,22 @@ async def update_behavioural_screening(student_id: int, payload: dict, current_u
     today = date.today()
     age = relativedelta(today, student.dob).years
     
-    valid_classes = ["Play group", "PP-I", "PP-II", "Nursery", "LKG", "UKG", "Play school", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12","1","2","3","4","5","6","7","8","9","10","11","12"]
+    valid_classes = [
+        # Standard numeric
+        "1","2","3","4","5","6","7","8","9","10","11","12",
+        # "Class N" format
+        "Class 1","Class 2","Class 3","Class 4","Class 5","Class 6",
+        "Class 7","Class 8","Class 9","Class 10","Class 11","Class 12",
+        # Roman numeral formats
+        "Class I","Class II","Class III","Class IV","Class V","Class VI",
+        "Class VII","Class VIII","Class IX","Class X","Class XI","Class XII",
+        "I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII",
+        # Ordinal formats (e.g. from class_values_dict)
+        "1st Class","2nd Class","3rd Class","4th Class","5th Class","6th Class",
+        "7th Class","8th Class","9th Class","10th Class","11th Class","12th Class",
+        # Pre-primary
+        "Play group","PP-I","PP-II","Nursery","LKG","UKG","Play school",
+    ]
     class_room=student.class_room
     if class_room not in valid_classes:
         response_obj = StandardResponse(

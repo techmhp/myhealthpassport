@@ -1,4 +1,5 @@
 import io
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -34,6 +35,46 @@ def clean_phone(phone):
     # Remove any whitespace or unwanted chars (optional)
     phone_str = phone_str.replace(" ", "").replace("-", "")
     return phone_str
+
+def normalize_class(val):
+    """Normalize class/grade values from CSV to standard numeric format.
+    Converts: 'Class VII' → '7', 'VII' → '7', '7th' → '7', '7th Class' → '7',
+              'Class 7' → '7'. Pre-primary values (LKG, UKG, Nursery, PP-I, PP-II,
+              Play group, Play school) are returned as-is.
+    """
+    ROMAN = {
+        "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5",
+        "VI": "6", "VII": "7", "VIII": "8", "IX": "9", "X": "10",
+        "XI": "11", "XII": "12"
+    }
+    if pd.isna(val) or str(val).strip().lower() in ("", "nan", "none", "null"):
+        return ""
+
+    val = str(val).strip()
+
+    # Remove "Class " prefix (case-insensitive)
+    cleaned = re.sub(r'(?i)^\s*class\s*', '', val).strip()
+
+    # Check if it's a Roman numeral
+    if cleaned.upper() in ROMAN:
+        return ROMAN[cleaned.upper()]
+
+    # Remove ordinal suffixes: 1st, 2nd, 3rd, 4th ... 12th
+    cleaned = re.sub(r'(?i)(st|nd|rd|th)\b', '', cleaned).strip()
+    # Remove trailing " Class", " Grade", " Std", " Standard"
+    cleaned = re.sub(r'(?i)\s*(class|grade|std|standard)\s*$', '', cleaned).strip()
+
+    # If now a digit, return it
+    if cleaned.isdigit():
+        return cleaned
+
+    # Check roman numeral again (in case "VIIth" → "VII")
+    if cleaned.upper() in ROMAN:
+        return ROMAN[cleaned.upper()]
+
+    # Return original value as-is (handles LKG, UKG, Nursery, PP-I, Play group, etc.)
+    return val
+
 
 def csv_columns_list():
     # Minimal required columns
@@ -391,7 +432,7 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             if col not in df_processed.columns:
                 df_processed[col] = ''
 
-        df_processed["student_class"] = df_processed['student_class'].astype(str)
+        df_processed["student_class"] = df_processed['student_class'].astype(str).apply(normalize_class)
         df_processed['student_aadhar_no'] = df_processed['student_aadhar_no'].astype(str)
         df_processed['student_abha_id'] = df_processed['student_abha_id'].astype(str)
         df_processed['student_mp_uhid'] = df_processed['student_mp_uhid'].astype(str)

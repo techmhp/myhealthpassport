@@ -1594,21 +1594,35 @@ async def get_school_students_by_category(
         payment_lookup = {sid: True for sid in paid_students}
 
     class_values_dict = {
-        "12": "12th Class",
-        "11": "11th Class",
-        "10": "10th Class",
-        "9": "9th Class",
-        "8": "8th Class",
-        "7": "7th Class",
-        "6": "6th Class",
-        "5": "5th Class",
-        "4": "4th Class",
-        "3": "3rd Class",
-        "2": "2nd Class",
-        "1": "1st Class",
-        "Nursery": "Nursery",
-        "LKG": "LKG",
-        "UKG": "UKG"
+        # Standard numeric keys
+        "12": "12th Class", "11": "11th Class", "10": "10th Class",
+        "9": "9th Class",   "8": "8th Class",   "7": "7th Class",
+        "6": "6th Class",   "5": "5th Class",   "4": "4th Class",
+        "3": "3rd Class",   "2": "2nd Class",   "1": "1st Class",
+        # Ordinal "Nth Class" keys
+        "12th Class": "12th Class", "11th Class": "11th Class", "10th Class": "10th Class",
+        "9th Class": "9th Class",   "8th Class": "8th Class",   "7th Class": "7th Class",
+        "6th Class": "6th Class",   "5th Class": "5th Class",   "4th Class": "4th Class",
+        "3rd Class": "3rd Class",   "2nd Class": "2nd Class",   "1st Class": "1st Class",
+        # "Class N" format
+        "Class 12": "12th Class", "Class 11": "11th Class", "Class 10": "10th Class",
+        "Class 9": "9th Class",   "Class 8": "8th Class",   "Class 7": "7th Class",
+        "Class 6": "6th Class",   "Class 5": "5th Class",   "Class 4": "4th Class",
+        "Class 3": "3rd Class",   "Class 2": "2nd Class",   "Class 1": "1st Class",
+        # Roman numeral "Class XII" format
+        "Class XII": "12th Class", "Class XI": "11th Class", "Class X": "10th Class",
+        "Class IX": "9th Class",   "Class VIII": "8th Class", "Class VII": "7th Class",
+        "Class VI": "6th Class",   "Class V": "5th Class",    "Class IV": "4th Class",
+        "Class III": "3rd Class",  "Class II": "2nd Class",   "Class I": "1st Class",
+        # Bare Roman numerals
+        "XII": "12th Class", "XI": "11th Class", "X": "10th Class",
+        "IX": "9th Class",   "VIII": "8th Class", "VII": "7th Class",
+        "VI": "6th Class",   "V": "5th Class",    "IV": "4th Class",
+        "III": "3rd Class",  "II": "2nd Class",   "I": "1st Class",
+        # Pre-primary
+        "Nursery": "Nursery", "LKG": "LKG", "UKG": "UKG",
+        "PP-I": "PP-I", "PP-II": "PP-II",
+        "Play group": "Play group", "Play school": "Play school",
     }
 
     class_dict = {}

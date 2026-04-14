@@ -506,6 +506,15 @@ def render_pdf_wkhtmltopdf(html_content: str) -> bytes:
     """
     Render HTML → PDF using wkhtmltopdf (much faster than WeasyPrint on this server).
     wkhtmltopdf v0.12.6 is pre-installed. Falls back to WeasyPrint if not found.
+
+    Key flags:
+      --viewport-size 794x1123  — forces render at exact A4 pixel dimensions (96 DPI).
+                                   Without this wkhtmltopdf defaults to ~1024px wide,
+                                   shrinking 794px-wide content to ~77% and making fonts
+                                   and borders look smaller than the WeasyPrint baseline.
+      --disable-smart-shrinking — prevents a secondary scale-down pass.
+      --zoom 1                  — explicit 1:1 zoom; combined with viewport-size this
+                                   produces output identical in scale to WeasyPrint.
     """
     import subprocess
     try:
@@ -519,6 +528,8 @@ def render_pdf_wkhtmltopdf(html_content: str) -> bytes:
                 "--margin-bottom", "0",
                 "--margin-left", "0",
                 "--margin-right", "0",
+                "--viewport-size", "794x1123",  # A4 at 96 DPI — fixes scale vs WeasyPrint
+                "--zoom", "1",                  # explicit 1:1, no secondary shrink
                 "--print-media-type",
                 "--disable-smart-shrinking",
                 "--encoding", "utf-8",

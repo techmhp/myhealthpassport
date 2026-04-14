@@ -107,14 +107,9 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         column_errors = []
         df_initial = pd.read_csv(io.StringIO(contents.decode("utf-8-sig")))
 
-        # Clean column names: remove ALL internal spaces, strip trailing dots/commas/spaces
-        # Handles cases like: "student _first_name" → "student_first_name", "phone." → "phone"
-        df_initial.columns = [
-            col.replace(' ', '').rstrip('.').rstrip(',').strip()
-            for col in df_initial.columns
-        ]
-
-        # Normalize column names — accept common naming variations from schools
+        # Normalize column names — accept common naming variations from schools.
+        # IMPORTANT: The map is applied BEFORE space-removal so multi-word keys like
+        # "Student Name", "Roll No", "Phone Number" etc. are matched correctly.
         column_name_map = {
             # Name → student_first_name
             "name": "student_first_name",
@@ -122,46 +117,95 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             "NAME": "student_first_name",
             "student_name": "student_first_name",
             "Student Name": "student_first_name",
+            "StudentName": "student_first_name",
             "first_name": "student_first_name",
             "First Name": "student_first_name",
+            "FirstName": "student_first_name",
+            "Fname": "student_first_name",
+            "FName": "student_first_name",
+            "Full Name": "student_first_name",
+            "FullName": "student_first_name",
+            "full_name": "student_first_name",
             # Roll number → student_roll_no
             "roll_no": "student_roll_no",
             "Roll_no": "student_roll_no",
             "Roll No": "student_roll_no",
+            "RollNo": "student_roll_no",
             "roll no": "student_roll_no",
+            "rollno": "student_roll_no",
             "ROLL_NO": "student_roll_no",
             "Roll Number": "student_roll_no",
+            "RollNumber": "student_roll_no",
             "roll_number": "student_roll_no",
-            "RollNo": "student_roll_no",
+            "Roll No.": "student_roll_no",
+            "Admission No": "student_roll_no",
+            "AdmissionNo": "student_roll_no",
+            "Admission No.": "student_roll_no",
+            "admission_no": "student_roll_no",
             # Gender → student_gender
             "gender": "student_gender",
             "Gender": "student_gender",
             "GENDER": "student_gender",
+            "sex": "student_gender",
+            "Sex": "student_gender",
+            "SEX": "student_gender",
             # DOB → student_dob
             "dob": "student_dob",
             "DOB": "student_dob",
             "Date of Birth": "student_dob",
+            "DateofBirth": "student_dob",
             "date_of_birth": "student_dob",
             "DateOfBirth": "student_dob",
             "Date Of Birth": "student_dob",
+            "Date Of Birth": "student_dob",
+            "Dateofbirth": "student_dob",
+            "Birth Date": "student_dob",
+            "BirthDate": "student_dob",
+            "birth_date": "student_dob",
             # Class → student_class
             "class": "student_class",
             "Class": "student_class",
             "CLASS": "student_class",
             "class_name": "student_class",
             "Class Name": "student_class",
+            "ClassName": "student_class",
             "standard": "student_class",
             "Standard": "student_class",
+            "STANDARD": "student_class",
+            "Std": "student_class",
+            "STD": "student_class",
+            "std": "student_class",
+            "grade": "student_class",
+            "Grade": "student_class",
+            "GRADE": "student_class",
             # Phone → phone
             "Phone": "phone",
             "PHONE": "phone",
             "phone_number": "phone",
             "Phone Number": "phone",
+            "PhoneNumber": "phone",
+            "Phone No": "phone",
+            "PhoneNo": "phone",
+            "Phone No.": "phone",
             "Mobile": "phone",
             "mobile": "phone",
+            "MOBILE": "phone",
             "Mobile Number": "phone",
+            "MobileNumber": "phone",
+            "Mobile No": "phone",
+            "MobileNo": "phone",
+            "Mobile No.": "phone",
+            "mobile_number": "phone",
+            "mobile_no": "phone",
             "contact": "phone",
             "Contact": "phone",
+            "CONTACT": "phone",
+            "Contact No": "phone",
+            "ContactNo": "phone",
+            "Contact Number": "phone",
+            "ContactNumber": "phone",
+            "contact_no": "phone",
+            "contact_number": "phone",
             # Section → student_section
             "section": "student_section",
             "Section": "student_section",
@@ -169,12 +213,43 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             # Last name → student_last_name
             "last_name": "student_last_name",
             "Last Name": "student_last_name",
+            "LastName": "student_last_name",
             "surname": "student_last_name",
             "Surname": "student_last_name",
         }
+
+        # Step 1: Strip leading/trailing whitespace only (preserve internal spaces for map matching)
+        df_initial.columns = [col.strip() for col in df_initial.columns]
+
+        # Step 2: Apply column_name_map FIRST — catches "Student Name", "Roll No", "Phone Number" etc.
         df_initial = df_initial.rename(columns={
             k: v for k, v in column_name_map.items() if k in df_initial.columns
         })
+
+        # Step 3: Clean remaining column names (remove internal spaces, strip trailing dots/commas)
+        # Handles "student _first_name" → "student_first_name", "phone." → "phone", etc.
+        # Only applied to columns not already in the known-good list
+        known_cols = set(csv_columns_list())
+        df_initial.columns = [
+            col if col in known_cols else col.replace(' ', '').rstrip('.').rstrip(',').strip()
+            for col in df_initial.columns
+        ]
+
+        # Step 4: Apply column_name_map again for any space-removed variants not yet matched
+        df_initial = df_initial.rename(columns={
+            k: v for k, v in column_name_map.items() if k in df_initial.columns
+        })
+
+        # Step 5: Final case-insensitive fallback for any remaining unmapped columns
+        # Builds a lowercase lookup so "STUDENT_FIRST_NAME", "Student_First_Name" etc. all work
+        remaining_cols = set(df_initial.columns) - known_cols
+        if remaining_cols:
+            ci_map = {v.lower(): v for v in known_cols}
+            df_initial = df_initial.rename(columns={
+                col: ci_map[col.lower()]
+                for col in remaining_cols
+                if col.lower() in ci_map
+            })
 
         for col in df_initial.columns:
             if col not in csv_columns_list():

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=794">
     <title>Health Screening Report</title>
     <style>
         * {
@@ -2159,6 +2160,20 @@
                 }
             });
         };
+    </script>
+    <script>
+    /* Fix: ensure each .report-section is a multiple of one page height so
+       the coloured right-border always fills the full last page of each section */
+    (function() {
+        var pageHeight = 1123;
+        var sections = document.querySelectorAll('.report-section');
+        for (var i = 0; i < sections.length; i++) {
+            var h = sections[i].offsetHeight;
+            var pages = Math.ceil(h / pageHeight);
+            if (pages < 1) pages = 1;
+            sections[i].style.minHeight = (pages * pageHeight) + 'px';
+        }
+    })();
     </script>
 </body>
 </html>

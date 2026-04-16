@@ -25,6 +25,7 @@ const ClassView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, failed: 0 });
+  const [bulkDownloadLabel, setBulkDownloadLabel] = useState('All Reports');
 
   const tabs = [
     { name: 'Table View', href: '#', id: 'Table-View' },
@@ -83,16 +84,14 @@ const ClassView = () => {
     setSearchQuery(value);
   };
 
-  // Bulk download all student PDFs sequentially
-  const handleBulkDownload = async () => {
+  // Generic bulk download handler — pass specific reports array or leave empty for all
+  const handleBulkDownload = async (reports = ['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'], label = 'All Reports') => {
     if (bulkDownloading || filteredStudents.length === 0) return;
     setBulkDownloading(true);
+    setBulkDownloadLabel(label);
     setBulkProgress({ current: 0, total: filteredStudents.length, failed: 0 });
 
-    const reportData = JSON.stringify({
-      reports: ['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'],
-    });
-    const dashIdx = classSection.indexOf('-'); const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection; const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
+    const reportData = JSON.stringify({ reports });
     const academicYear = null; // uses current year on backend
 
     let failed = 0;
@@ -152,9 +151,9 @@ const ClassView = () => {
 
     setBulkDownloading(false);
     if (failed === 0) {
-      toastMessage(`All ${filteredStudents.length} PDFs downloaded successfully`, 'success');
+      toastMessage(`All ${filteredStudents.length} ${label} PDFs downloaded successfully`, 'success');
     } else {
-      toastMessage(`Downloaded ${filteredStudents.length - failed}/${filteredStudents.length} PDFs. ${failed} failed (reports may not be generated yet).`, 'warning');
+      toastMessage(`Downloaded ${filteredStudents.length - failed}/${filteredStudents.length} ${label} PDFs. ${failed} failed.`, 'warning');
     }
   };
 
@@ -257,12 +256,37 @@ const ClassView = () => {
               </button>
             ))}
           </div>
-          {/* Bulk Download Button — top right */}
-          <div className="absolute right-0">
+          {/* Bulk Download Buttons — top right */}
+          <div className="absolute right-0 flex items-center gap-2">
+            {/* Dental Bulk Download */}
             <button
-              onClick={handleBulkDownload}
+              onClick={() => handleBulkDownload(['dental'], 'Dental')}
               disabled={bulkDownloading || loading || filteredStudents.length === 0}
-              title="Bulk Download PDFs for all students"
+              title="Bulk Download Dental Reports for all students"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#34C789] text-[#34C789] text-sm font-medium hover:bg-[#EDFDF5] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
+              </svg>
+              Dental
+            </button>
+            {/* Vision Bulk Download */}
+            <button
+              onClick={() => handleBulkDownload(['eye'], 'Vision')}
+              disabled={bulkDownloading || loading || filteredStudents.length === 0}
+              title="Bulk Download Vision Reports for all students"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#F59E0B] text-[#F59E0B] text-sm font-medium hover:bg-[#FFFBEB] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
+              </svg>
+              Vision
+            </button>
+            {/* All Reports Bulk Download */}
+            <button
+              onClick={() => handleBulkDownload(['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'], 'All Reports')}
+              disabled={bulkDownloading || loading || filteredStudents.length === 0}
+              title="Bulk Download All Reports for all students"
               className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#5389FF] text-[#5389FF] text-sm font-medium hover:bg-[#ECF2FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
@@ -289,7 +313,7 @@ const ClassView = () => {
               <div className="mb-5">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Bulk Downloading PDFs</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Bulk Downloading — {bulkDownloadLabel}</h3>
               <p className="text-sm text-gray-600 text-center mb-3">
                 Processing student {bulkProgress.current} of {bulkProgress.total}
                 {bulkProgress.failed > 0 && ` (${bulkProgress.failed} skipped)`}

@@ -6,7 +6,14 @@ import StudentCardView from '@/components/StudentCardView';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import Header from '@/components/Header';
 import SchoolClassRoomStudentsList from '@/components/SchoolClassRoomStudentsList';
-import { schoolDetails, studentListByClassAndSection, startPDFGenerationSelected, createPDFDownloadToken } from '@/services/secureApis';
+import {
+  schoolDetails,
+  studentListByClassAndSection,
+  startPDFGenerationSelected,
+  createPDFDownloadToken,
+  exportDentalScreening,
+  exportVisionScreening,
+} from '@/services/secureApis';
 import { formatFullName, toastMessage } from '@/helpers/utilities';
 import PlusButton from '@/components/UI/PlusButton';
 import Link from 'next/link';
@@ -23,6 +30,7 @@ const ClassView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingModule, setDownloadingModule] = useState(null);
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, failed: 0 });
   const [bulkDownloadLabel, setBulkDownloadLabel] = useState('All Reports');
@@ -34,6 +42,11 @@ const ClassView = () => {
   function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
   }
+
+  // Parse class and section from URL param (e.g. "7-SEC A" → classRoom="7", section="SEC A")
+  const dashIdx = classSection.indexOf('-');
+  const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection;
+  const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
 
   // Function to simulate fetching data from your API
   const fetchSchoolDetails = async () => {
@@ -54,9 +67,6 @@ const ClassView = () => {
     setLoading(true);
     setError(null);
     try {
-      const dashIdx = classSection.indexOf('-');
-      const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection;
-      const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
       const allStudentsResponse = await studentListByClassAndSection(schoolid, classRoom, section, searchQuery);
       const allStudentsResults = JSON.parse(allStudentsResponse);
       if (allStudentsResults.status === true) {
@@ -66,7 +76,6 @@ const ClassView = () => {
         setError('Failed to fetch students: ' + allStudentsResults.message);
       }
     } catch (err) {
-      // console.log(err);
       setError('Error fetching students data');
     } finally {
       setLoading(false);
@@ -84,7 +93,40 @@ const ClassView = () => {
     setSearchQuery(value);
   };
 
-  // Generic bulk download handler — pass specific reports array or leave empty for all
+  // Export a single CSV file for the entire class section (Dental or Vision)
+  const handleExportCsv = async (type) => {
+    if (downloadingModule) return;
+    setDownloadingModule(type);
+    try {
+      let res;
+      if (type === 'dental') {
+        res = await exportDentalScreening(schoolid, classRoom, section);
+      } else if (type === 'vision') {
+        res = await exportVisionScreening(schoolid, classRoom, section);
+      }
+      if (res?.error) {
+        toastMessage(res.message || 'Failed to download', 'error');
+        return;
+      }
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const label = type === 'dental' ? 'Dental' : 'Vision';
+      a.download = `${label}-Screening_${classSection}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      toastMessage(`${label} screening data downloaded successfully`, 'success');
+    } catch (err) {
+      toastMessage(err?.message || 'Failed to download', 'error');
+    } finally {
+      setDownloadingModule(null);
+    }
+  };
+
+  // Generic bulk download handler for All Reports (individual PDFs)
   const handleBulkDownload = async (reports = ['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'], label = 'All Reports') => {
     if (bulkDownloading || filteredStudents.length === 0) return;
     setBulkDownloading(true);
@@ -92,7 +134,7 @@ const ClassView = () => {
     setBulkProgress({ current: 0, total: filteredStudents.length, failed: 0 });
 
     const reportData = JSON.stringify({ reports });
-    const academicYear = null; // uses current year on backend
+    const academicYear = null;
 
     let failed = 0;
     for (let i = 0; i < filteredStudents.length; i++) {
@@ -105,7 +147,6 @@ const ClassView = () => {
         if (downloadData.status === true && downloadData.download) {
           downloadUrl = downloadData.download;
         } else if (downloadData.status === false && downloadData.check_status) {
-          // Poll up to 6 times (30s total)
           const key = new URL(downloadData.check_status).searchParams.get('key');
           for (let attempt = 0; attempt < 6; attempt++) {
             await new Promise(r => setTimeout(r, 5000));
@@ -137,7 +178,6 @@ const ClassView = () => {
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          // Small delay so browser doesn't block multiple downloads
           await new Promise(r => setTimeout(r, 1200));
         } else {
           failed++;
@@ -159,10 +199,7 @@ const ClassView = () => {
 
   // Filter the student list based on the search term
   const filteredStudents = students.filter(student => {
-    // Convert search term to lowercase for case-insensitive search
     const lowerCaseSearchTerm = searchQuery.toLowerCase();
-
-    // Check if the search term is found in any of the relevant fields
     return (
       student.roll_no.toLowerCase().includes(lowerCaseSearchTerm) ||
       formatFullName(student).toLowerCase().includes(lowerCaseSearchTerm) ||
@@ -256,36 +293,50 @@ const ClassView = () => {
               </button>
             ))}
           </div>
-          {/* Bulk Download Buttons — top right */}
+          {/* Export / Download Buttons — top right */}
           <div className="absolute right-0 flex items-center gap-2">
-            {/* Dental Bulk Download */}
+            {/* Dental CSV Export */}
             <button
-              onClick={() => handleBulkDownload(['dental'], 'Dental')}
-              disabled={bulkDownloading || loading || filteredStudents.length === 0}
-              title="Bulk Download Dental Reports for all students"
+              onClick={() => handleExportCsv('dental')}
+              disabled={downloadingModule !== null || loading || filteredStudents.length === 0}
+              title="Download Dental Screening data as CSV for all students"
               className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#34C789] text-[#34C789] text-sm font-medium hover:bg-[#EDFDF5] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
-                <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
-              </svg>
+              {downloadingModule === 'dental' ? (
+                <svg className="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
+                </svg>
+              )}
               Dental
             </button>
-            {/* Vision Bulk Download */}
+            {/* Vision CSV Export */}
             <button
-              onClick={() => handleBulkDownload(['eye'], 'Vision')}
-              disabled={bulkDownloading || loading || filteredStudents.length === 0}
-              title="Bulk Download Vision Reports for all students"
+              onClick={() => handleExportCsv('vision')}
+              disabled={downloadingModule !== null || loading || filteredStudents.length === 0}
+              title="Download Vision Screening data as CSV for all students"
               className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#F59E0B] text-[#F59E0B] text-sm font-medium hover:bg-[#FFFBEB] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
-                <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
-              </svg>
+              {downloadingModule === 'vision' ? (
+                <svg className="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
+                </svg>
+              )}
               Vision
             </button>
-            {/* All Reports Bulk Download */}
+            {/* All Reports Bulk Download (individual PDFs) */}
             <button
               onClick={() => handleBulkDownload(['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'], 'All Reports')}
-              disabled={bulkDownloading || loading || filteredStudents.length === 0}
+              disabled={bulkDownloading || downloadingModule !== null || loading || filteredStudents.length === 0}
               title="Bulk Download All Reports for all students"
               className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#5389FF] text-[#5389FF] text-sm font-medium hover:bg-[#ECF2FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >

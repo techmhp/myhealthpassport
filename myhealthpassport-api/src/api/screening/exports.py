@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import re
 from typing import Optional
 
 from fastapi import Query, Depends
@@ -8,9 +9,31 @@ from fastapi.responses import StreamingResponse
 
 from src.core.manager import get_current_user
 from src.models.student_models import Students, SmartScaleData
-from src.models.screening_models import NutritionScreening, BehaviouralScreening
+from src.models.screening_models import NutritionScreening, BehaviouralScreening, DentalScreening, EyeScreening
 from src.models.other_models import ClinicalRecomendations, ClinicalFindings
 from . import router
+
+
+_ROMAN = {
+    "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5", "VI": "6",
+    "VII": "7", "VIII": "8", "IX": "9", "X": "10", "XI": "11", "XII": "12",
+}
+
+
+def _norm_class(val: str) -> str:
+    """Normalize class value to a plain digit string for comparison."""
+    if not val:
+        return ""
+    v = re.sub(r'(?i)^\s*class\s*', '', str(val).strip()).strip()
+    if v.upper() in _ROMAN:
+        return _ROMAN[v.upper()]
+    v = re.sub(r'(?i)(st|nd|rd|th)\b', '', v).strip()
+    v = re.sub(r'(?i)\s*(class|grade|std|standard)\s*', '', v).strip()
+    if v.isdigit():
+        return v
+    if v.upper() in _ROMAN:
+        return _ROMAN[v.upper()]
+    return str(val).strip()
 
 
 def _make_student_name(student) -> str:
@@ -38,12 +61,18 @@ def _extract_answers(questions_data, question_type: str) -> str:
 
 async def _get_students(school_id: int, class_name: Optional[str], section: Optional[str]):
     """Return students filtered by school / class / section, ordered for export."""
-    filters = {"school_students__school_id": school_id, "is_deleted": False}
+    all_students = await Students.filter(
+        school_students__school_id=school_id, is_deleted=False
+    ).order_by("class_room", "section", "roll_no")
+
     if class_name:
-        filters["class_room"] = class_name
+        norm = _norm_class(class_name)
+        all_students = [s for s in all_students if _norm_class(s.class_room) == norm]
     if section:
-        filters["section"] = section.upper()
-    return await Students.filter(**filters).order_by("class_room", "section", "roll_no")
+        sec_upper = section.strip().upper()
+        all_students = [s for s in all_students if s.section.strip().upper() == sec_upper]
+
+    return all_students
 
 
 def _filename_suffix(class_name, section) -> str:
@@ -492,6 +521,131 @@ async def export_psychology_checklist(
         writer.writerow(row)
 
     filename = f"psychology-checklist_{_filename_suffix(class_name, section)}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. Dental Screening Export
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/export/dental-screening")
+async def export_dental_screening(
+    school_id: int = Query(..., description="School ID"),
+    class_name: Optional[str] = Query(None, description="Class (e.g. 7)"),
+    section: Optional[str] = Query(None, description="Section (e.g. A)"),
+    current_user: dict = Depends(get_current_user),
+):
+    students = await _get_students(school_id, class_name, section)
+    student_ids = [s.id for s in students]
+
+    screenings = (
+        await DentalScreening.filter(student_id__in=student_ids, is_deleted=False)
+        .order_by("-created_at")
+        .all()
+    )
+    # Keep only the most-recent entry per student
+    seen: set = set()
+    screening_map: dict = {}
+    for ds in screenings:
+        if ds.student_id not in seen:
+            screening_map[ds.student_id] = ds
+            seen.add(ds.student_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Roll No", "Name", "Gender", "Class", "Section",
+        "Patient Concern", "Oral Examination", "Examination Note",
+        "Diagnosis", "Treatment Recommendations", "Treatment Recommendations Note",
+        "Report Summary", "Next Follow-up", "Screening Status", "Saved At",
+    ])
+
+    for student in students:
+        ds = screening_map.get(student.id)
+        writer.writerow([
+            student.roll_no,
+            _make_student_name(student),
+            student.gender,
+            student.class_room,
+            student.section,
+            ds.patient_concern if ds else "",
+            ds.oral_examination if ds else "",
+            ds.examination_note if ds else "",
+            ds.diagnosis if ds else "",
+            ds.treatment_recommendations if ds else "",
+            ds.treatment_recommendations_note if ds else "",
+            ds.report_summary if ds else "",
+            ds.next_followup if ds else "",
+            "Complete" if (ds and ds.screening_status) else "Incomplete",
+            ds.created_at.strftime("%Y-%m-%d %H:%M") if ds else "",
+        ])
+
+    filename = f"dental-screening_{_filename_suffix(class_name, section)}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. Vision (Eye) Screening Export
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/export/vision-screening")
+async def export_vision_screening(
+    school_id: int = Query(..., description="School ID"),
+    class_name: Optional[str] = Query(None, description="Class (e.g. 7)"),
+    section: Optional[str] = Query(None, description="Section (e.g. A)"),
+    current_user: dict = Depends(get_current_user),
+):
+    students = await _get_students(school_id, class_name, section)
+    student_ids = [s.id for s in students]
+
+    screenings = (
+        await EyeScreening.filter(student_id__in=student_ids, is_deleted=False)
+        .order_by("-created_at")
+        .all()
+    )
+    # Keep only the most-recent entry per student
+    seen: set = set()
+    screening_map: dict = {}
+    for es in screenings:
+        if es.student_id not in seen:
+            screening_map[es.student_id] = es
+            seen.add(es.student_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Roll No", "Name", "Gender", "Class", "Section",
+        "Patient Concern", "Vision Left Eye", "Vision Right Eye",
+        "Additional Findings", "Recommendations", "Report Summary",
+        "Next Follow-up", "Screening Status", "Saved At",
+    ])
+
+    for student in students:
+        es = screening_map.get(student.id)
+        writer.writerow([
+            student.roll_no,
+            _make_student_name(student),
+            student.gender,
+            student.class_room,
+            student.section,
+            es.patient_concern if es else "",
+            es.vision_lefteye_res if es else "",
+            es.vision_righteye_res if es else "",
+            es.additional_find if es else "",
+            es.recommendations if es else "",
+            es.report_summary if es else "",
+            es.next_followup if es else "",
+            "Complete" if (es and es.screening_status) else "Incomplete",
+            es.created_at.strftime("%Y-%m-%d %H:%M") if es else "",
+        ])
+
+    filename = f"vision-screening_{_filename_suffix(class_name, section)}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv; charset=utf-8",

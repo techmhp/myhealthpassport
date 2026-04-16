@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import StudentCardView from '@/components/StudentCardView';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -9,10 +9,9 @@ import SchoolClassRoomStudentsList from '@/components/SchoolClassRoomStudentsLis
 import {
   schoolDetails,
   studentListByClassAndSection,
-  startPDFGenerationSelected,
-  createPDFDownloadToken,
   exportDentalScreening,
   exportVisionScreening,
+  exportAllReportsExcel,
 } from '@/services/secureApis';
 import { formatFullName, toastMessage } from '@/helpers/utilities';
 import PlusButton from '@/components/UI/PlusButton';
@@ -31,9 +30,6 @@ const ClassView = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadingModule, setDownloadingModule] = useState(null);
-  const [bulkDownloading, setBulkDownloading] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, failed: 0 });
-  const [bulkDownloadLabel, setBulkDownloadLabel] = useState('All Reports');
 
   const tabs = [
     { name: 'Table View', href: '#', id: 'Table-View' },
@@ -126,74 +122,36 @@ const ClassView = () => {
     }
   };
 
-  // Generic bulk download handler for All Reports (individual PDFs)
-  const handleBulkDownload = async (reports = ['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'], label = 'All Reports') => {
-    if (bulkDownloading || filteredStudents.length === 0) return;
-    setBulkDownloading(true);
-    setBulkDownloadLabel(label);
-    setBulkProgress({ current: 0, total: filteredStudents.length, failed: 0 });
-
-    const reportData = JSON.stringify({ reports });
-    const academicYear = null;
-
-    let failed = 0;
-    for (let i = 0; i < filteredStudents.length; i++) {
-      const student = filteredStudents[i];
-      setBulkProgress({ current: i + 1, total: filteredStudents.length, failed });
-      try {
-        const downloadData = await startPDFGenerationSelected(parseInt(student.id), reportData, academicYear);
-        let downloadUrl = null;
-
-        if (downloadData.status === true && downloadData.download) {
-          downloadUrl = downloadData.download;
-        } else if (downloadData.status === false && downloadData.check_status) {
-          const key = new URL(downloadData.check_status).searchParams.get('key');
-          for (let attempt = 0; attempt < 6; attempt++) {
-            await new Promise(r => setTimeout(r, 5000));
-            try {
-              const { downloadPDFSelected } = await import('@/services/secureApis');
-              const pollResp = await downloadPDFSelected(parseInt(student.id), key, academicYear);
-              const pollData = JSON.parse(pollResp);
-              if (pollData.status === true && pollData.download) {
-                downloadUrl = pollData.download;
-                break;
-              } else if (pollData.status === 'error') {
-                break;
-              }
-            } catch { break; }
-          }
-        }
-
-        if (downloadUrl) {
-          const urlObj = new URL(downloadUrl);
-          const key = urlObj.searchParams.get('key');
-          const acYear = urlObj.searchParams.get('academic_year');
-          const token = await createPDFDownloadToken(student.id, key, acYear);
-          const baseApiUrl = process.env.NEXT_PUBLIC_API_URL;
-          const params = new URLSearchParams({ key, academic_year: acYear || '', direct: 'true', download_token: token });
-          const directUrl = `${baseApiUrl}/report/${student.id}/download-selected?${params.toString()}`;
-          const link = document.createElement('a');
-          link.href = directUrl;
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          await new Promise(r => setTimeout(r, 1200));
-        } else {
-          failed++;
-          setBulkProgress({ current: i + 1, total: filteredStudents.length, failed });
-        }
-      } catch {
-        failed++;
-        setBulkProgress({ current: i + 1, total: filteredStudents.length, failed });
+  // Download all reports as a single multi-sheet Excel (.xlsx) file
+  const handleBulkDownload = async () => {
+    if (downloadingModule || filteredStudents.length === 0) return;
+    setDownloadingModule('bulk');
+    try {
+      const res = await exportAllReportsExcel(schoolid, classRoom, section);
+      if (res?.error) {
+        toastMessage(res.message || 'Failed to download', 'error');
+        return;
       }
-    }
-
-    setBulkDownloading(false);
-    if (failed === 0) {
-      toastMessage(`All ${filteredStudents.length} ${label} PDFs downloaded successfully`, 'success');
-    } else {
-      toastMessage(`Downloaded ${filteredStudents.length - failed}/${filteredStudents.length} ${label} PDFs. ${failed} failed.`, 'warning');
+      // GetCallBinary returns base64 — decode to binary blob
+      const binary = atob(res.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `All-Reports_${classSection}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      toastMessage('All reports downloaded as Excel successfully', 'success');
+    } catch (err) {
+      toastMessage(err?.message || 'Failed to download', 'error');
+    } finally {
+      setDownloadingModule(null);
     }
   };
 
@@ -333,16 +291,23 @@ const ClassView = () => {
               )}
               Vision
             </button>
-            {/* All Reports Bulk Download (individual PDFs) */}
+            {/* All Reports — Excel Download */}
             <button
-              onClick={() => handleBulkDownload(['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'], 'All Reports')}
-              disabled={bulkDownloading || downloadingModule !== null || loading || filteredStudents.length === 0}
-              title="Bulk Download All Reports for all students"
+              onClick={handleBulkDownload}
+              disabled={downloadingModule !== null || loading || filteredStudents.length === 0}
+              title="Download All Reports as Excel (.xlsx) for all students"
               className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#5389FF] text-[#5389FF] text-sm font-medium hover:bg-[#ECF2FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
-                <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
-              </svg>
+              {downloadingModule === 'bulk' ? (
+                <svg className="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                  <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
+                </svg>
+              )}
               Bulk Download
             </button>
           </div>
@@ -356,31 +321,6 @@ const ClassView = () => {
         <PlusButton />
       </Link>
 
-      {/* Bulk Download Progress Modal */}
-      {bulkDownloading && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
-            <div className="flex flex-col items-center">
-              <div className="mb-5">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Bulk Downloading — {bulkDownloadLabel}</h3>
-              <p className="text-sm text-gray-600 text-center mb-3">
-                Processing student {bulkProgress.current} of {bulkProgress.total}
-                {bulkProgress.failed > 0 && ` (${bulkProgress.failed} skipped)`}
-              </p>
-              {/* Progress bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${bulkProgress.total > 0 ? (bulkProgress.current / bulkProgress.total) * 100 : 0}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-400 text-center mt-3">Please don&apos;t close this window</p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

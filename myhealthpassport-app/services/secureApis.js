@@ -1140,3 +1140,64 @@ export const thyrocareLabReports = async payload => {
   const response = await call.GetCall(`/thyrocare/student-orders?student_id=${payload.student_id}`);
   return response;
 };
+
+// ═══════════════════════════════════════════════════════════
+//  MHB (My Health Buddy) Nutrition Engine Integration
+// ════════════════════���══════════════════════════════════════
+
+// Register family with MHB nutrition engine
+export const mhbRegisterFamily = async () => {
+  const call = new V1SecureApi();
+  const response = await call.PostCall('/nutrition/register-family', JSON.stringify({}));
+  return response;
+};
+
+// Get MHB wellness score for nutrition pillar
+export const mhbWellnessScore = async (studentId) => {
+  const call = new V1SecureApi();
+  const response = await call.GetCall(`/nutrition/wellness-score/${studentId}`);
+  return response;
+};
+
+// Get MHB weekly analytics
+export const mhbWeeklyAnalytics = async (studentId) => {
+  const call = new V1SecureApi();
+  const response = await call.GetCall(`/nutrition/weekly-analytics/${studentId}`);
+  return response;
+};
+
+// Log a meal via MHB
+export const mhbLogMeal = async (studentId, mealData) => {
+  const call = new V1SecureApi();
+  const response = await call.PostCall(`/nutrition/log-meal/${studentId}`, JSON.stringify(mealData));
+  return response;
+};
+
+// Analyse a meal via MHB AI (returns dishes, macros, scores, swaps — does NOT save)
+export const mhbAnalyseMeal = async (studentId, mealData) => {
+  const call = new V1SecureApi();
+  const response = await call.PostCall(`/nutrition/analyse-meal/${studentId}`, JSON.stringify(mealData));
+  return response;
+};
+
+// Confirm + save a meal to MHB (call after mhbAnalyseMeal returns)
+export const mhbConfirmMeal = async (studentId, mealData) => {
+  const call = new V1SecureApi();
+  const response = await call.PostCall(`/nutrition/confirm-meal/${studentId}`, JSON.stringify(mealData));
+  return response;
+};
+
+// Start a Priya voice session — returns VAPI publicKey + assistant config
+// for the frontend to pass directly to the VAPI Web SDK.
+export const mhbPriyaSession = async (studentId) => {
+  const call = new V1SecureApi();
+  const response = await call.PostCall(`/nutrition/priya-session/${studentId}`, JSON.stringify({}));
+  return response;
+};
+
+// Check if family is registered with MHB
+export const mhbFamilyStatus = async () => {
+  const call = new V1SecureApi();
+  const response = await call.GetCall('/nutrition/family-status');
+  return response;
+};

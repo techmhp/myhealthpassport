@@ -1,6 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 const BaseURL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -28,8 +29,74 @@ class V1SecureApi {
       mode: this.mode,
       cache: 'no-store',
     });
+    if (result.status === 401) {
+      redirect('/login?reason=session_expired');
+    }
     const response = await result.text();
     return response;
+  };
+
+  GetCallBinary = async endpoint => {
+    try {
+      const cookieStore = await cookies();
+      const access_token = cookieStore.get('access_token')?.value;
+      this.headers['Authorization'] = 'Bearer ' + access_token;
+      const endpoint_url = this.url + endpoint;
+      const result = await fetch(endpoint_url, {
+        method: 'GET',
+        headers: this.headers,
+        cache: 'no-store',
+      });
+      if (result.status === 401) {
+        redirect('/login?reason=session_expired');
+      }
+      if (!result.ok) {
+        let message = `HTTP ${result.status}: Request failed`;
+        try {
+          const errorData = await result.json();
+          message = errorData?.detail || errorData?.message || message;
+        } catch {}
+        return { error: true, message };
+      }
+      const arrayBuffer = await result.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const contentType = result.headers.get('content-type') || 'application/pdf';
+      const contentDisposition = result.headers.get('content-disposition') || '';
+      return { data: base64, contentType, contentDisposition };
+    } catch (err) {
+      return { error: true, message: err?.message || 'Unexpected error' };
+    }
+  };
+
+  GetCallBlob = async endpoint => {
+    try {
+      const cookieStore = await cookies();
+      const access_token = cookieStore.get('access_token')?.value;
+      this.headers['Authorization'] = 'Bearer ' + access_token;
+      const endpoint_url = this.url + endpoint;
+      const result = await fetch(endpoint_url, {
+        method: 'GET',
+        headers: this.headers,
+        cache: 'no-store',
+      });
+      if (result.status === 401) {
+        redirect('/login?reason=session_expired');
+      }
+      if (!result.ok) {
+        let message = `HTTP ${result.status}: Request failed`;
+        try {
+          const errorData = await result.json();
+          message = errorData?.detail || errorData?.message || message;
+        } catch {}
+        return { error: true, message };
+      }
+      // Return CSV as plain text so it can be serialised through server action
+      const text = await result.text();
+      const contentDisposition = result.headers.get('content-disposition') || '';
+      return { data: text, contentDisposition, status: result.status };
+    } catch (err) {
+      return { error: true, message: err?.message || 'Unexpected error' };
+    }
   };
 
   FormPostCall = async (endpoint, data) => {
@@ -59,6 +126,9 @@ class V1SecureApi {
       headers: this.headers,
       body: data,
     });
+    if (result.status === 401) {
+      redirect('/login?reason=session_expired');
+    }
     const response = await result.json();
     return response;
   };
@@ -73,6 +143,9 @@ class V1SecureApi {
       headers: this.headers,
       body: data,
     });
+    if (result.status === 401) {
+      redirect('/login?reason=session_expired');
+    }
     const response = await result.json();
     return response;
   };
@@ -1012,6 +1085,11 @@ export const downloadPDFSelected = async (studentId, queryParameter, academicYea
   return response;
 };
 
+export const downloadPDFFileAsBase64 = async (studentId, key, academicYear) => {
+  const call = new V1SecureApi();
+  return await call.GetCallBinary(`/report/${studentId}/download-selected?key=${key}&academic_year=${academicYear}&direct=true`);
+};
+
 // Add new function for downloading the actual PDF file
 // export const downloadPDFFile = async downloadUrl => {
 //   const call = new V1SecureApi();
@@ -1141,9 +1219,69 @@ export const thyrocareLabReports = async payload => {
   return response;
 };
 
+// ─── CSV EXPORT FUNCTIONS ────────────────────────────────────────────────────
+
+export const exportNutritionChecklist = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/nutrition-checklist?${params.toString()}`);
+};
+
+export const exportNutritionAnalysis = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/nutrition-analysis?${params.toString()}`);
+};
+
+export const exportPsychologyAnalysis = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/psychology-analysis?${params.toString()}`);
+};
+
+export const exportSmartScale = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/smart-scale?${params.toString()}`);
+};
+
+export const exportPsychologyChecklist = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/psychology-checklist?${params.toString()}`);
+};
+
+export const createPDFDownloadToken = async (studentId, key, academicYear) => {
+  const cookieStore = await cookies();
+  const access_token = cookieStore.get('access_token')?.value;
+  const params = new URLSearchParams({ key });
+  if (academicYear) params.append('academic_year', academicYear);
+  const res = await fetch(
+    `${BaseURL}/report/${studentId}/create-download-token?${params.toString()}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    }
+  );
+  const data = await res.json();
+  if (!data.status || !data.token) throw new Error('Failed to create download token');
+  return data.token;
+};
+
 // ═══════════════════════════════════════════════════════════
 //  MHB (My Health Buddy) Nutrition Engine Integration
-// ════════════════════���══════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 
 // Register family with MHB nutrition engine
 export const mhbRegisterFamily = async () => {

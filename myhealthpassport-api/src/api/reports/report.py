@@ -1,15 +1,19 @@
 import asyncio
+import base64
 import time
 import json
+import uuid
 from typing import Optional, Any, Dict, Tuple, List
 from pathlib import Path
 from datetime import datetime
 
 import anyio
-from fastapi import APIRouter, Request, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, Request, HTTPException, BackgroundTasks, Query, Depends
 from fastapi.responses import HTMLResponse, Response, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from tortoise.expressions import Q
+from src.core.manager import get_current_user
+from src.core.cache_maanger import ObjectCache
 
 from src.models.other_models import ClinicalFindings, ClinicalRecomendations
 from src.models.screening_models import EyeScreening, DentalScreening, BehaviouralScreening
@@ -50,6 +54,32 @@ async def cached_get_new_url(path: str, ttl: int = DEFAULT_URL_CACHE_TTL) -> str
     return signed
 
 # =========================================================
+# Fetch S3 image as base64 data URI (avoids WeasyPrint making external HTTP calls)
+# =========================================================
+async def get_s3_image_as_data_uri(s3_key: str) -> Optional[str]:
+    """
+    Download an image directly from S3 and return it as a base64 data URI.
+    When passed to WeasyPrint, this eliminates the need for WeasyPrint to make
+    external HTTP requests to fetch presigned S3 URLs during PDF rendering —
+    which was the primary cause of PDF generation timeouts.
+    """
+    if not s3_key or s3_client is None:
+        return None
+    try:
+        def _download():
+            resp = s3_client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=s3_key)
+            body = resp["Body"].read()
+            content_type = resp.get("ContentType", "image/png")
+            b64 = base64.b64encode(body).decode("utf-8")
+            return f"data:{content_type};base64,{b64}"
+
+        return await anyio.to_thread.run_sync(_download)
+    except Exception as e:
+        print(f"⚠️ [PDF] Failed to embed S3 image as base64 (key={s3_key}): {e}")
+        return None
+
+
+# =========================================================
 # Safe JSON loader
 # =========================================================
 def safe_json_load(val: Any, default: Any = None) -> Any:
@@ -69,18 +99,21 @@ def safe_json_load(val: Any, default: Any = None) -> Any:
 # Build report context (optimized & fixed validation)
 # =========================================================
 async def build_report_context(
-    request: Request, 
-    student_id: int, 
+    request: Request,
+    student_id: int,
     required_sections: List[str] = None,
-    academic_year: Optional[str] = None
+    academic_year: Optional[str] = None,
+    strict: bool = True
 ) -> dict:
     """
     Builds a complete report context asynchronously.
-    
-    :param required_sections: List of section keys (e.g. ['emotional', 'dental']). 
+
+    :param required_sections: List of section keys (e.g. ['emotional', 'dental']).
                               If provided, only these sections are validated for existence.
                               If None, ALL sections must be present (strict full report).
     :param academic_year: Academic year in format 'YYYY-YYYY'. Defaults to current year.
+    :param strict: If False, missing sections are logged as warnings but don't raise errors.
+                   PDF will be generated with whatever data is available.
     """
     
     # Determine academic year
@@ -175,7 +208,8 @@ async def build_report_context(
         if school.school_logo.startswith("data:"):
             school_logo_url = school.school_logo
         else:
-            school_logo_url = await cached_get_new_url(school.school_logo)
+            # Embed as base64 so WeasyPrint doesn't make an external HTTP request to S3
+            school_logo_url = await get_s3_image_as_data_uri(school.school_logo)
 
     # -------------------------------------------------------------------------
     # FIXED DATA INTEGRITY CHECK (Dynamic Validation)
@@ -215,10 +249,13 @@ async def build_report_context(
         missing_sections = [key for key, value in required_strict.items() if not value]
 
     if missing_sections:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Report not completed for academic year {academic_year}: missing data for {', '.join(missing_sections)}"
-        )
+        if strict:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Report not completed for academic year {academic_year}: missing data for {', '.join(missing_sections)}"
+            )
+        else:
+            print(f"⚠️ [PDF Debug] Partial data — missing sections (non-strict mode): {missing_sections}. Generating PDF with available data.")
 
     # -------------------------------------------------------------------------
     # Parsing Logic (Unchanged)
@@ -346,15 +383,17 @@ async def build_report_context(
             elif entry.get("question_type") == "Areas of Concern":
                 lneed_attention.extend(entry.get("answers", []))
 
-    # Image URLs
+    # Image URLs — use base64 data URIs to avoid WeasyPrint making external HTTP requests
     profile_url: Optional[str] = None
     if getattr(student, "profile_image", None):
         if student.profile_image.startswith("data:"):
             profile_url = student.profile_image
         else:
-            profile_url = await cached_get_new_url(student.profile_image)
+            profile_url = await get_s3_image_as_data_uri(student.profile_image)
 
     REPORTS_DIR = Path(__file__).resolve().parent
+    # Profile fallback: use local file:// to avoid an HTTP request from WeasyPrint
+    profile_fallback = f"file://{REPORTS_DIR / 'Profile_icon1.png'}"
     left_logo_url = f"file://{REPORTS_DIR / 'logo-left.png'}"
     right_logo_url = school_logo_url
     gauge_url = f"file://{REPORTS_DIR / 'gauge.png'}"
@@ -399,7 +438,7 @@ async def build_report_context(
         "student": student,
         "smart": smart_data,
         "school": school,
-        "profile_url": profile_url or "/static/default-photo.jpg",
+        "profile_url": profile_url or profile_fallback,
         "left_logo": left_logo_url,
         "right_logo": right_logo_url,
         "gauge": gauge_url,
@@ -440,6 +479,17 @@ async def build_report_context(
         "si": strength_icon,
         **{f"teeth{num}": path for num, path in teeth.items()},
         **sidebar_icons,
+        # ── Section visibility flags ─────────────────────────────────────────
+        # These control {% if show_* %} blocks in the template.
+        # For the full report, show a section whenever its data exists.
+        # The selected-sections endpoint overrides these with its own .update().
+        "show_profile":   True,
+        "show_physical":  bool(smart_data),
+        "show_nutrition": bool(nutritional_questionaire),
+        "show_emotional": bool(emo_data),
+        "show_dental":    bool(dental_data),
+        "show_eye":       bool(eye_screening),
+        "show_lab":       bool(lab_data),
     }
 
 # =========================================================
@@ -450,6 +500,46 @@ TEMP_DIR.mkdir(parents=True, exist_ok=True)
 pdf_status: Dict[str, Dict[str, Any]] = {}
 pdf_status_lock = asyncio.Lock()
 PDF_TTL_SECONDS = 24 * 3600  # 24 hours
+
+
+def render_pdf_wkhtmltopdf(html_content: str) -> bytes:
+    """
+    Render HTML → PDF using wkhtmltopdf (much faster than WeasyPrint on this server).
+    wkhtmltopdf v0.12.6 is pre-installed. Falls back to WeasyPrint if not found.
+    """
+    import subprocess
+    try:
+        result = subprocess.run(
+            [
+                "wkhtmltopdf",
+                "--quiet",
+                "--enable-local-file-access",   # needed for file:// teeth SVGs
+                "--page-size", "A4",
+                "--margin-top", "0",
+                "--margin-bottom", "0",
+                "--margin-left", "0",
+                "--margin-right", "0",
+                "--print-media-type",
+                "--disable-smart-shrinking",
+                "--encoding", "utf-8",
+                "-", "-",                        # stdin → stdout
+            ],
+            input=html_content.encode("utf-8"),
+            capture_output=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.decode("utf-8", errors="replace")
+            # wkhtmltopdf exits non-zero on warnings too — still check we got PDF bytes
+            if result.stdout and result.stdout[:4] == b"%PDF":
+                return result.stdout  # output is valid PDF despite exit code
+            raise RuntimeError(f"wkhtmltopdf failed (exit {result.returncode}): {stderr[:500]}")
+        return result.stdout
+    except FileNotFoundError:
+        # wkhtmltopdf not on PATH — fall back to WeasyPrint
+        print("⚠️ [PDF] wkhtmltopdf not found, falling back to WeasyPrint")
+        import weasyprint
+        return weasyprint.HTML(string=html_content).write_pdf()
 
 def is_pdf_fresh(path: Path) -> bool:
     """Check if existing PDF is still within TTL window."""
@@ -470,8 +560,7 @@ async def generate_pdf(student_id: int, request: Request, academic_year: Optiona
         html_content = templates.get_template("reports.html").render(context)
 
         def render_pdf():
-            import weasyprint
-            return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
+            return render_pdf_wkhtmltopdf(html_content)
 
         pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
         pdf_path = TEMP_DIR / f"report_{student_id}_{academic_year}.pdf"
@@ -530,8 +619,7 @@ async def download_report_pdf(
     html_content = templates.get_template("reports.html").render(context)
 
     def render_pdf():
-        import weasyprint
-        return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
+        return render_pdf_wkhtmltopdf(html_content)
 
     pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
     pdf_path.write_bytes(pdf_bytes)
@@ -1075,6 +1163,10 @@ async def start_download_selected(
     """
     Start background PDF generation for selected sections.
     """
+    # JS null becomes the string "null" in query params — treat it as absent
+    if academic_year == "null":
+        academic_year = None
+
     selected = [r.strip().lower() for r in payload.get("reports", []) if isinstance(r, str) and r.strip()]
     if not selected:
         raise HTTPException(status_code=400, detail="No sections selected")
@@ -1102,17 +1194,6 @@ async def start_download_selected(
             "download": f"{base_url}/api/v1/report/{student_id}/download-selected?key={selected_key}&academic_year={academic_year}&direct=true"  # ✅ CHANGED: Added &direct=true
         })
 
-    # Validation
-    try:
-        print(f"🔍 [PDF Debug] Validating report context for {student_id} ({selected_key})...")
-        await build_report_context(request, student_id, required_sections=selected)
-        print(f"✅ [PDF Debug] Validation passed for {cache_key}")
-    except HTTPException as e:
-        print(f"❌ [PDF Debug] Validation failed for {cache_key}: {e.detail}")
-        async with pdf_status_lock:
-            pdf_status[cache_key] = {"ready": False, "status": "error", "error": e.detail}
-        return JSONResponse({"status": "error", "message": e.detail})
-
     async with pdf_status_lock:
         pdf_status[cache_key] = {"ready": False, "status": "generating", "path": ""}
     print(f"🚀 [PDF Debug] Background generation scheduled for {cache_key}")
@@ -1121,7 +1202,7 @@ async def start_download_selected(
     async def generate_selected_pdf():
         try:
             print(f"🧠 [PDF Debug] Building context for {cache_key}...")
-            context = await build_report_context(request, student_id, required_sections=selected)
+            context = await build_report_context(request, student_id, required_sections=selected, strict=False)
             
             context.update({
                 "show_profile": True,
@@ -1138,8 +1219,7 @@ async def start_download_selected(
             print(f"🖨️ [PDF Debug] Converting HTML → PDF...")
 
             def render_pdf():
-                import weasyprint
-                return weasyprint.HTML(string=html_content, base_url=str(request.base_url)).write_pdf()
+                return render_pdf_wkhtmltopdf(html_content)
 
             pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
             pdf_path.write_bytes(pdf_bytes)
@@ -1231,15 +1311,46 @@ async def start_download_selected(
 #             "message": f"Error generating download link: {str(e)}"
 #         })
 
-@router.get("/{student_id}/download-selected")
-async def download_selected_report(
-    request: Request, 
-    student_id: int, 
+@router.post("/{student_id}/create-download-token")
+async def create_pdf_download_token(
+    student_id: int,
     key: str,
     academic_year: Optional[str] = None,
-    direct: bool = False  # ✅ Flag to trigger direct download
+    current_user: dict = Depends(get_current_user),
+):
+    """Issue a short-lived (60s) one-time download token for direct browser download."""
+    token = str(uuid.uuid4())
+    cache = ObjectCache(cache_key=f"pdf-dl-token:{token}")
+    await cache.set({"student_id": student_id, "key": key, "academic_year": academic_year}, ttl=60)
+    return JSONResponse({"status": True, "token": token})
+
+
+@router.get("/{student_id}/download-selected")
+async def download_selected_report(
+    request: Request,
+    student_id: int,
+    key: str,
+    academic_year: Optional[str] = None,
+    direct: bool = False,
+    download_token: Optional[str] = None,  # one-time token for direct browser download
 ):
     """Check PDF availability and return download URL, or serve file directly if direct=true."""
+    # JS null becomes the string "null" in query params — treat it as absent
+    if academic_year == "null":
+        academic_year = None
+
+    # Validate one-time download token (used for direct browser downloads)
+    if download_token:
+        token_cache = ObjectCache(cache_key=f"pdf-dl-token:{download_token}")
+        token_data = await token_cache.get()
+        if not token_data:
+            return JSONResponse(
+                {"status": False, "message": "Download link expired or invalid. Please try again."},
+                status_code=401
+            )
+        # Consume the token (delete it so it can't be reused)
+        await token_cache.delete()
+
     # ✅ Try with academic_year first, then fallback to 'default'
     cache_key_with_year = f"{student_id}_{key}_{academic_year}" if academic_year else None
     cache_key_default = f"{student_id}_{key}_default"
@@ -1265,6 +1376,21 @@ async def download_selected_report(
 
     print(f"⬇️ [PDF Debug] Download request received for {final_cache_key or cache_key_with_year or cache_key_default}, direct={direct}")
 
+    # Check in-memory status for errors (background task may have failed)
+    possible_cache_keys = [k for k in [cache_key_with_year, cache_key_default] if k]
+    async with pdf_status_lock:
+        status_info = None
+        for ck in possible_cache_keys:
+            if ck in pdf_status:
+                status_info = pdf_status[ck]
+                break
+    if status_info and status_info.get("status") == "error":
+        print(f"❌ [PDF Debug] Error status detected for {possible_cache_keys}: {status_info.get('error')}")
+        return JSONResponse({
+            "status": "error",
+            "message": status_info.get("error", "PDF generation failed. Please try again.")
+        })
+
     # Not found
     if not pdf_path or not pdf_path.exists():
         return JSONResponse({
@@ -1289,11 +1415,29 @@ async def download_selected_report(
     # ✅ If direct=true, serve the PDF file
     if direct:
         print(f"📄 [PDF Debug] Serving PDF file directly: {final_cache_key}")
+        # Build a friendly filename: "First Last - Class 5A.pdf"
+        # class_room and section live on the Students model directly
+        try:
+            student_obj = await Students.get_or_none(id=student_id)
+            if student_obj:
+                student_name = f"{student_obj.first_name or ''} {student_obj.last_name or ''}".strip()
+                class_room = student_obj.class_room or ''
+                section = student_obj.section or ''
+                if class_room:
+                    class_section = f"Class {class_room}{section}".strip()
+                    pdf_filename = f"{student_name} - {class_section}.pdf"
+                else:
+                    pdf_filename = f"{student_name}.pdf" if student_name else f"report_{student_id}.pdf"
+            else:
+                pdf_filename = f"report_{student_id}.pdf"
+        except Exception as e:
+            print(f"❌ [PDF Debug] Error building filename for student {student_id}: {e}")
+            pdf_filename = f"report_{student_id}.pdf"
         return FileResponse(
             pdf_path,
             media_type="application/pdf",
-            filename=f"report_{student_id}_{final_academic_year}.pdf",
-            headers={"Content-Disposition": f'attachment; filename="report_{student_id}_{final_academic_year}.pdf"'}
+            filename=pdf_filename,
+            headers={"Content-Disposition": f'attachment; filename="{pdf_filename}"'}
         )
 
     # ✅ Otherwise, return JSON with download URL (add &direct=true)

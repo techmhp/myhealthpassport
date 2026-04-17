@@ -292,7 +292,7 @@ async def create_individual_student(
                     parent.secondary_last_name = parent_data["secondary_last_name"]
                     parent.secondary_mobile = parent_data["secondary_mobile"]
                     parent.secondary_email = parent_data["secondary_email"]
-                    parent.pincode = parent_data["parent_pincode"]
+                    parent.pincode = parent_data["pincode"]
                     parent.is_active = parent_data["is_active"]
                     parent.is_verified = parent_data["is_verified"]
                     parent.updated_by = str(current_user.get("user_id", ""))

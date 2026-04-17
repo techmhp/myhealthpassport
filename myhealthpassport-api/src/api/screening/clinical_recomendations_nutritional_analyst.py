@@ -825,13 +825,20 @@ async def update_clinical_recommendations(update_data: dict, current_analyst: An
 
             for report in update_data["data"]:
                 report_id = report.get("id")
-                if not report_id:
-                    errors.append(f"Missing ID for one of the reports")
-                    continue
+                clinical_data = None
 
-                clinical_data = await ClinicalRecomendations.get_or_none(id=report_id).prefetch_related("student")
+                if report_id:
+                    clinical_data = await ClinicalRecomendations.get_or_none(id=report_id).prefetch_related("student")
+
+                # Fallback: look up by student_id + report_type if id is missing or not found
+                if not clinical_data and student_id and report.get("report_type"):
+                    clinical_data = await ClinicalRecomendations.filter(
+                        student_id=student_id,
+                        report_type__iexact=report.get("report_type").strip()
+                    ).prefetch_related("student").first()
+
                 if not clinical_data:
-                    errors.append(f"Clinical recommendation with ID {report_id} not found")
+                    errors.append(f"Clinical recommendation not found for report_type '{report.get('report_type')}'")
                     continue
 
                 if not isinstance(clinical_data, ClinicalRecomendations):
@@ -843,8 +850,8 @@ async def update_clinical_recommendations(update_data: dict, current_analyst: An
 
                 clinical_data.report_type = report.get("report_type", clinical_data.report_type)
                 clinical_data.questions_data = report.get("report_data", clinical_data.questions_data) or []
-                clinical_data.summary = report.get("summary", clinical_data.summary)
-                clinical_data.status = report.get("status", clinical_data.status)
+                clinical_data.summary = report.get("summary") or clinical_data.summary
+                clinical_data.status = report.get("status") or clinical_data.status
                 clinical_data.role_type = update_data.get("role_type", clinical_data.role_type) or current_analyst.user_role
                 clinical_data.role_name = update_data.get("role_name", clinical_data.role_name) or current_analyst.user_role
                 clinical_data.updated_at = datetime.utcnow()
@@ -860,9 +867,9 @@ async def update_clinical_recommendations(update_data: dict, current_analyst: An
                 student_records = await ClinicalRecomendations.filter(student_id=student_id).all()
                 if student_records:
                     update_fields = {}
-                    if "common_summary" in update_data:
+                    if "common_summary" in update_data and update_data["common_summary"]:
                         update_fields["common_summary"] = update_data["common_summary"]
-                    if "common_status" in update_data:
+                    if "common_status" in update_data and update_data["common_status"]:
                         update_fields["common_status"] = update_data["common_status"]
                     if "clinical_notes" in update_data:
                         update_fields["clinical_notes"] = update_data["clinical_notes"]

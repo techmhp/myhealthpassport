@@ -134,7 +134,7 @@ export default function SchoolUpdateForm({ schoolProfile }) {
           </div>
           <a
             href={`/admin/schools/${school.school_id}/schoolinfo`}
-            className="rounded-[5px] pt-[10px] pr-[20px] pb-[10px] pl-[20px] bg-[#5465FF] text-[#FFFFFF]"
+            className="rounded-[5px] pt-[10px] pr-[20px] pb-[10px] pl-[20px] bg-[#5465FF] text-[#FFFFFF] whitespace-nowrap"
           >
             View Student List
           </a>
@@ -519,7 +519,7 @@ export default function SchoolUpdateForm({ schoolProfile }) {
                 <button
                   type="submit"
                   name="submit"
-                  className="rounded-[5px] bg-indigo-500  px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                  className="rounded-[5px] bg-indigo-500  px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
                 >
                   Save Changes
                 </button>

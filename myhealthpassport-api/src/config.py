@@ -3,8 +3,9 @@ import ssl as ssl_module
 
 environment = os.environ.get("APP_ENV")
 
-# UAT: Supabase via SSL (cert verification disabled for pooler self-signed chain)
-def _build_uat_connection():
+# Supabase connection via asyncpg with SSL (cert verification disabled for pooler self-signed chain)
+# Credentials are read from DB_* env vars — set these in the .env file for each environment.
+def _build_supabase_connection():
     ctx = ssl_module.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl_module.CERT_NONE
@@ -13,7 +14,7 @@ def _build_uat_connection():
         "credentials": {
             "host": os.environ.get("DB_HOST", "aws-1-ap-south-1.pooler.supabase.com"),
             "port": int(os.environ.get("DB_PORT", "5432")),
-            "user": os.environ.get("DB_USER", "postgres.kzsjgnrubrtnkvcdfusz"),
+            "user": os.environ.get("DB_USER", ""),
             "password": os.environ.get("DB_PASSWORD", ""),
             "database": os.environ.get("DB_NAME", "postgres"),
             "ssl": ctx,
@@ -45,20 +46,13 @@ _apps = {
 }
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-_prod_db = DATABASE_URL or "postgres://secretadmin:Access100@localhost:5432/myhealth_passport"
 _dev_db = DATABASE_URL or "postgres://secretadmin:Access100@localhost:5432/myhealth_passport_dev"
 
-if environment == "uat":
+if environment in ("uat", "production"):
+    # Both UAT and PROD connect to their respective Supabase instances via SSL.
+    # Credentials must be provided through DB_HOST / DB_USER / DB_PASSWORD / DB_NAME env vars.
     TORTOISE_ORM = {
-        "connections": {"default": _build_uat_connection()},
-        "apps": _apps,
-        "use_tz": False,
-        "timezone": "UTC"
-    }
-
-elif environment == "production":
-    TORTOISE_ORM = {
-        "connections": {"default": _prod_db},
+        "connections": {"default": _build_supabase_connection()},
         "apps": _apps,
         "use_tz": False,
         "timezone": "UTC"

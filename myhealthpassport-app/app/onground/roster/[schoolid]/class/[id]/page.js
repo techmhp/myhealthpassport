@@ -25,6 +25,46 @@ const ClassView = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Summary counters — computed from full students list (not filtered)
+  const summaryStats = [
+    {
+      label: 'Total Students',
+      count: students.length,
+      color: 'bg-[#ECF2FF] text-[#5389FF]',
+      borderColor: 'border-[#B5CCFF]',
+    },
+    {
+      label: 'Registered',
+      count: students.filter(s => s.registration_status).length,
+      color: 'bg-green-50 text-green-700',
+      borderColor: 'border-green-200',
+    },
+    {
+      label: 'Vision Screening',
+      count: students.filter(s => s.eye_screening_status).length,
+      color: 'bg-blue-50 text-blue-700',
+      borderColor: 'border-blue-200',
+    },
+    {
+      label: 'Dental Screening',
+      count: students.filter(s => s.dental_screening_status).length,
+      color: 'bg-purple-50 text-purple-700',
+      borderColor: 'border-purple-200',
+    },
+    {
+      label: 'Nutrition Screening',
+      count: students.filter(s => s.nutrition_screening_status).length,
+      color: 'bg-orange-50 text-orange-700',
+      borderColor: 'border-orange-200',
+    },
+    {
+      label: 'Psychology Screening',
+      count: students.filter(s => s.behavioural_screening_status).length,
+      color: 'bg-pink-50 text-pink-700',
+      borderColor: 'border-pink-200',
+    },
+  ];
+
   const tabs = [
     { name: 'Table View', href: '#', id: 'Table-View' },
     { name: 'Card View', href: '#', id: 'Card-View' },
@@ -127,7 +167,7 @@ const ClassView = () => {
       case 'Table-View':
         return (
           <div className="bg-white rounded-lg pt-2">
-            <SchoolClassRoomStudentsList school={schoolProfile?.data?.school} students={filteredStudents} />
+            <SchoolClassRoomStudentsList school={schoolProfile?.data?.school} students={filteredStudents} stickyHeader={true} />
           </div>
         );
       case 'Card-View':
@@ -201,6 +241,27 @@ const ClassView = () => {
         <div className="mb-[33px]">
           <FilterSection searchQuery={searchQuery} onSearchChange={handleSearchChange} />
         </div>
+
+        {/* Real-time summary counters — visible only when data is loaded */}
+        {!loading && students.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-[24px]">
+            {summaryStats.map(stat => (
+              <div
+                key={stat.label}
+                className={`flex flex-col items-center justify-center rounded-lg border ${stat.borderColor} ${stat.color} py-3 px-2 text-center`}
+              >
+                <span className="text-2xl font-bold leading-none">{stat.count}</span>
+                <span className="mt-1 text-xs font-medium leading-tight">{stat.label}</span>
+                {stat.label !== 'Total Students' && students.length > 0 && (
+                  <span className="mt-0.5 text-xs opacity-60">
+                    / {students.length}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {renderTabContent()}
         {eventid !== '0' && eventid !== null ? (
           <div className="mb-5 mt-5 flex justify-center items-center gap-5">
@@ -216,7 +277,7 @@ const ClassView = () => {
               disabled={isSubmitting}
               onClick={() => completeEvent()}
               onSubmit={() => setIsSubmitting(false)}
-              className="rounded-[5px] cursor-pointer bg-indigo-500 w-[135px] h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-[5px] cursor-pointer bg-indigo-500 h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {isSubmitting ? 'Submitting...' : 'Verify & Save'}
             </button>

@@ -515,12 +515,12 @@ export default function StudentProfileForm({ details }) {
                 Upload Portrait
               </label>
               <div className="mt-2">
-                <input id="fileInput" type="file" className="hidden" onChange={handleImageChange} disabled={edit_status} hidden />
-                <label htmlFor="fileInput">
-                  <a type="button" className="rounded-full bg-blue-100 p-2 text-blue-500">
+                <input id="fileInput" type="file" className="hidden" onChange={handleImageChange} disabled={edit_status} />
+                <label htmlFor="fileInput" className="flex items-center gap-2 cursor-pointer">
+                  <span className="rounded-full bg-blue-100 p-2 text-blue-500 inline-flex">
                     <PlusCircleIcon className="h-6 w-6" aria-hidden="true" />
-                  </a>
-                  {file ? file.name : ''}
+                  </span>
+                  <span className="text-sm text-gray-600">{file ? file.name : 'Choose photo'}</span>
                 </label>
               </div>
             </div>

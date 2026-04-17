@@ -143,6 +143,7 @@ async def parent_childrens(
     return JSONResponse(content=response_obj.__dict__, status_code=status.HTTP_200_OK)
 
 
+
 # @router.get("/childrens")
 # async def parent_childrens(current_user: dict = Depends(get_current_user)):
 #     """

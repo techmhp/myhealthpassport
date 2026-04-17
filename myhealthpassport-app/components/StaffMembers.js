@@ -54,14 +54,20 @@ const StaffMembers = ({ team_type, role }) => {
   return (
     <div className="flex flex-col w-full gap-4">
       {results.status === true ? (
-        <div className="pt-6 grid grid-cols-3 gap-[30px]">
-          {results.data.users.map((user, index) => (
-            <StaffCardView key={index} user={user} />
-          ))}
-        </div>
+        results.data.users.length > 0 ? (
+          <div className="pt-6 grid grid-cols-3 gap-[30px]">
+            {results.data.users.map((user, index) => (
+              <StaffCardView key={index} user={user} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg p-8 text-center">
+            <div className="text-gray-400">No staff members found for this category.</div>
+          </div>
+        )
       ) : (
         <div className="bg-white rounded-lg p-8 text-center">
-          <div className="text-gray-500">{results.message}</div>
+          <div className="text-gray-400">{results.message || 'No staff members found.'}</div>
         </div>
       )}
     </div>

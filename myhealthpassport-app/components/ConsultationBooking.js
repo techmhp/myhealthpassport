@@ -418,6 +418,7 @@ const ConsultationBooking = ({
                             className="size-10 sm:size-12 rounded-full"
                             width={70}
                             height={70}
+                            unoptimized={isValidUrl(child.image)}
                           />
                           <div>
                             <h3 className="text-sm tracking-tight text-gray-900">{formatFullName(child)}</h3>
@@ -502,7 +503,7 @@ const ConsultationBooking = ({
         <div className="flex justify-end mt-3 sm:mt-4 md:mt-[22px]">
           <button
             onClick={ShowPreviewModel}
-            className="rounded-[5px] py-2 sm:pt-[10px] sm:pb-[10px] px-4 sm:pr-[20px] sm:pl-[20px] bg-[#5465FF] text-white flex items-center gap-2"
+            className="rounded-[5px] py-2 sm:pt-[10px] sm:pb-[10px] px-4 sm:pr-[20px] sm:pl-[20px] bg-[#5465FF] text-white flex items-center gap-2 whitespace-nowrap"
           >
             <span className="text-xs sm:text-sm font-normal">{isReschedule ? 'Confirm Reschedule' : 'Book Appointment'}</span>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 sm:size-5" width={24} height={24}>
@@ -540,6 +541,7 @@ const ConsultationBooking = ({
                     className="rounded-full size-10"
                     width={36}
                     height={36}
+                    unoptimized={isValidUrl(selectedPatient.image)}
                   />
                   <p className="text-xs sm:text-sm m-0 whitespace-wrap">{selectedPatient.name}</p>
                 </div>
@@ -555,6 +557,7 @@ const ConsultationBooking = ({
                     className="rounded-full size-10"
                     width={36}
                     height={36}
+                    unoptimized={isValidUrl(expertDetails?.profile_image_url)}
                   />
                   <p className="text-xs sm:text-sm m-0 whitespace-wrap">{formatFullName(expertDetails)}</p>
                 </div>
@@ -588,7 +591,7 @@ const ConsultationBooking = ({
               </button>
               <button
                 onClick={isReschedule ? () => savebookConsultation({ status: 'captured' }) : handlePayment}
-                className="w-full sm:flex-1 rounded-[5px] bg-[#5465FF] py-2 sm:pt-[10px] sm:pb-[10px] px-4 sm:pr-[20px] sm:pl-[20px] text-white"
+                className="w-full sm:flex-1 rounded-[5px] bg-[#5465FF] py-2 sm:pt-[10px] sm:pb-[10px] px-4 sm:pr-[20px] sm:pl-[20px] text-white whitespace-nowrap"
               >
                 {isReschedule ? 'Confirm Reschedule' : 'Confirm & Pay'}
               </button>

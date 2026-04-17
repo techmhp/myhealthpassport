@@ -12,6 +12,7 @@ const StudentCardView = ({ student }) => {
   const { schoolid, id } = useParams();
   const [role, setRole] = useState(null);
   const [root, setRoot] = useState('');
+  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
     if (cookies.role && cookies.root !== 'undefined') {
@@ -42,11 +43,13 @@ const StudentCardView = ({ student }) => {
         <div className="flex flex-col p-[20px] rounded-[10px] bg-[#F3F7FA]">
           <div className="flex flex-col gap-[26px] items-center">
             <Image
-              src={isValidUrl(student?.profile_image) ? student.profile_image : '/iconx/profile-image.svg'}
+              src={!imgFailed && isValidUrl(student?.profile_image) ? student.profile_image : '/iconx/profile-image.svg'}
               alt="Profile"
               className="rounded-full border-2 border-gray-300 w-[102px] h-[102px]"
               width={102}
               height={102}
+              unoptimized={!imgFailed && isValidUrl(student?.profile_image)}
+              onError={() => setImgFailed(true)}
             />
             {/* Name */}
             <h3 className="font-semibold text-[18px] leading-[100%] tracking-[0%] text-center mt-3">

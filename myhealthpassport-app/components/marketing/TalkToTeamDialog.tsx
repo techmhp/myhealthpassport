@@ -39,9 +39,18 @@ const TalkToTeamDialog = ({ open, onOpenChange }: TalkToTeamDialogProps) => {
     }
     setLoading(true);
     try {
-      // TODO: Integrate with backend API to submit parent inquiry
-      // Previously used Supabase: supabase.from("parent_bookings").insert(...)
-      console.log("Talk to team form submitted:", form);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/general/parent-inquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inquiry_type: "talk_to_team",
+          child_name: form.child_name,
+          parent_name: form.parent_name,
+          phone: form.phone,
+          concern_area: form.concern_area,
+        }),
+      });
+      if (!res.ok) throw new Error("Submission failed");
       setConfirmedName(form.child_name);
       setShowConfirmation(true);
       setForm({ child_name: "", parent_name: "", phone: "", concern_area: "" });

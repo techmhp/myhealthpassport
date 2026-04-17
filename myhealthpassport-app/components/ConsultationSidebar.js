@@ -25,7 +25,7 @@ const ConsultationSidebar = ({ children, setPatient }) => {
           children.map((child, index) => (
             <div key={index} onClick={() => onSelectPatient(child)}
               className={classNames(selected === child.student_id ? "border-2 border-[#5389FF]" : "border border-gray-400", "flex items-center gap-x-2 p-3 sm:p-4 rounded-lg hover:border-2 hover:border-[#5389FF]")}>
-              <Image alt="profile" src={isValidUrl(child.image) ? child.image : "/iconx/profile-image.svg"} className="size-10 sm:size-12 rounded-full" width={70} height={70} />
+              <Image alt="profile" src={isValidUrl(child.image) ? child.image : "/iconx/profile-image.svg"} className="size-10 sm:size-12 rounded-full" width={70} height={70} unoptimized={isValidUrl(child.image)} />
               <div>
                 <h3 className="text-sm tracking-tight text-gray-900">{formatFullName(child)}</h3>
               </div>

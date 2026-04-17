@@ -6,6 +6,11 @@ const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
 const nextConfig = {
   reactStrictMode: true, // Enable React strict mode for improved error handling
   poweredByHeader: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb', // Allow larger payloads (e.g. base64 profile image uploads)
+    },
+  },
   eslint: {
     ignoreDuringBuilds: true, // Skip ESLint during CI builds (lint separately)
   },
@@ -90,6 +95,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'myhealth-passport.s3.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'myhealth-passport.s3.ap-south-1.amazonaws.com',
       },
       {
         protocol: 'https',

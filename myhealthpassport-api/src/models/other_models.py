@@ -266,6 +266,34 @@ from tortoise import fields, models
 from enum import Enum
 
 
+class ParentInquiry(models.Model):
+    """Stores public form submissions from the marketing website (parents page)."""
+    inquiry_id = fields.BigIntField(pk=True)
+
+    inquiry_type = fields.CharField(max_length=50)  # "talk_to_team" | "book_screening"
+    status = fields.CharField(max_length=50, default="new")  # "new" | "contacted" | "closed"
+
+    # Common fields
+    child_name = fields.CharField(max_length=255)
+    parent_name = fields.CharField(max_length=255)
+    phone = fields.CharField(max_length=20)
+
+    # Talk-to-team fields
+    concern_area = fields.CharField(max_length=255, null=True)
+
+    # Book-screening fields
+    child_dob = fields.DateField(null=True)
+    gender = fields.CharField(max_length=20, null=True)
+    preferred_date = fields.DateField(null=True)
+    preferred_time = fields.CharField(max_length=20, null=True)
+
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        table = "parent_inquiries"
+
+
 class BookingStatus(str, Enum):
     pending = "pending"      # temporarily held, payment not done
     confirmed = "confirmed"  # payment done

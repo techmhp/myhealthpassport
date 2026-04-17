@@ -190,9 +190,29 @@ async def create_dental_screening(request: DentalScreeningRequest, current_user=
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_403_FORBIDDEN)
 
     try:
-        # Validate student and screening user existence
-        student = await Students.get(id=request.student_id)
-        screening_user = await ScreeningTeam.get(id=request.screening_user_id)
+        # Validate student existence
+        student = await Students.get_or_none(id=request.student_id)
+        if not student:
+            response = StandardResponse(
+                status=False,
+                message=f"Student with ID {request.student_id} not found",
+                data={},
+                errors={"detail": "Student does not exist"}
+            )
+            return JSONResponse(content=response.__dict__, status_code=status.HTTP_404_NOT_FOUND)
+
+        # Validate screening user - fall back to current user if provided ID not found
+        screening_user = await ScreeningTeam.get_or_none(id=request.screening_user_id)
+        if not screening_user:
+            screening_user = await ScreeningTeam.get_or_none(id=current_user["user_id"])
+        if not screening_user:
+            response = StandardResponse(
+                status=False,
+                message="Screening user not found",
+                data={},
+                errors={"detail": f"Invalid screening_user_id: {request.screening_user_id}"}
+            )
+            return JSONResponse(content=response.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
         # Convert lists to JSON strings for storage
         patient_concern_json = json.dumps(request.patient_concern)

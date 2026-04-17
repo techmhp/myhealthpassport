@@ -6,7 +6,7 @@ import StudentCardView from '@/components/StudentCardView';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import Header from '@/components/Header';
 import SchoolClassRoomStudentsList from '@/components/SchoolClassRoomStudentsList';
-import { schoolDetails, studentListByClassAndSection } from '@/services/secureApis';
+import { schoolDetails, studentListByClassAndSection, startPDFGenerationSelected, createPDFDownloadToken } from '@/services/secureApis';
 import { formatFullName, toastMessage } from '@/helpers/utilities';
 import PlusButton from '@/components/UI/PlusButton';
 import Link from 'next/link';
@@ -23,6 +23,8 @@ const ClassView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, failed: 0 });
 
   const tabs = [
     { name: 'Table View', href: '#', id: 'Table-View' },
@@ -77,6 +79,81 @@ const ClassView = () => {
   // Handle search input change
   const handleSearchChange = value => {
     setSearchQuery(value);
+  };
+
+  // Bulk download all student PDFs sequentially
+  const handleBulkDownload = async () => {
+    if (bulkDownloading || filteredStudents.length === 0) return;
+    setBulkDownloading(true);
+    setBulkProgress({ current: 0, total: filteredStudents.length, failed: 0 });
+
+    const reportData = JSON.stringify({
+      reports: ['dental', 'eye', 'physical', 'emotional', 'nutrition', 'lab'],
+    });
+    const [classRoom, section] = classSection.split('-');
+    const academicYear = null; // uses current year on backend
+
+    let failed = 0;
+    for (let i = 0; i < filteredStudents.length; i++) {
+      const student = filteredStudents[i];
+      setBulkProgress({ current: i + 1, total: filteredStudents.length, failed });
+      try {
+        const downloadData = await startPDFGenerationSelected(parseInt(student.id), reportData, academicYear);
+        let downloadUrl = null;
+
+        if (downloadData.status === true && downloadData.download) {
+          downloadUrl = downloadData.download;
+        } else if (downloadData.status === false && downloadData.check_status) {
+          // Poll up to 6 times (30s total)
+          const key = new URL(downloadData.check_status).searchParams.get('key');
+          for (let attempt = 0; attempt < 6; attempt++) {
+            await new Promise(r => setTimeout(r, 5000));
+            try {
+              const { downloadPDFSelected } = await import('@/services/secureApis');
+              const pollResp = await downloadPDFSelected(parseInt(student.id), key, academicYear);
+              const pollData = JSON.parse(pollResp);
+              if (pollData.status === true && pollData.download) {
+                downloadUrl = pollData.download;
+                break;
+              } else if (pollData.status === 'error') {
+                break;
+              }
+            } catch { break; }
+          }
+        }
+
+        if (downloadUrl) {
+          const urlObj = new URL(downloadUrl);
+          const key = urlObj.searchParams.get('key');
+          const acYear = urlObj.searchParams.get('academic_year');
+          const token = await createPDFDownloadToken(student.id, key, acYear);
+          const baseApiUrl = process.env.NEXT_PUBLIC_API_URL;
+          const params = new URLSearchParams({ key, academic_year: acYear || '', direct: 'true', download_token: token });
+          const directUrl = `${baseApiUrl}/report/${student.id}/download-selected?${params.toString()}`;
+          const link = document.createElement('a');
+          link.href = directUrl;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          // Small delay so browser doesn't block multiple downloads
+          await new Promise(r => setTimeout(r, 1200));
+        } else {
+          failed++;
+          setBulkProgress({ current: i + 1, total: filteredStudents.length, failed });
+        }
+      } catch {
+        failed++;
+        setBulkProgress({ current: i + 1, total: filteredStudents.length, failed });
+      }
+    }
+
+    setBulkDownloading(false);
+    if (failed === 0) {
+      toastMessage(`All ${filteredStudents.length} PDFs downloaded successfully`, 'success');
+    } else {
+      toastMessage(`Downloaded ${filteredStudents.length - failed}/${filteredStudents.length} PDFs. ${failed} failed (reports may not be generated yet).`, 'warning');
+    }
   };
 
   // Filter the student list based on the search term
@@ -162,7 +239,7 @@ const ClassView = () => {
             homeHref="/admin/schools"
           />
         </div>
-        <div className="flex items-center justify-center mt-[17px] mb-[27px]">
+        <div className="relative flex items-center justify-center mt-[17px] mb-[27px]">
           <div className="flex space-x-1 overflow-x-auto gap-2.5 rounded-lg border border-[#ECF2FF] p-1.5">
             {tabs.map(tab => (
               <button
@@ -178,6 +255,20 @@ const ClassView = () => {
               </button>
             ))}
           </div>
+          {/* Bulk Download Button — top right */}
+          <div className="absolute right-0">
+            <button
+              onClick={handleBulkDownload}
+              disabled={bulkDownloading || loading || filteredStudents.length === 0}
+              title="Bulk Download PDFs for all students"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-[#5389FF] text-[#5389FF] text-sm font-medium hover:bg-[#ECF2FF] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                <path fillRule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 1 0 1.1-1.02l-3.25-3.5a.75.75 0 0 0-1.1 0L6.2 4.74a.75.75 0 0 0 1.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 0 0 4 9.25v7.5A2.25 2.25 0 0 0 6.25 19h7.5A2.25 2.25 0 0 0 16 16.75v-7.5A2.25 2.25 0 0 0 13.75 7Zm-3 0h-1.5v5.25a.75.75 0 0 0 1.5 0V7Z" clipRule="evenodd" />
+              </svg>
+              Bulk Download
+            </button>
+          </div>
         </div>
         <div className="mb-[33px]">
           <FilterSection searchQuery={searchQuery} onSearchChange={handleSearchChange} />
@@ -187,6 +278,32 @@ const ClassView = () => {
       <Link href={`/admin/schools/${schoolid}/student/add`}>
         <PlusButton />
       </Link>
+
+      {/* Bulk Download Progress Modal */}
+      {bulkDownloading && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
+            <div className="flex flex-col items-center">
+              <div className="mb-5">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">Bulk Downloading PDFs</h3>
+              <p className="text-sm text-gray-600 text-center mb-3">
+                Processing student {bulkProgress.current} of {bulkProgress.total}
+                {bulkProgress.failed > 0 && ` (${bulkProgress.failed} skipped)`}
+              </p>
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${bulkProgress.total > 0 ? (bulkProgress.current / bulkProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400 text-center mt-3">Please don&apos;t close this window</p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

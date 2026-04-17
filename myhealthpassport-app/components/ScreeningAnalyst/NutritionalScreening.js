@@ -11,7 +11,7 @@ export default function NutritionalScreening() {
   const router = useRouter();
   const { studentId } = useParams();
   const [results, setResults] = useState({});
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitMessage, setSubmitMessage] = useState('');
@@ -105,8 +105,8 @@ export default function NutritionalScreening() {
     </div>
   )
 
-  if (error && !formData) return <div className="text-center p-[20px] text-red-500">Error: {error.message}</div>;
-  if (!formData) return <div className="text-center p-[20px]">No data to display.</div>;
+  if (error && (!formData || Object.keys(formData).length === 0)) return <div className="text-center p-[20px] text-red-500">Error loading nutrition data. Please refresh the page.</div>;
+  if (!formData || Object.keys(formData).length === 0) return <div className="text-center p-[20px]">No nutrition screening data available.</div>;
 
   return (
     <div className="w-full">
@@ -143,7 +143,7 @@ export default function NutritionalScreening() {
           <button type="button" onClick={() => { router.back() }} className="font-normal w-[78px] h-[37px] py-2 px-5  border border-[#5465FF]  rounded-[5px] whitespace-nowrap">Back</button>
           <button
             type="submit"
-            className="rounded-[5px] bg-indigo-500 w-[135px] h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+            className="rounded-[5px] bg-indigo-500 h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Submitting...' : 'Save changes'}

@@ -129,19 +129,19 @@ const NoAppointmentsView = ({ roleType, toggleAccordion }) => {
           </div>
           <Link
             href={`/health-buddy/roster/${schoolid}/student/${studentId}/book-appointment/experts`}
-            className="rounded-[5px] bg-indigo-500 w-[250px] h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+            className="rounded-[5px] bg-indigo-500 w-[250px] h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
             disabled={true}
           >
             Book Appointment
           </Link>
           {/* {isDisabled || formData.appointment_status ? (
-            <span className="rounded-[5px] bg-indigo-300 w-[250px] h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white shadow-xs cursor-not-allowed">
+            <span className="rounded-[5px] bg-indigo-300 w-[250px] h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white shadow-xs cursor-not-allowed whitespace-nowrap">
               Book Appointment
             </span>
           ) : (
             <Link
               href={`/health-buddy/roster/${schoolid}/student/${studentId}/book-appointment/experts`}
-              className="rounded-[5px] bg-indigo-500 w-[250px] h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              className="rounded-[5px] bg-indigo-500 w-[250px] h-[40px] px-5 py-2 mt-4 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
             >
               Book Appointment
             </Link>
@@ -172,7 +172,7 @@ const NoAppointmentsView = ({ roleType, toggleAccordion }) => {
           type="button"
           onClick={handleSaveChanges}
           disabled={saving}
-          className="rounded-[5px] bg-indigo-500 w-[145px] h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          className="rounded-[5px] bg-indigo-500 h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
         >
           {saving ? 'saving...' : 'Save Changes '}
         </button>

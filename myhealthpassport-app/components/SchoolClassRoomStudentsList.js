@@ -10,8 +10,7 @@ import { toastMessage, formatFullName, renderStatusIcon, renderMedicalOfficerSta
 import ConfirmModal from './UI/ConfirmModal';
 import { updateOverallScreeningStatus, updatePaymentStatus } from '@/services/secureApis';
 
-const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentClick = null }) => {
-  console.log('students', students);
+const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentClick = null, stickyHeader = false }) => {
   const router = useRouter();
   const cookies = nookies.get();
   const { schoolid, id } = useParams();
@@ -269,7 +268,7 @@ const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentC
 
   return (
     <div className="w-full flex flex-col gap-8">
-      <div className="w-full overflow-x-auto">
+      <div className={`w-full overflow-x-auto${stickyHeader ? ' overflow-y-auto max-h-[560px]' : ''}`}>
         {Object.keys(students).length > 0 ? (
           <table
             className="w-full border border-solid border-[#B5CCFF] rounded"
@@ -279,7 +278,7 @@ const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentC
               borderRadius: '4px',
             }}
           >
-            <thead>
+            <thead className={stickyHeader ? 'sticky top-0 z-10' : ''}>
               <tr className="bg-[#ECF2FF]">
                 {columns.map((column, index) => (
                   <th
@@ -321,6 +320,32 @@ const SchoolClassRoomStudentsList = ({ school, students, page = null, onStudentC
                 </>
               ))}
             </tbody>
+            {/* Column count footer — only for CAMP_COORDINATOR status columns */}
+            {columns.some(c => c.key === 'registration_status' && c.type === 'status') && students.length > 0 && (
+              <tfoot>
+                <tr className="bg-[#ECF2FF]">
+                  {columns.map((column, index) => {
+                    if (column.type === 'status' || column.type === 'complete_status') {
+                      const count = students.filter(s => s[column.key]).length;
+                      return (
+                        <td
+                          key={column.key || index}
+                          className="bg-[#ECF2FF] border-t border-l border-solid border-[#B5CCFF] py-2 px-3 text-center font-inter font-semibold text-sm text-[#5389FF]"
+                        >
+                          {count}/{students.length}
+                        </td>
+                      );
+                    }
+                    return (
+                      <td
+                        key={column.key || index}
+                        className="bg-[#ECF2FF] border-t border-l border-solid border-[#B5CCFF] py-2 px-3"
+                      />
+                    );
+                  })}
+                </tr>
+              </tfoot>
+            )}
           </table>
         ) : (
           <div className="text-center py-8 text-gray-500 text-sm/6"> No student data available </div>

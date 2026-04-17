@@ -17,6 +17,7 @@ const BulkImport = () => {
   const [school_id, setSchool_id] = useState(schoolid);
   const [results, setResults] = useState({});
   const [showErrorMessage, setShowErrorMessage] = useState('Please upload a csv file');
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     setRoot(cookies.root);
@@ -60,12 +61,15 @@ const BulkImport = () => {
   };
 
   const StudentDataConfirm = async () => {
+    if (isConfirming) return; // Prevent double-click
+    setIsConfirming(true);
     let data = {
       transaction_no: transactionNo,
       confirm: true,
     };
     try {
-      const response = await importStudentsDataConfirm(schoolid, JSON.stringify(data));
+      // Use school_id (from state, resolved for school-admin users) rather than schoolid (from params)
+      const response = await importStudentsDataConfirm(school_id, JSON.stringify(data));
       if (response.status === true) {
         toastMessage(response.message || 'Students imported successfully', 'success');
         if (root === 'admin') {
@@ -74,9 +78,13 @@ const BulkImport = () => {
           router.push(`/${root}/students`);
         }
       } else {
+        setTransactionNo(null); // Clear so user must re-upload (prevents "Invalid Transaction Id" on retry)
+        setIsConfirming(false);
         toastMessage(response.message || 'Confirmation failed', 'error');
       }
     } catch (err) {
+      setTransactionNo(null);
+      setIsConfirming(false);
       toastMessage(err.message || 'Confirmation failed', 'error');
       setShowErrorMessage(err.message || 'Confirmation failed');
     }
@@ -195,12 +203,12 @@ const BulkImport = () => {
           <button
             type="button"
             onClick={StudentDataConfirm}
-            disabled={!transactionNo}
-            className={`rounded-[5px] px-5 py-2 text-sm font-normal whitespace-nowrap shadow-xs bg-indigo-500 text-white 
-    ${transactionNo ? ' hover:bg-indigo-400 cursor-pointer' : 'cursor-not-allowed'}
+            disabled={!transactionNo || isConfirming}
+            className={`rounded-[5px] px-5 py-2 text-sm font-normal whitespace-nowrap shadow-xs bg-indigo-500 text-white
+    ${transactionNo && !isConfirming ? ' hover:bg-indigo-400 cursor-pointer' : 'cursor-not-allowed opacity-70'}
   `}
           >
-            Confirm & Upload
+            {isConfirming ? 'Uploading...' : 'Confirm & Upload'}
           </button>
         </div>
       </div>

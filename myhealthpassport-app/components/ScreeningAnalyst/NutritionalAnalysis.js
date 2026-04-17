@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import {
   nutritionalAnalystRecomendations,
   createNutritionalAnalystRecomendations,
@@ -11,7 +11,6 @@ import InlineSpinner from '../UI/InlineSpinner';
 
 export default function NutritionalAnalysis() {
   const { studentId } = useParams();
-  const router = useRouter();
 
   // Initialize form data with proper structure
   const initializeFormData = () => ({
@@ -92,6 +91,13 @@ export default function NutritionalAnalysis() {
   const [medicalOfficerPhysicalScreeningReport, setMedicalOfficerPhysicalScreeningReport] = useState({});
   const [medicalOfficerNutritionalReport, setMedicalOfficerNutritionalReport] = useState({});
   const [medicalOfficerLabReport, setMedicalOfficerLabReport] = useState({});
+  // Autosave state
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const autoSaveIntervalRef = useRef(null);
+  const formDataRef = useRef(null);
+  const hasExistingDataRef = useRef(false);
+  const userInfoRef = useRef(null);
 
   // Function to populate form data from API response
   const populateFormDataFromAPI = apiResponse => {
@@ -113,7 +119,7 @@ export default function NutritionalAnalysis() {
       // Map API data to form structure
       if (data && Array.isArray(data)) {
         data.forEach(apiReport => {
-          const formReportIndex = newFormData.data.findIndex(formReport => formReport.report_type === apiReport.report_type);
+          const formReportIndex = newFormData.data.findIndex(formReport => formReport.report_type.trim().toLowerCase() === (apiReport.report_type || '').trim().toLowerCase());
 
           if (formReportIndex !== -1) {
             newFormData.data[formReportIndex].id = apiReport.id;
@@ -198,27 +204,100 @@ export default function NutritionalAnalysis() {
     }
   }, [studentId]);
 
+  // Keep refs in sync with state so the autosave interval can access latest values
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { hasExistingDataRef.current = hasExistingData; }, [hasExistingData]);
+  useEffect(() => { userInfoRef.current = userInfo; }, [userInfo]);
+
+  // Autosave — 30-second interval
+  const autoSave = useCallback(async () => {
+    const currentFormData = formDataRef.current;
+    const currentUserInfo = userInfoRef.current;
+    const currentHasExisting = hasExistingDataRef.current;
+
+    // Don't create blank records when there's no existing data AND no content entered
+    if (!currentHasExisting) {
+      const hasAnyContent = currentFormData?.data?.some(report =>
+        report.report_data?.some(section => section.answers?.length > 0)
+      ) || currentFormData?.clinical_notes?.trim() || currentFormData?.common_summary?.trim();
+      if (!hasAnyContent) return;
+    }
+
+    if (!currentUserInfo) return;
+
+    setAutoSaveStatus('saving');
+    try {
+      const updatedFormData = {
+        ...currentFormData,
+        role_type: currentUserInfo.role_type,
+        role_name: currentUserInfo.user_role,
+      };
+      let result;
+      if (currentHasExisting) {
+        result = await updateNutritionalAnalystRecomendations(JSON.stringify(updatedFormData));
+      } else {
+        result = await createNutritionalAnalystRecomendations(JSON.stringify(updatedFormData));
+      }
+      if (result?.status) {
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+        hasExistingDataRef.current = true;
+        setHasExistingData(true);
+      } else {
+        setAutoSaveStatus('error');
+      }
+    } catch {
+      setAutoSaveStatus('error');
+    }
+  }, []);
+
+  // Start / stop autosave interval once loading is done
+  useEffect(() => {
+    if (loading) return;
+    autoSaveIntervalRef.current = setInterval(autoSave, 30000);
+    return () => clearInterval(autoSaveIntervalRef.current);
+  }, [loading, autoSave]);
+
   const addRemark = (reportIndex, questionIndex) => {
     const remarkKey = `${reportIndex}-${questionIndex}`;
     const remarkText = newRemarks[remarkKey];
 
     if (remarkText && remarkText.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.data[reportIndex].report_data[questionIndex].answers.push(remarkText.trim());
-      setFormData(updatedFormData);
-
-      // Clear the input
-      setNewRemarks({
-        ...newRemarks,
-        [remarkKey]: '',
-      });
+      setFormData(prev => ({
+        ...prev,
+        data: prev.data.map((report, rIdx) =>
+          rIdx === reportIndex
+            ? {
+                ...report,
+                report_data: report.report_data.map((question, qIdx) =>
+                  qIdx === questionIndex
+                    ? { ...question, answers: [...question.answers, remarkText.trim()] }
+                    : question
+                ),
+              }
+            : report
+        ),
+      }));
+      setNewRemarks(prev => ({ ...prev, [remarkKey]: '' }));
     }
   };
 
   const removeRemark = (reportIndex, questionIndex, answerIndex) => {
-    const updatedFormData = { ...formData };
-    updatedFormData.data[reportIndex].report_data[questionIndex].answers.splice(answerIndex, 1);
-    setFormData(updatedFormData);
+    setFormData(prev => ({
+      ...prev,
+      data: prev.data.map((report, rIdx) =>
+        rIdx === reportIndex
+          ? {
+              ...report,
+              report_data: report.report_data.map((question, qIdx) =>
+                qIdx === questionIndex
+                  ? { ...question, answers: question.answers.filter((_, i) => i !== answerIndex) }
+                  : question
+              ),
+            }
+          : report
+      ),
+    }));
   };
 
   const startEditRemark = (reportIndex, questionIndex, answerIndex, currentValue) => {
@@ -229,12 +308,27 @@ export default function NutritionalAnalysis() {
 
   const saveEditRemark = (reportIndex, questionIndex, answerIndex) => {
     if (editRemarkValue.trim() !== '') {
-      const updatedFormData = { ...formData };
-      updatedFormData.data[reportIndex].report_data[questionIndex].answers[answerIndex] = editRemarkValue.trim();
-      setFormData(updatedFormData);
+      setFormData(prev => ({
+        ...prev,
+        data: prev.data.map((report, rIdx) =>
+          rIdx === reportIndex
+            ? {
+                ...report,
+                report_data: report.report_data.map((question, qIdx) =>
+                  qIdx === questionIndex
+                    ? {
+                        ...question,
+                        answers: question.answers.map((ans, aIdx) =>
+                          aIdx === answerIndex ? editRemarkValue.trim() : ans
+                        ),
+                      }
+                    : question
+                ),
+              }
+            : report
+        ),
+      }));
     }
-
-    // Clear edit state
     setEditingRemark(null);
     setEditRemarkValue('');
   };
@@ -253,15 +347,21 @@ export default function NutritionalAnalysis() {
   };
 
   const updateSummary = (reportIndex, value) => {
-    const updatedFormData = { ...formData };
-    updatedFormData.data[reportIndex].summary = value;
-    setFormData(updatedFormData);
+    setFormData(prev => ({
+      ...prev,
+      data: prev.data.map((report, idx) =>
+        idx === reportIndex ? { ...report, summary: value } : report
+      ),
+    }));
   };
 
   const updateStatus = (reportIndex, value) => {
-    const updatedFormData = { ...formData };
-    updatedFormData.data[reportIndex].status = value;
-    setFormData(updatedFormData);
+    setFormData(prev => ({
+      ...prev,
+      data: prev.data.map((report, idx) =>
+        idx === reportIndex ? { ...report, status: value } : report
+      ),
+    }));
   };
 
   const updateCommonSummary = value => {
@@ -309,7 +409,11 @@ export default function NutritionalAnalysis() {
       if (result.status) {
         const successMessage = hasExistingData ? 'Data updated successfully' : 'Data created successfully';
         toastMessage(result.message || successMessage, 'success');
-        router.refresh();
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+        setHasExistingData(true);
+        // Re-fetch from API so the form always reflects exactly what was saved
+        await fetchData();
       } else {
         // console.error('Save failed:', result.message);
         toastMessage(result.message || 'Failed to save data', 'error');
@@ -544,6 +648,24 @@ export default function NutritionalAnalysis() {
 
   return (
     <div className="w-full pt-[35px] pr-[34px] pb-[60px] pl-[34px] flex flex-col gap-10">
+      {/* Autosave status banner */}
+      {autoSaveStatus === 'saving' && (
+        <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          Auto-saving…
+        </div>
+      )}
+      {autoSaveStatus === 'saved' && lastSavedAt && (
+        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+          <span className="text-green-500">●</span>
+          Auto-saved at {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
+      {autoSaveStatus === 'error' && (
+        <div className="flex items-center gap-2 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+          <span>⚠</span> Auto-save failed — please save manually
+        </div>
+      )}
       <div className="flex flex-col gap-10">
         {/* Render all report sections */}
         {formData.data.map((reportData, reportIndex) => renderReportSection(reportData, reportIndex))}
@@ -577,7 +699,7 @@ export default function NutritionalAnalysis() {
         </button>
         <button
           type="button"
-          className="rounded-[5px] bg-indigo-500 h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          className="rounded-[5px] bg-indigo-500 h-[37px] px-5 py-2 text-sm font-normal text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 whitespace-nowrap"
           onClick={saveChanges}
         >
           Save Changes

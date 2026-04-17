@@ -2,7 +2,7 @@
 import { MessageCircle } from "lucide-react";
 
 const WhatsAppButton = () => {
-  const phoneNumber = "917793925151";
+  const phoneNumber = "15558523408"; // AiSensy MHP WhatsApp Business number
   const message = encodeURIComponent("Hi, I'd like to know more about My Health Passport.");
 
   return (

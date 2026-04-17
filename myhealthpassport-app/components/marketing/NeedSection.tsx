@@ -68,7 +68,7 @@ const NeedSection = () => {
               <AnimatedSection key={index} delay={index * 100}>
                 <div className="group relative bg-background p-6 sm:p-8 rounded-2xl border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card h-full">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-hero opacity-0 group-hover:opacity-100 transition-opacity rounded-t-2xl" />
-                  
+
                   {/* Icon & Title */}
                   <div className="flex items-center gap-3 mb-3 sm:mb-4">
                     <div className="w-9 h-9 sm:w-10 sm:h-10 bg-brand/10 rounded-xl flex items-center justify-center">

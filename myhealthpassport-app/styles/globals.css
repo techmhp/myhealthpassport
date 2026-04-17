@@ -7,14 +7,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 220 30% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 30% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    --popover-foreground: 220 30% 20%;
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -23,17 +23,17 @@
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 213 20% 90%;
+    --input: 213 20% 90%;
+    --ring: 214 100% 50%;
     --radius: 0.75rem;
-    --brand: 221 83% 53%;
-    --brand-light: 217 91% 60%;
-    --brand-dark: 224 76% 48%;
+    --brand: 214 100% 50%;
+    --brand-light: 216 100% 96%;
+    --brand-dark: 214 100% 35%;
     --coral: 0 84% 60%;
-    --mint: 152 69% 31%;
+    --mint: 158 63% 52%;
     --sunshine: 45 93% 47%;
-    --lavender: 263 70% 50%;
+    --lavender: 270 67% 75%;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -251,19 +251,19 @@ input[type='number'] {
    shadow-glow, shadow-card, animate-typing
    ============================================================ */
 
-/* Blue gradient background — used in SecuritySection, NeedSection, PillarsSection, etc. */
+/* Blue gradient background — used in SecuritySection */
 .bg-gradient-hero {
-    background: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(240, 65%, 40%) 100%);
+    background: linear-gradient(135deg, hsl(214, 100%, 50%) 0%, hsl(240, 80%, 60%) 100%);
 }
 
-/* Soft off-white/pale-blue gradient — used in Hero, ApproachSection, HowItWorks */
+/* Soft off-white/pale-blue gradient — used in Hero, Parents page hero */
 .bg-gradient-soft {
-    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(217, 91%, 97%) 50%, hsl(221, 83%, 96%) 100%);
+    background: linear-gradient(180deg, hsl(210, 40%, 98%) 0%, hsl(214, 100%, 98%) 100%);
 }
 
 /* Blue gradient applied to text */
 .text-gradient-hero {
-    background: linear-gradient(135deg, hsl(221, 83%, 53%) 0%, hsl(240, 65%, 40%) 100%);
+    background: linear-gradient(135deg, hsl(214, 100%, 50%) 0%, hsl(240, 80%, 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

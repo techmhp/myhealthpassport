@@ -154,6 +154,9 @@ const ROLE_COLUMNS = (root, userRole, page = null) => {
       { key: 'gender', header: 'Gender', type: 'text' },
       { key: 'age', header: 'Age', type: 'text' },
       { key: 'completed_status', header: 'Screening Status', type: 'all_completed_status' },
+      { key: 'nutrition_analysis_status', header: 'Nutrition Analysis', type: 'status' },
+      { key: 'psychological_analysis_status', header: 'Emotional Analysis', type: 'status' },
+      { key: 'medical_officer_analysis_status', header: 'Medical Officer', type: 'status' },
     ];
   }
 
@@ -167,6 +170,9 @@ const ROLE_COLUMNS = (root, userRole, page = null) => {
       { key: 'age', header: 'Age', type: 'text' },
       { key: 'school_payment_status', header: 'Payment Status', type: 'complete_status' },
       { key: 'completed_status', header: 'Screening Status', type: 'all_completed_status' },
+      { key: 'nutrition_analysis_status', header: 'Nutrition Analysis', type: 'status' },
+      { key: 'psychological_analysis_status', header: 'Emotional Analysis', type: 'status' },
+      { key: 'medical_officer_analysis_status', header: 'Medical Officer', type: 'status' },
       { key: 'generated_report_status', header: 'Report Status', type: 'status' },
       { key: 'health_buddy', header: 'Health Buddy', type: 'status' },
     ];

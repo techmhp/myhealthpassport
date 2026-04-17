@@ -116,8 +116,16 @@ async def user_login(form_data: GeneralLoginFormSchema = Depends(get_login_form_
         data["specialty"] = user.specialty or ""
         data["education"] = user.education or ""
 
-    object_cache = ObjectCache(cache_key=access_token)
-    await object_cache.set(data, ttl=86400)
+    try:
+        object_cache = ObjectCache(cache_key=access_token)
+        await object_cache.set(data, ttl=86400)
+    except Exception as e:
+        data_dict = {
+            "status": False,
+            "message": "Login service temporarily unavailable. Please try again in a moment.",
+        }
+        response = StandardResponse(**data_dict)
+        return JSONResponse(content=response.__dict__, status_code=200)
 
     data_dict = {
         "status": True,
@@ -295,14 +303,10 @@ async def user_login(payload: MobileNumber):
 
     transaction_id = generate_transaction_number()
     environ = os.environ.get("APP_ENV", "")
-    
-    print(f"Environment: {environ}")  # DEBUG
 
     if environ == "production":
         otp = generate_otp()
-        print(f"Generated OTP: {otp}")  # DEBUG
         response = send_otp_sms(payload.mobile, otp)
-        print(f"SMS Response: {response}")  # DEBUG
         if not response:
             data_dict = {
                 "status": False,
@@ -312,10 +316,8 @@ async def user_login(payload: MobileNumber):
             return response_obj
     else:
         otp = "123456"
-        print(f"Non-prod OTP: {otp}")  # DEBUG
 
     cache_key = f"otp-{transaction_id}:{otp}"
-    print(f"Cache key created: {cache_key}")  # DEBUG
 
     data = {
         "user_id": user.id,

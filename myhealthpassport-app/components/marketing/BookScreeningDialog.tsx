@@ -44,9 +44,21 @@ const BookScreeningDialog = ({ open, onOpenChange, onBookingSuccess }: BookScree
     }
     setLoading(true);
     try {
-      // TODO: Integrate with backend API to submit booking
-      // Previously used Supabase: supabase.from("parent_bookings").insert(...)
-      console.log("Booking form submitted:", form);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/general/parent-inquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inquiry_type: "book_screening",
+          child_name: form.child_name,
+          parent_name: form.parent_name,
+          phone: form.phone,
+          child_dob: form.child_dob || null,
+          gender: form.gender || null,
+          preferred_date: form.preferred_date || null,
+          preferred_time: form.preferred_time || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Submission failed");
       setConfirmedData({
         child_name: form.child_name,
         preferred_date: form.preferred_date,

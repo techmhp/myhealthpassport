@@ -80,11 +80,10 @@ const StudentInfo = () => {
   // Define all tab configurations based on specialist type
   const tabConfigurations = {
     NUTRITIONIST: [
-      { name: 'Nutritional Screening', id: 'Nutritional-Screening', status: student_details?.nutrition_screening_status },
+      { name: 'Nutritional & Physical Screening', id: 'Nutritional-Screening', status: student_details?.nutrition_screening_status },
       { name: "Parent's Response", id: 'Parents-Response', status: null },
       { name: "Teacher's Response", id: 'Teachers-Response', status: null },
       { name: 'Lab Reports', id: 'Lab-Reports', status: null },
-      { name: 'Smart Scale Report', id: 'Smart-Scale-Report', status: null },
     ],
     PSYCHOLOGIST: [
       { name: 'Behavioural Screening', id: 'Behavioural-Screening', status: student_details?.behavioural_screening_status },
@@ -146,8 +145,12 @@ const StudentInfo = () => {
     switch (activeTab) {
       case 'Nutritional-Screening':
         return (
-          <div className="bg-white rounded-lg">
+          <div className="bg-white rounded-lg flex flex-col gap-6">
             <NutritionalScreening />
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="px-4 pb-2 font-inter font-semibold text-sm text-gray-700">Physical Screening (Smart Scale)</h3>
+              <PhysicalScreening />
+            </div>
           </div>
         );
 
@@ -182,14 +185,7 @@ const StudentInfo = () => {
       case 'Lab-Reports':
         return (
           <div className="bg-white rounded-lg">
-            <LabReports />
-          </div>
-        );
-
-      case 'Smart-Scale-Report':
-        return (
-          <div className="bg-white rounded-lg">
-            <PhysicalScreening />
+            <LabReports studentId={studentId} />
           </div>
         );
 

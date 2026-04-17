@@ -60,7 +60,7 @@ export default function StudentForm() {
   });
 
   // Required fields based on StudentCreate model
-  const requiredFields = ['first_name', 'phone', 'class_room', 'section', 'dob', 'roll_no'];
+  const requiredFields = ['first_name', 'last_name', 'gender', 'phone', 'class_room', 'section', 'dob', 'roll_no'];
 
   useEffect(() => {
     if (typeof schoolid === 'undefined') {

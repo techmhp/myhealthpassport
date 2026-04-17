@@ -2,30 +2,43 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { screeningOverallSummary } from '@/services/secureApis';
+import { screeningOverallSummary, mhbWellnessScore } from '@/services/secureApis';
 import InlineSpinner from './UI/InlineSpinner';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { stringToArray } from '@/helpers/utilities';
 
 const OverallSummary = ({ academicYear = null }) => {
   const { id, studentId } = useParams();
+  const router = useRouter();
+  const recordId = id || studentId;
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mhbScore, setMhbScore] = useState(null);
 
   useEffect(() => {
-    const recordId = id ? id : studentId ? studentId : 0;
     screeningOverallSummary(recordId, academicYear)
       .then(res => {
         const response = JSON.parse(res);
         setResults(response);
       })
       .catch(error => {
-        // console.error('Error loading user info:', error);
         setError(error);
       })
       .finally(() => {
         setLoading(false);
+      });
+
+    // Fetch MHB nutrition wellness score (non-blocking)
+    mhbWellnessScore(recordId)
+      .then(res => {
+        const response = typeof res === 'string' ? JSON.parse(res) : res;
+        if (response?.status === true && response?.data) {
+          setMhbScore(response.data);
+        }
+      })
+      .catch(() => {
+        // MHB integration is optional — silently fail
       });
   }, [academicYear]);
 
@@ -125,6 +138,43 @@ const OverallSummary = ({ academicYear = null }) => {
                 ))
               : 'N/A'}
           </div>
+
+          {/* ── MHB AI Nutrition Score ────────────────────── */}
+          {mhbScore && (
+            <div className="mt-3 rounded-[8px] border border-[#E0E7FF] bg-[#F8FAFF] p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`flex items-center justify-center w-[48px] h-[48px] rounded-full text-white font-bold text-[16px] ${
+                  mhbScore.traffic_light === 'green' ? 'bg-[#16A34A]' :
+                  mhbScore.traffic_light === 'amber' ? 'bg-[#F59E0B]' :
+                  mhbScore.traffic_light === 'red' ? 'bg-[#DC2626]' : 'bg-[#9CA3AF]'
+                }`}>
+                  {mhbScore.score}
+                </div>
+                <div>
+                  <p className="font-semibold text-[14px] leading-[18px] text-[#1E293B]">
+                    AI Nutrition Wellness Score
+                  </p>
+                  <p className="font-normal text-[12px] leading-[16px] text-[#64748B]">
+                    Based on {mhbScore.meals_analysed || 0} meal{mhbScore.meals_analysed !== 1 ? 's' : ''} analysed
+                    {mhbScore.confidence ? ` · ${mhbScore.confidence} confidence` : ''}
+                  </p>
+                </div>
+              </div>
+              <p className="font-normal text-[11px] text-[#94A3B8]">
+                Powered by My Health Buddy · AI-powered meal analysis
+              </p>
+
+              {/* Talk to Priya CTA */}
+              <div className="mt-3 pt-3 border-t border-[#E0E7FF]">
+                <button
+                  onClick={() => router.push(`/parent/nutrition/${recordId}/talk-to-priya`)}
+                  className="w-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:from-[#1D4ED8] hover:to-[#6D28D9] text-white font-semibold text-[13px] py-2.5 rounded-[8px] transition flex items-center justify-center gap-2"
+                >
+                  <span>🎙️</span> Talk to Priya — AI Nutrition Companion
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -259,8 +309,65 @@ const OverallSummary = ({ academicYear = null }) => {
       </div>
     </div>
   ) : (
-    <div className="w-full py-8 items-center justify-center text-gray-500 text-center text-md font-medium">
-      {results?.message || 'Screening or summary data not available for the student'}
+    <div className="w-full py-8">
+      <div className="text-gray-500 text-center text-md font-medium mb-6">
+        {results?.message || 'Screening or summary data not available for the student'}
+      </div>
+
+      {/* ── MHB AI Nutrition Score (shown even without screening data) ── */}
+      {mhbScore && (
+        <div className="max-w-xl mx-auto rounded-[10px] border border-[#BDD2FF] bg-white p-7">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            {/* Score Circle */}
+            <div className={`flex items-center justify-center w-[72px] h-[72px] rounded-full text-white font-bold text-[24px] shrink-0 ${
+              mhbScore.traffic_light === 'green' ? 'bg-[#16A34A]' :
+              mhbScore.traffic_light === 'amber' ? 'bg-[#F59E0B]' :
+              mhbScore.traffic_light === 'red' ? 'bg-[#DC2626]' : 'bg-[#9CA3AF]'
+            }`}>
+              {mhbScore.score}
+            </div>
+
+            {/* Details */}
+            <div className="flex-1 text-center md:text-left">
+              <p className="font-semibold text-[16px] leading-[22px] text-[#1E293B] mb-1">
+                AI Nutrition Wellness Score
+              </p>
+              <p className="font-normal text-[13px] leading-[18px] text-[#64748B] mb-2">
+                Based on {mhbScore.meals_analysed || 0} meal{mhbScore.meals_analysed !== 1 ? 's' : ''} analysed
+                {mhbScore.confidence ? ` · ${mhbScore.confidence} confidence` : ''}
+              </p>
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <div className={`w-2 h-2 rounded-full ${
+                  mhbScore.traffic_light === 'green' ? 'bg-[#16A34A]' :
+                  mhbScore.traffic_light === 'amber' ? 'bg-[#F59E0B]' :
+                  mhbScore.traffic_light === 'red' ? 'bg-[#DC2626]' : 'bg-[#9CA3AF]'
+                }`} />
+                <span className="text-[12px] font-medium text-[#64748B] capitalize">
+                  {mhbScore.traffic_light === 'green' ? 'Good nutrition habits' :
+                   mhbScore.traffic_light === 'amber' ? 'Needs improvement' :
+                   mhbScore.traffic_light === 'red' ? 'Needs attention' : 'Not enough data'}
+                </span>
+              </div>
+              <p className="font-normal text-[11px] text-[#94A3B8] mt-3">
+                Powered by My Health Buddy · AI-powered meal analysis
+              </p>
+            </div>
+          </div>
+
+          {/* Talk to Priya CTA */}
+          <div className="mt-5 pt-5 border-t border-[#E2E8F0]">
+            <button
+              onClick={() => router.push(`/parent/nutrition/${recordId}/talk-to-priya`)}
+              className="w-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:from-[#1D4ED8] hover:to-[#6D28D9] text-white font-semibold text-[14px] py-3 rounded-[8px] transition flex items-center justify-center gap-2 shadow-lg shadow-[#2563EB]/20"
+            >
+              <span>🎙️</span> Talk to Priya — AI Nutrition Companion
+            </button>
+            <p className="text-[11px] text-[#94A3B8] text-center mt-2">
+              Log meals, get nutrition advice, plan your week — all by voice
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

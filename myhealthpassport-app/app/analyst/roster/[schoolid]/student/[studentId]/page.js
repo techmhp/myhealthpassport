@@ -184,14 +184,14 @@ const StudentInfo = () => {
       case 'Nutritional-Analysis':
         return (
           <div className="bg-white rounded-lg">
-            <NutritionalAnalysis />
+            <NutritionalAnalysis academicYear={academicYear} />
           </div>
         );
 
       case 'Psychologist-Analysis':
         return (
           <div className="bg-white rounded-lg">
-            <PsychologistAnalysis />
+            <PsychologistAnalysis academicYear={academicYear} />
           </div>
         );
 

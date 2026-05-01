@@ -467,9 +467,12 @@ export const getSmartScaleData = async studentId => {
 //***** ANALYST TEAM APIS START */
 
 // 21.1 get clinical recomendations nutritional analyst
-export const nutritionalAnalystRecomendations = async studentId => {
+export const nutritionalAnalystRecomendations = async (studentId, academicYear = null) => {
   const call = new V1SecureApi();
-  const response = await call.GetCall(`/screening/nutritional-analyst/${studentId}`);
+  const url = academicYear
+    ? `/screening/nutritional-analyst/${studentId}?academic_year=${academicYear}`
+    : `/screening/nutritional-analyst/${studentId}`;
+  const response = await call.GetCall(url);
   return response;
 };
 
@@ -488,9 +491,12 @@ export const updateNutritionalAnalystRecomendations = async data => {
 };
 
 // 24.1 get clinical recomendations psychological anayst
-export const psychologicalAnalystRecomendations = async studentId => {
+export const psychologicalAnalystRecomendations = async (studentId, academicYear = null) => {
   const call = new V1SecureApi();
-  const response = await call.GetCall(`/screening/psychological-analyst/${studentId}`);
+  const url = academicYear
+    ? `/screening/psychological-analyst/${studentId}?academic_year=${academicYear}`
+    : `/screening/psychological-analyst/${studentId}`;
+  const response = await call.GetCall(url);
   return response;
 };
 

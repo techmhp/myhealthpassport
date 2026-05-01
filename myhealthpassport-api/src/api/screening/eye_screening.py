@@ -238,6 +238,10 @@ async def get_eye_screening(
             es_id=es_id
         ).first()
 
+        # Fallback: record saved today is outside the year filter range
+        if not eye_screening:
+            eye_screening = await EyeScreening.filter(es_id=es_id).first()
+
         if not eye_screening:
             logger.warning(f"Eye screening with ID {es_id} not found")
             resp = StandardResponse(

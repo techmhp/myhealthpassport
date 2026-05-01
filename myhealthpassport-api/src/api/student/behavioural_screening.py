@@ -144,6 +144,12 @@ async def get_behavioural_screening(
         student_id=student_id
     ).first()
 
+    # Fallback: record saved today is outside the year filter range
+    if not behavioural_screening:
+        behavioural_screening = await BehaviouralScreening.filter(
+            student_id=student_id
+        ).first()
+
     if behavioural_screening is None:
         behavioural_screening = BehaviouralScreening(
             student=student,

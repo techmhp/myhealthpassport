@@ -526,7 +526,6 @@ async def submit_nutritional_answers(
                     existing.answer = ans
                     existing.notes = prefixed_notes
                     existing.status = True
-                    existing.updated_at = datetime.utcnow()
                     existing.updated_by = current_teacher.id
                     existing.updated_user_role = current_teacher.user_role
                     existing.updated_role_type = current_teacher.role_type
@@ -672,6 +671,16 @@ async def get_teacher_answers_dashboard(
             Q(student__section=teacher.section),
             Q(is_deleted=False)
         ).all()
+
+        # Fallback: answers saved today are outside the year filter range
+        if not answers:
+            answers = await TeacherAnswers.filter(
+                Q(teacher_id=user_id),
+                Q(student__school_students__school=school_id),
+                Q(student__class_room=teacher.class_room),
+                Q(student__section=teacher.section),
+                Q(is_deleted=False)
+            ).all()
 
         # Extract unique student IDs
         answered_student_ids = {answer.student_id for answer in answers}

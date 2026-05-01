@@ -125,6 +125,12 @@ async def get_dental_screening(
             student_id=student_id
         ).first()
 
+        # Fallback: record saved today is outside the year filter range
+        if not dental_screening:
+            dental_screening = await DentalScreening.filter(
+                student_id=student_id
+            ).first()
+
         if not dental_screening:
             response = StandardResponse(
                 status=False,

@@ -286,6 +286,14 @@ async def get_nutritional_questions(
             question_id__in=all_question_ids,
             is_deleted=False
         ).order_by('-updated_at').values("question_id", "answer", "notes")
+
+        # Fallback: answers saved today are outside the year filter range
+        if not existing_answers:
+            existing_answers = await ParentAnswers.filter(
+                student_id=student_id,
+                question_id__in=all_question_ids,
+                is_deleted=False
+            ).order_by('-updated_at').values("question_id", "answer", "notes")
         
         answer_map = {answer["question_id"]: answer["answer"] for answer in existing_answers}
         notes = next((a["notes"].replace("NUTRITIONAL:", "").strip() for a in existing_answers if a["notes"] and a["notes"].startswith("NUTRITIONAL:")), None)
@@ -519,7 +527,6 @@ async def submit_nutritional_answers(
                 if existing:
                     existing.answer = answer.answer
                     existing.notes = prefixed_notes
-                    existing.updated_at = datetime.utcnow()
                     existing.updated_by = str(current_parent.id)
                     existing.updated_user_role = current_parent.user_role
                     existing.updated_role_type = "PARENT"

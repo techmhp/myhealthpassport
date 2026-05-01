@@ -142,6 +142,12 @@ async def get_nutrition_screening(
         student_id=student_id
     ).first()
 
+    # Fallback: record saved today is outside the year filter range
+    if not nutrition_screening:
+        nutrition_screening = await NutritionScreening.filter(
+            student_id=student_id
+        ).first()
+
     if nutrition_screening is None:
         nutrition_screening = NutritionScreening(
             student=student,
@@ -304,6 +310,8 @@ async def update_nutrition_screening(student_id: int, payload: dict, current_use
 
     year_filter = build_academic_year_filter(get_current_academic_year())
     nutrition_screening = await NutritionScreening.filter(year_filter, student_id=student_id).first()
+    if not nutrition_screening:
+        nutrition_screening = await NutritionScreening.filter(student_id=student_id).first()
 
     doctor_id = payload.get("doctor_id")
     doctor = None

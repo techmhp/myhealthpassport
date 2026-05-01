@@ -385,6 +385,14 @@ async def get_emotional_questions(
             is_deleted=False
         ).values("question_id", "answer", "notes")
 
+        # Fallback: answers saved today are outside the year filter range
+        if not saved_answers:
+            saved_answers = await TeacherAnswers.filter(
+                student_id=student_id,
+                question_id__in=[q.question_id for q in questions],
+                is_deleted=False
+            ).values("question_id", "answer", "notes")
+
         answer_map = {a["question_id"]: a["answer"] for a in saved_answers}
         notes = next(
             (a["notes"].replace("EMOTIONAL_DEVELOPMENTAL:", "").strip()
@@ -522,7 +530,6 @@ async def submit_emotional_answers(
                     existing.answer = answer_val
                     existing.notes = prefixed_notes
                     existing.status = True
-                    existing.updated_at = datetime.utcnow()
                     existing.updated_by = current_teacher.id
                     existing.updated_user_role = current_teacher.user_role
                     existing.updated_role_type = current_teacher.role_type

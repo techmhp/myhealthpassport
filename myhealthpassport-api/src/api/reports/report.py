@@ -172,8 +172,8 @@ async def build_report_context(
         .first(),
         ClinicalRecomendations.filter(
             year_filter,
-            student_id=student_id, 
-            is_deleted=False, 
+            student_id=student_id,
+            is_deleted=False,
             report_type="Lab Reports"
         )
         .order_by("-created_at")
@@ -196,6 +196,52 @@ async def build_report_context(
         lab_data,
         behavioural_screening,
     ) = await asyncio.gather(*tasks)
+
+    # Fallback: records saved near academic year boundary have created_at outside the
+    # year filter range. Re-query without the filter for any section that returned None.
+    fallback_tasks = []
+    fallback_keys = []
+
+    if not smart_data:
+        fallback_tasks.append(SmartScaleData.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("smart_data")
+    if not pysch_data:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Physical Screening Report").order_by("-created_at").first())
+        fallback_keys.append("pysch_data")
+    if not nutritional_questionaire:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Questionnaire Reports").order_by("-created_at").first())
+        fallback_keys.append("nutritional_questionaire")
+    if not screening_analysis:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Nutrition Deficiency Report").order_by("-created_at").first())
+        fallback_keys.append("screening_analysis")
+    if not emo_data:
+        fallback_tasks.append(ClinicalFindings.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("emo_data")
+    if not dental_data:
+        fallback_tasks.append(DentalScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("dental_data")
+    if not eye_screening:
+        fallback_tasks.append(EyeScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("eye_screening")
+    if not lab_data:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Lab Reports").order_by("-created_at").first())
+        fallback_keys.append("lab_data")
+    if not behavioural_screening:
+        fallback_tasks.append(BehaviouralScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("behavioural_screening")
+
+    if fallback_tasks:
+        fallback_results = await asyncio.gather(*fallback_tasks)
+        result_map = dict(zip(fallback_keys, fallback_results))
+        smart_data = result_map.get("smart_data", smart_data) or smart_data
+        pysch_data = result_map.get("pysch_data", pysch_data) or pysch_data
+        nutritional_questionaire = result_map.get("nutritional_questionaire", nutritional_questionaire) or nutritional_questionaire
+        screening_analysis = result_map.get("screening_analysis", screening_analysis) or screening_analysis
+        emo_data = result_map.get("emo_data", emo_data) or emo_data
+        dental_data = result_map.get("dental_data", dental_data) or dental_data
+        eye_screening = result_map.get("eye_screening", eye_screening) or eye_screening
+        lab_data = result_map.get("lab_data", lab_data) or lab_data
+        behavioural_screening = result_map.get("behavioural_screening", behavioural_screening) or behavioural_screening
 
     # Core validations
     if not student:

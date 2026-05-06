@@ -141,7 +141,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Physical Screening Report",
+            report_type__iexact="Physical Screening Report",
         )
         .order_by("-created_at")
         .first(),
@@ -149,7 +149,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Questionnaire Reports",
+            report_type__iexact="Questionnaire Reports",
         )
         .order_by("-created_at")
         .first(),
@@ -157,7 +157,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Nutrition Deficiency Report",
+            report_type__iexact="Nutrition Deficiency Report",
         )
         .order_by("-created_at")
         .first(),
@@ -174,7 +174,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Lab Reports"
+            report_type__iexact="Lab Reports"
         )
         .order_by("-created_at")
         .first(),
@@ -206,13 +206,13 @@ async def build_report_context(
         fallback_tasks.append(SmartScaleData.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
         fallback_keys.append("smart_data")
     if not pysch_data:
-        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Physical Screening Report").order_by("-created_at").first())
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Physical Screening Report").order_by("-created_at").first())
         fallback_keys.append("pysch_data")
     if not nutritional_questionaire:
-        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Questionnaire Reports").order_by("-created_at").first())
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Questionnaire Reports").order_by("-created_at").first())
         fallback_keys.append("nutritional_questionaire")
     if not screening_analysis:
-        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Nutrition Deficiency Report").order_by("-created_at").first())
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Nutrition Deficiency Report").order_by("-created_at").first())
         fallback_keys.append("screening_analysis")
     if not emo_data:
         fallback_tasks.append(ClinicalFindings.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
@@ -224,7 +224,7 @@ async def build_report_context(
         fallback_tasks.append(EyeScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
         fallback_keys.append("eye_screening")
     if not lab_data:
-        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type="Lab Reports").order_by("-created_at").first())
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Lab Reports").order_by("-created_at").first())
         fallback_keys.append("lab_data")
     if not behavioural_screening:
         fallback_tasks.append(BehaviouralScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())

@@ -9,7 +9,7 @@ const services = [
   {
     id: "emotional",
     icon: Brain,
-    title: "Emotional & Learning",
+    title: "Resilience and Learning",
     tagline: "Support for the Mind",
     description: "Guided support for children facing emotional, behavioural, or learning challenges — with expert psychologists and therapists.",
     color: "lavender",
@@ -19,23 +19,50 @@ const services = [
       "Behavioural concerns & social skills",
       "Speech, motor & developmental support",
     ],
-    details: [
-      "Adolescent exam stress management",
-      "Sensory processing support",
-      "Special educator sessions available",
-      "Parent guidance & home strategies",
-    ],
+    details: [] as string[],
     outcome: "Understand. Support. Progress — at your child's pace.",
     pricingTabs: [
-      { id: "assessment", label: "Assessment", price: "1,999", paise: 199900, period: "per session" },
-      { id: "counselling", label: "Counselling", price: "1,499", paise: 149900, period: "per session" },
+      {
+        id: "assessment",
+        label: "Assessment",
+        price: "1,999",
+        paise: 199900,
+        period: "per session",
+        details: [
+          "Detailed developmental & family history understanding",
+          "Age-appropriate psychometric and behavioral assessments",
+          "Evaluation of learning, attention, and academic concerns",
+          "Screening for emotional, social, and behavioral difficulties",
+          "Assessment of sensory processing & adaptive functioning",
+          "Identification of strengths, abilities, and support needs",
+          "Comprehensive child-focused assessment report",
+          "Tailored intervention plan with school & home recommendations",
+        ],
+      },
+      {
+        id: "counselling",
+        label: "Counselling",
+        price: "1,499",
+        paise: 149900,
+        period: "per session",
+        details: [
+          "Safe, engaging, and child-friendly therapeutic environment",
+          "Support for exam stress, anxiety, and emotional regulation",
+          "Addressing behavioral concerns & social skill difficulties",
+          "Use of play therapy, CBT, and expressive techniques",
+          "Building confidence, resilience & self-esteem",
+          "Strengthening coping skills and problem-solving abilities",
+          "Regular parent guidance & collaborative sessions",
+          "Ongoing progress tracking & personalized intervention plan",
+        ],
+      },
     ],
     bundle: { label: "Monthly Pack · 4 sessions", price: "4,999", paise: 499900 },
   },
   {
     id: "nutrition",
     icon: Apple,
-    title: "Nutrition & Lifestyle",
+    title: "Nourish",
     tagline: "Fuel for Growth",
     description: "Personalised nutrition plans and lifestyle guidance to address energy, immunity, growth, and eating habit concerns.",
     color: "mint",
@@ -53,7 +80,7 @@ const services = [
     ],
     outcome: "Better fuel. Stronger growth. Healthier habits.",
     pricingTabs: [
-      { id: "monthly", label: "Monthly", price: "2,999", paise: 299900, period: "per month" },
+      { id: "monthly", label: "Monthly", price: "2,999", paise: 299900, period: "per month", details: undefined as string[] | undefined },
     ],
   },
 ];
@@ -182,7 +209,7 @@ const ServiceCard = ({ service }: { service: typeof services[0] }) => {
         <div className={`grid transition-all duration-500 ease-in-out ${expanded ? "grid-rows-[1fr] opacity-100 mt-5" : "grid-rows-[0fr] opacity-0"}`}>
           <div className="overflow-hidden">
             <ul className="space-y-2.5">
-              {service.details.map((item, i) => (
+              {(activeOption.details ?? service.details).map((item, i) => (
                 <li key={i} className="flex items-start gap-2.5">
                   <div className={`w-4 h-4 ${c.bg} rounded-full flex items-center justify-center shrink-0 mt-0.5`}>
                     <Check className={`w-2.5 h-2.5 ${c.text}`} />

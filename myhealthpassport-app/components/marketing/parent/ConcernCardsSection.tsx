@@ -25,9 +25,10 @@ const services = [
       {
         id: "assessment",
         label: "Assessment",
-        price: "1,999",
-        paise: 199900,
+        price: "2,499",
+        paise: 249900,
         period: "per session",
+        showBundle: false,
         details: [
           "Detailed developmental & family history understanding",
           "Age-appropriate psychometric and behavioral assessments",
@@ -42,9 +43,10 @@ const services = [
       {
         id: "counselling",
         label: "Counselling",
-        price: "1,499",
-        paise: 149900,
+        price: "1,999",
+        paise: 199900,
         period: "per session",
+        showBundle: true,
         details: [
           "Safe, engaging, and child-friendly therapeutic environment",
           "Support for exam stress, anxiety, and emotional regulation",
@@ -80,7 +82,7 @@ const services = [
     ],
     outcome: "Better fuel. Stronger growth. Healthier habits.",
     pricingTabs: [
-      { id: "monthly", label: "Monthly", price: "2,999", paise: 299900, period: "per month", details: undefined as string[] | undefined },
+      { id: "monthly", label: "Monthly", price: "2,999", paise: 299900, period: "per month", details: undefined as string[] | undefined, showBundle: false },
     ],
   },
 ];
@@ -179,7 +181,7 @@ const ServiceCard = ({ service }: { service: typeof services[0] }) => {
           </div>
 
           {/* Bundle offer */}
-          {service.bundle && (
+          {service.bundle && activeOption.showBundle && (
             <div className={`${c.bg} px-4 py-3 flex items-center justify-between border-t ${c.border}`}>
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-0.5">{service.bundle.label}</p>

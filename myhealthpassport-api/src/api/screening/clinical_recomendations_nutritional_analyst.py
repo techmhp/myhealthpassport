@@ -234,6 +234,12 @@ async def get_clinical_recommendations(
             student__id=student_id
         ).prefetch_related("student").all()
 
+        # Fallback: records saved today have updated_at outside the year range — fetch without year filter
+        if not clinical_data_list:
+            clinical_data_list = await ClinicalRecomendations.filter(
+                student__id=student_id
+            ).prefetch_related("student").all()
+
         if not clinical_data_list:
             response_obj = StandardResponse(
                 status=False,
@@ -854,7 +860,6 @@ async def update_clinical_recommendations(update_data: dict, current_analyst: An
                 clinical_data.status = report.get("status") or clinical_data.status
                 clinical_data.role_type = update_data.get("role_type", clinical_data.role_type) or current_analyst.user_role
                 clinical_data.role_name = update_data.get("role_name", clinical_data.role_name) or current_analyst.user_role
-                clinical_data.updated_at = datetime.utcnow()
                 clinical_data.updated_by = current_analyst.id
                 clinical_data.updated_user_role = current_analyst.user_role
                 clinical_data.created_role_type = update_data.get("role_type", clinical_data.created_role_type) or current_analyst.role_type
@@ -876,7 +881,6 @@ async def update_clinical_recommendations(update_data: dict, current_analyst: An
                     if update_fields:
                         update_fields["updated_by"] = current_analyst.id
                         update_fields["updated_user_role"] = current_analyst.user_role
-                        update_fields["updated_at"] = datetime.utcnow()
                         update_fields["analysis_status"] = is_all_complete
                         for record in student_records:
                             for key, value in update_fields.items():

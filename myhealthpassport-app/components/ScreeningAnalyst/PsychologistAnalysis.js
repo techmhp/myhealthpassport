@@ -10,7 +10,7 @@ import { toastMessage } from '@/helpers/utilities';
 import { useRouter } from 'next/navigation';
 import InlineSpinner from '../UI/InlineSpinner';
 
-export default function PsychologistAnalysis() {
+export default function PsychologistAnalysis({ academicYear = null }) {
   const { studentId } = useParams();
   const router = useRouter();
 
@@ -83,7 +83,7 @@ export default function PsychologistAnalysis() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const rawResponse = await psychologicalAnalystRecomendations(studentId);
+      const rawResponse = await psychologicalAnalystRecomendations(studentId, academicYear);
       const results = JSON.parse(rawResponse);
       setApiData(results);
 
@@ -198,7 +198,7 @@ export default function PsychologistAnalysis() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [academicYear]);
 
   // Handle adding findings data
   const addFindingsData = type => {

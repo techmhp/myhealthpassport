@@ -467,9 +467,12 @@ export const getSmartScaleData = async studentId => {
 //***** ANALYST TEAM APIS START */
 
 // 21.1 get clinical recomendations nutritional analyst
-export const nutritionalAnalystRecomendations = async studentId => {
+export const nutritionalAnalystRecomendations = async (studentId, academicYear = null) => {
   const call = new V1SecureApi();
-  const response = await call.GetCall(`/screening/nutritional-analyst/${studentId}`);
+  const url = academicYear
+    ? `/screening/nutritional-analyst/${studentId}?academic_year=${academicYear}`
+    : `/screening/nutritional-analyst/${studentId}`;
+  const response = await call.GetCall(url);
   return response;
 };
 
@@ -488,9 +491,12 @@ export const updateNutritionalAnalystRecomendations = async data => {
 };
 
 // 24.1 get clinical recomendations psychological anayst
-export const psychologicalAnalystRecomendations = async studentId => {
+export const psychologicalAnalystRecomendations = async (studentId, academicYear = null) => {
   const call = new V1SecureApi();
-  const response = await call.GetCall(`/screening/psychological-analyst/${studentId}`);
+  const url = academicYear
+    ? `/screening/psychological-analyst/${studentId}?academic_year=${academicYear}`
+    : `/screening/psychological-analyst/${studentId}`;
+  const response = await call.GetCall(url);
   return response;
 };
 
@@ -565,7 +571,11 @@ export const studentList = async (schoolId, search = '') => {
 // 8.2. Students List by class & section
 export const studentListByClassAndSection = async (schoolId, classroom = null, section = null, search = null) => {
   const call = new V1SecureApi();
-  const response = await call.GetCall(`/school/${schoolId}/students-list-by-class?classroom=${classroom}&section=${section}&search=${search}`);
+  const parts = [];
+  if (classroom) parts.push(`classroom=${encodeURIComponent(classroom)}`);
+  if (section) parts.push(`section=${encodeURIComponent(section)}`);
+  if (search) parts.push(`search=${encodeURIComponent(search)}`);
+  const response = await call.GetCall(`/school/${schoolId}/students-list-by-class?${parts.join('&')}`);
   return response;
 };
 
@@ -1259,6 +1269,30 @@ export const exportPsychologyChecklist = async (schoolId, className, section) =>
   if (className) params.append('class_name', className);
   if (section) params.append('section', section);
   return await call.GetCallBlob(`/screening/export/psychology-checklist?${params.toString()}`);
+};
+
+export const exportDentalScreening = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/dental-screening?${params.toString()}`);
+};
+
+export const exportVisionScreening = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/screening/export/vision-screening?${params.toString()}`);
+};
+
+export const exportAllReportsExcel = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBinary(`/screening/export/all-reports-excel?${params.toString()}`);
 };
 
 export const createPDFDownloadToken = async (studentId, key, academicYear) => {

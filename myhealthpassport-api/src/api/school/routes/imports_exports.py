@@ -1,4 +1,5 @@
 import io
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -34,6 +35,46 @@ def clean_phone(phone):
     # Remove any whitespace or unwanted chars (optional)
     phone_str = phone_str.replace(" ", "").replace("-", "")
     return phone_str
+
+def normalize_class(val):
+    """Normalize class/grade values from CSV to standard numeric format.
+    Converts: 'Class VII' → '7', 'VII' → '7', '7th' → '7', '7th Class' → '7',
+              'Class 7' → '7'. Pre-primary values (LKG, UKG, Nursery, PP-I, PP-II,
+              Play group, Play school) are returned as-is.
+    """
+    ROMAN = {
+        "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5",
+        "VI": "6", "VII": "7", "VIII": "8", "IX": "9", "X": "10",
+        "XI": "11", "XII": "12"
+    }
+    if pd.isna(val) or str(val).strip().lower() in ("", "nan", "none", "null"):
+        return ""
+
+    val = str(val).strip()
+
+    # Remove "Class " prefix (case-insensitive)
+    cleaned = re.sub(r'(?i)^\s*class\s*', '', val).strip()
+
+    # Check if it's a Roman numeral
+    if cleaned.upper() in ROMAN:
+        return ROMAN[cleaned.upper()]
+
+    # Remove ordinal suffixes: 1st, 2nd, 3rd, 4th ... 12th
+    cleaned = re.sub(r'(?i)(st|nd|rd|th)\b', '', cleaned).strip()
+    # Remove trailing " Class", " Grade", " Std", " Standard"
+    cleaned = re.sub(r'(?i)\s*(class|grade|std|standard)\s*$', '', cleaned).strip()
+
+    # If now a digit, return it
+    if cleaned.isdigit():
+        return cleaned
+
+    # Check roman numeral again (in case "VIIth" → "VII")
+    if cleaned.upper() in ROMAN:
+        return ROMAN[cleaned.upper()]
+
+    # Return original value as-is (handles LKG, UKG, Nursery, PP-I, Play group, etc.)
+    return val
+
 
 def csv_columns_list():
     # Minimal required columns
@@ -107,14 +148,9 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         column_errors = []
         df_initial = pd.read_csv(io.StringIO(contents.decode("utf-8-sig")))
 
-        # Clean column names: remove ALL internal spaces, strip trailing dots/commas/spaces
-        # Handles cases like: "student _first_name" → "student_first_name", "phone." → "phone"
-        df_initial.columns = [
-            col.replace(' ', '').rstrip('.').rstrip(',').strip()
-            for col in df_initial.columns
-        ]
-
-        # Normalize column names — accept common naming variations from schools
+        # Normalize column names — accept common naming variations from schools.
+        # IMPORTANT: The map is applied BEFORE space-removal so multi-word keys like
+        # "Student Name", "Roll No", "Phone Number" etc. are matched correctly.
         column_name_map = {
             # Name → student_first_name
             "name": "student_first_name",
@@ -122,46 +158,140 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             "NAME": "student_first_name",
             "student_name": "student_first_name",
             "Student Name": "student_first_name",
+            "StudentName": "student_first_name",
             "first_name": "student_first_name",
             "First Name": "student_first_name",
+            "FirstName": "student_first_name",
+            "Fname": "student_first_name",
+            "FName": "student_first_name",
+            "Full Name": "student_first_name",
+            "FullName": "student_first_name",
+            "full_name": "student_first_name",
             # Roll number → student_roll_no
             "roll_no": "student_roll_no",
             "Roll_no": "student_roll_no",
             "Roll No": "student_roll_no",
+            "RollNo": "student_roll_no",
             "roll no": "student_roll_no",
+            "rollno": "student_roll_no",
             "ROLL_NO": "student_roll_no",
             "Roll Number": "student_roll_no",
+            "RollNumber": "student_roll_no",
             "roll_number": "student_roll_no",
-            "RollNo": "student_roll_no",
+            "Roll No.": "student_roll_no",
+            "Admission No": "student_roll_no",
+            "AdmissionNo": "student_roll_no",
+            "Admission No.": "student_roll_no",
+            "admission_no": "student_roll_no",
+            # Serial / Sl number used as roll number when no Roll No column exists
+            "S.No": "student_roll_no",
+            "SNo": "student_roll_no",
+            "S.No.": "student_roll_no",
+            "SNO": "student_roll_no",
+            "sno": "student_roll_no",
+            "s.no": "student_roll_no",
+            "Sr.No": "student_roll_no",
+            "SrNo": "student_roll_no",
+            "Sr No": "student_roll_no",
+            "sr_no": "student_roll_no",
+            "Sl.No": "student_roll_no",
+            "SlNo": "student_roll_no",
+            "Sl No": "student_roll_no",
+            "sl_no": "student_roll_no",
+            "Serial No": "student_roll_no",
+            "SerialNo": "student_roll_no",
+            "serial_no": "student_roll_no",
             # Gender → student_gender
             "gender": "student_gender",
             "Gender": "student_gender",
             "GENDER": "student_gender",
+            "sex": "student_gender",
+            "Sex": "student_gender",
+            "SEX": "student_gender",
             # DOB → student_dob
             "dob": "student_dob",
             "DOB": "student_dob",
             "Date of Birth": "student_dob",
+            "DateofBirth": "student_dob",
             "date_of_birth": "student_dob",
             "DateOfBirth": "student_dob",
             "Date Of Birth": "student_dob",
+            "Date Of Birth": "student_dob",
+            "Dateofbirth": "student_dob",
+            "Birth Date": "student_dob",
+            "BirthDate": "student_dob",
+            "birth_date": "student_dob",
             # Class → student_class
             "class": "student_class",
             "Class": "student_class",
             "CLASS": "student_class",
             "class_name": "student_class",
             "Class Name": "student_class",
+            "ClassName": "student_class",
             "standard": "student_class",
             "Standard": "student_class",
+            "STANDARD": "student_class",
+            "Std": "student_class",
+            "STD": "student_class",
+            "std": "student_class",
+            "grade": "student_class",
+            "Grade": "student_class",
+            "GRADE": "student_class",
             # Phone → phone
             "Phone": "phone",
             "PHONE": "phone",
             "phone_number": "phone",
             "Phone Number": "phone",
+            "PhoneNumber": "phone",
+            "Phone No": "phone",
+            "PhoneNo": "phone",
+            "Phone No.": "phone",
             "Mobile": "phone",
             "mobile": "phone",
+            "MOBILE": "phone",
             "Mobile Number": "phone",
+            "MobileNumber": "phone",
+            "Mobile No": "phone",
+            "MobileNo": "phone",
+            "Mobile No.": "phone",
+            "mobile_number": "phone",
+            "mobile_no": "phone",
             "contact": "phone",
             "Contact": "phone",
+            "CONTACT": "phone",
+            "Contact No": "phone",
+            "ContactNo": "phone",
+            "Contact Number": "phone",
+            "ContactNumber": "phone",
+            "contact_no": "phone",
+            "contact_number": "phone",
+            # Father/Mother/Parent mobile → phone
+            "Father Mobile No": "phone",
+            "FatherMobileNo": "phone",
+            "Father Mobile No.": "phone",
+            "FatherMobileNo.": "phone",
+            "Father Mobile": "phone",
+            "FatherMobile": "phone",
+            "father_mobile": "phone",
+            "father_mobile_no": "phone",
+            "Mother Mobile No": "phone",
+            "MotherMobileNo": "phone",
+            "Mother Mobile": "phone",
+            "MotherMobile": "phone",
+            "mother_mobile": "phone",
+            "mother_mobile_no": "phone",
+            "Parent Mobile No": "phone",
+            "ParentMobileNo": "phone",
+            "Parent Mobile": "phone",
+            "ParentMobile": "phone",
+            "parent_mobile": "phone",
+            "parent_mobile_no": "phone",
+            "Guardian Mobile": "phone",
+            "GuardianMobile": "phone",
+            "Guardian Mobile No": "phone",
+            "GuardianMobileNo": "phone",
+            "guardian_mobile": "phone",
+            "guardian_mobile_no": "phone",
             # Section → student_section
             "section": "student_section",
             "Section": "student_section",
@@ -169,12 +299,43 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             # Last name → student_last_name
             "last_name": "student_last_name",
             "Last Name": "student_last_name",
+            "LastName": "student_last_name",
             "surname": "student_last_name",
             "Surname": "student_last_name",
         }
+
+        # Step 1: Strip leading/trailing whitespace only (preserve internal spaces for map matching)
+        df_initial.columns = [col.strip() for col in df_initial.columns]
+
+        # Step 2: Apply column_name_map FIRST — catches "Student Name", "Roll No", "Phone Number" etc.
         df_initial = df_initial.rename(columns={
             k: v for k, v in column_name_map.items() if k in df_initial.columns
         })
+
+        # Step 3: Clean remaining column names (remove internal spaces, strip trailing dots/commas)
+        # Handles "student _first_name" → "student_first_name", "phone." → "phone", etc.
+        # Only applied to columns not already in the known-good list
+        known_cols = set(csv_columns_list())
+        df_initial.columns = [
+            col if col in known_cols else col.replace(' ', '').rstrip('.').rstrip(',').strip()
+            for col in df_initial.columns
+        ]
+
+        # Step 4: Apply column_name_map again for any space-removed variants not yet matched
+        df_initial = df_initial.rename(columns={
+            k: v for k, v in column_name_map.items() if k in df_initial.columns
+        })
+
+        # Step 5: Final case-insensitive fallback for any remaining unmapped columns
+        # Builds a lowercase lookup so "STUDENT_FIRST_NAME", "Student_First_Name" etc. all work
+        remaining_cols = set(df_initial.columns) - known_cols
+        if remaining_cols:
+            ci_map = {v.lower(): v for v in known_cols}
+            df_initial = df_initial.rename(columns={
+                col: ci_map[col.lower()]
+                for col in remaining_cols
+                if col.lower() in ci_map
+            })
 
         for col in df_initial.columns:
             if col not in csv_columns_list():
@@ -182,15 +343,22 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
 
         missing_expected_columns = [col for col in original_required_strings if col not in df_initial.columns]
         if missing_expected_columns:
+            found_cols = [c for c in df_initial.columns if c]
             resp = StandardResponse(
                 status=False,
-                message=f"Missing required columns in CSV: {', '.join(missing_expected_columns)}.",
+                message=f"Missing required columns in CSV: {', '.join(missing_expected_columns)}. Columns detected in your file: {', '.join(found_cols)}.",
                 data={},
-                errors={"details": f"Missing columns: {', '.join(missing_expected_columns)}."},
+                errors={
+                    "missing_columns": missing_expected_columns,
+                    "found_columns": found_cols,
+                    "details": f"Missing columns: {', '.join(missing_expected_columns)}. Detected: {', '.join(found_cols)}.",
+                },
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         df_processed = df_initial.fillna('')
+        # Replace any literal "NaN", "nan", "None" strings left by pandas with empty string
+        df_processed = df_processed.replace({'nan': '', 'NaN': '', 'None': '', 'none': '', 'NULL': '', 'null': ''})
 
         # Ensure optional columns exist BEFORE duplicate check and further processing
         if 'student_section' not in df_processed.columns:
@@ -219,7 +387,9 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         # Keep only the first occurrence of each unique combination
         df_processed = df_processed.drop_duplicates(subset=['student_roll_no', 'student_class', 'student_section'], keep='first')
 
+        # Validate required fields per row — skip invalid rows, don't block the upload
         row_errors = []
+        valid_indices = []
         for index, row in df_processed.iterrows():
             empty_required_fields_in_row = []
             for col in strictly_required_non_empty_columns:
@@ -230,15 +400,21 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
                 row_errors.append({
                     "row_number": index + 2,
                     "missing_fields": empty_required_fields_in_row,
-                    "message": f"Row {index + 2}: The following fields cannot be empty: {', '.join(empty_required_fields_in_row)}."
+                    "message": f"Row {index + 2}: Skipped — required fields empty: {', '.join(empty_required_fields_in_row)}."
                 })
+            else:
+                valid_indices.append(index)
 
-        if row_errors:
+        # Keep only rows that passed validation
+        df_processed = df_processed.loc[valid_indices]
+
+        # If NO rows are valid at all, then return an error
+        if df_processed.empty:
             resp = StandardResponse(
                 status=False,
-                message="Validation Error: Some required fields are empty. Please check the highlighted rows and fields.",
+                message="No valid rows found. All rows have missing required fields. Please check the file and try again.",
                 data={"row_errors": row_errors},
-                errors={"details": "Required fields are missing in some rows."},
+                errors={"details": "All rows failed validation."},
             )
             return JSONResponse(content=resp.__dict__, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
@@ -256,7 +432,7 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
             if col not in df_processed.columns:
                 df_processed[col] = ''
 
-        df_processed["student_class"] = df_processed['student_class'].astype(str)
+        df_processed["student_class"] = df_processed['student_class'].astype(str).apply(normalize_class)
         df_processed['student_aadhar_no'] = df_processed['student_aadhar_no'].astype(str)
         df_processed['student_abha_id'] = df_processed['student_abha_id'].astype(str)
         df_processed['student_mp_uhid'] = df_processed['student_mp_uhid'].astype(str)
@@ -272,7 +448,7 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         df_processed['student_last_name'] = df_processed['student_last_name'].astype(str)
         df_processed['student_dob'] = df_processed['student_dob'].astype(str)
         df_processed['student_blood_group'] = df_processed['student_blood_group'].astype(str)
-        df_processed['student_section'] = df_processed['student_section'].astype(str)
+        df_processed['student_section'] = df_processed['student_section'].astype(str).str.strip()
         df_processed['student_food_preferences'] = df_processed['student_food_preferences'].astype(str)
 
         df_processed['address_line_1'] = df_processed['address_line_1'].astype(str)
@@ -389,9 +565,12 @@ async def import_students_data(file: UploadFile = File(...), school_id: str | No
         message += " (Warning: Duplicate entries detected in the uploaded file)"
     if existing_student_warnings:
         message += f" | {len(existing_student_warnings)} student(s) already exist and will be skipped"
+    if row_errors:
+        message += f" | {len(row_errors)} row(s) skipped due to missing required fields"
 
     # Combine all warnings
-    all_warnings = duplicate_errors + existing_student_warnings
+    skipped_row_warnings = [e["message"] for e in row_errors]
+    all_warnings = duplicate_errors + existing_student_warnings + skipped_row_warnings
 
     resp = StandardResponse(
         status=True,
@@ -495,16 +674,19 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
             student["created_role_type"] = str(current_user.get("role_type", ""))
 
             dob = None
-            dob_str = student.get("student_dob", "").strip()
+            dob_str = str(student.get("student_dob", "") or "").strip()
+            # Treat pandas NaN artifacts and placeholder values as empty
+            if dob_str.lower() in ("nan", "none", "null", "n/a", "na", "-", ""):
+                dob_str = ""
             if dob_str:
-                for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d"):
+                for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d"):
                     try:
                         dob = datetime.strptime(dob_str, fmt).date()
                         break
                     except ValueError:
                         continue
                 if dob is None:
-                    errors.append(f"Invalid date format for student_dob: {dob_str}. Expected mm/dd/yyyy, dd/mm/yyyy, dd-mm-yyyy, or yyyy-mm-dd.")
+                    errors.append(f"Invalid date format for student_dob: {dob_str}. Expected dd-mm-yyyy or yyyy-mm-dd.")
                     continue
 
             student_data = {
@@ -514,7 +696,7 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
                 "gender": student.get("student_gender", "").upper(),
                 "dob": dob,
                 "class_room": student.get("student_class", ""),
-                "section": student.get("student_section", "").upper(),
+                "section": student.get("student_section", "").strip().upper(),
                 "roll_no": student.get("student_roll_no", "").upper(),
                 "aadhaar_no": str(student.get("student_aadhar_no", "")).strip(),
                 "abha_id": str(student.get("student_abha_id", "")).strip(),

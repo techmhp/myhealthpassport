@@ -141,7 +141,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Physical Screening Report",
+            report_type__iexact="Physical Screening Report",
         )
         .order_by("-created_at")
         .first(),
@@ -149,7 +149,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Questionnaire Reports",
+            report_type__iexact="Questionnaire Reports",
         )
         .order_by("-created_at")
         .first(),
@@ -157,7 +157,7 @@ async def build_report_context(
             year_filter,
             student_id=student_id,
             is_deleted=False,
-            report_type="Nutrition Deficiency Report",
+            report_type__iexact="Nutrition Deficiency Report",
         )
         .order_by("-created_at")
         .first(),
@@ -172,9 +172,9 @@ async def build_report_context(
         .first(),
         ClinicalRecomendations.filter(
             year_filter,
-            student_id=student_id, 
-            is_deleted=False, 
-            report_type="Lab Reports"
+            student_id=student_id,
+            is_deleted=False,
+            report_type__iexact="Lab Reports"
         )
         .order_by("-created_at")
         .first(),
@@ -196,6 +196,52 @@ async def build_report_context(
         lab_data,
         behavioural_screening,
     ) = await asyncio.gather(*tasks)
+
+    # Fallback: records saved near academic year boundary have created_at outside the
+    # year filter range. Re-query without the filter for any section that returned None.
+    fallback_tasks = []
+    fallback_keys = []
+
+    if not smart_data:
+        fallback_tasks.append(SmartScaleData.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("smart_data")
+    if not pysch_data:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Physical Screening Report").order_by("-created_at").first())
+        fallback_keys.append("pysch_data")
+    if not nutritional_questionaire:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Questionnaire Reports").order_by("-created_at").first())
+        fallback_keys.append("nutritional_questionaire")
+    if not screening_analysis:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Nutrition Deficiency Report").order_by("-created_at").first())
+        fallback_keys.append("screening_analysis")
+    if not emo_data:
+        fallback_tasks.append(ClinicalFindings.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("emo_data")
+    if not dental_data:
+        fallback_tasks.append(DentalScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("dental_data")
+    if not eye_screening:
+        fallback_tasks.append(EyeScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("eye_screening")
+    if not lab_data:
+        fallback_tasks.append(ClinicalRecomendations.filter(student_id=student_id, is_deleted=False, report_type__iexact="Lab Reports").order_by("-created_at").first())
+        fallback_keys.append("lab_data")
+    if not behavioural_screening:
+        fallback_tasks.append(BehaviouralScreening.filter(student_id=student_id, is_deleted=False).order_by("-created_at").first())
+        fallback_keys.append("behavioural_screening")
+
+    if fallback_tasks:
+        fallback_results = await asyncio.gather(*fallback_tasks)
+        result_map = dict(zip(fallback_keys, fallback_results))
+        smart_data = result_map.get("smart_data", smart_data) or smart_data
+        pysch_data = result_map.get("pysch_data", pysch_data) or pysch_data
+        nutritional_questionaire = result_map.get("nutritional_questionaire", nutritional_questionaire) or nutritional_questionaire
+        screening_analysis = result_map.get("screening_analysis", screening_analysis) or screening_analysis
+        emo_data = result_map.get("emo_data", emo_data) or emo_data
+        dental_data = result_map.get("dental_data", dental_data) or dental_data
+        eye_screening = result_map.get("eye_screening", eye_screening) or eye_screening
+        lab_data = result_map.get("lab_data", lab_data) or lab_data
+        behavioural_screening = result_map.get("behavioural_screening", behavioural_screening) or behavioural_screening
 
     # Core validations
     if not student:
@@ -479,17 +525,6 @@ async def build_report_context(
         "si": strength_icon,
         **{f"teeth{num}": path for num, path in teeth.items()},
         **sidebar_icons,
-        # ── Section visibility flags ─────────────────────────────────────────
-        # These control {% if show_* %} blocks in the template.
-        # For the full report, show a section whenever its data exists.
-        # The selected-sections endpoint overrides these with its own .update().
-        "show_profile":   True,
-        "show_physical":  bool(smart_data),
-        "show_nutrition": bool(nutritional_questionaire),
-        "show_emotional": bool(emo_data),
-        "show_dental":    bool(dental_data),
-        "show_eye":       bool(eye_screening),
-        "show_lab":       bool(lab_data),
     }
 
 # =========================================================
@@ -501,55 +536,86 @@ pdf_status: Dict[str, Dict[str, Any]] = {}
 pdf_status_lock = asyncio.Lock()
 PDF_TTL_SECONDS = 24 * 3600  # 24 hours
 
-
-def render_pdf_wkhtmltopdf(html_content: str) -> bytes:
-    """
-    Render HTML → PDF using wkhtmltopdf (much faster than WeasyPrint on this server).
-    wkhtmltopdf v0.12.6 is pre-installed. Falls back to WeasyPrint if not found.
-    """
-    import subprocess
-    try:
-        result = subprocess.run(
-            [
-                "wkhtmltopdf",
-                "--quiet",
-                "--enable-local-file-access",   # needed for file:// teeth SVGs
-                "--page-size", "A4",
-                "--margin-top", "0",
-                "--margin-bottom", "0",
-                "--margin-left", "0",
-                "--margin-right", "0",
-                "--print-media-type",
-                "--disable-smart-shrinking",
-                "--encoding", "utf-8",
-                "-", "-",                        # stdin → stdout
-            ],
-            input=html_content.encode("utf-8"),
-            capture_output=True,
-            timeout=120,
-        )
-        if result.returncode != 0:
-            stderr = result.stderr.decode("utf-8", errors="replace")
-            # wkhtmltopdf exits non-zero on warnings too — still check we got PDF bytes
-            if result.stdout and result.stdout[:4] == b"%PDF":
-                return result.stdout  # output is valid PDF despite exit code
-            raise RuntimeError(f"wkhtmltopdf failed (exit {result.returncode}): {stderr[:500]}")
-        return result.stdout
-    except FileNotFoundError:
-        # wkhtmltopdf not on PATH — fall back to WeasyPrint
-        print("⚠️ [PDF] wkhtmltopdf not found, falling back to WeasyPrint")
-        import weasyprint
-        return weasyprint.HTML(string=html_content).write_pdf()
-
 def is_pdf_fresh(path: Path) -> bool:
     """Check if existing PDF is still within TTL window."""
     return path.exists() and (time.time() - path.stat().st_mtime) < PDF_TTL_SECONDS
+
+# =========================================================
+# Fast PDF renderer: Playwright/Chromium → WeasyPrint fallback
+# =========================================================
+async def render_html_to_pdf(html_content: str) -> bytes:
+    """
+    Render HTML → PDF using Playwright/Chromium (~3-7s).
+    Automatically falls back to WeasyPrint (~60-75s) if Playwright is
+    not installed or Chromium is unavailable.
+
+    Playwright is preferred because:
+    - Full modern CSS support (Grid, custom properties, flexbox)
+    - Same rendering engine as Chrome — matches browser preview exactly
+    - 10-15x faster than WeasyPrint for complex multi-page reports
+    """
+    import tempfile, os
+    t0 = time.time()
+
+    # --- Try Playwright first ---
+    try:
+        from playwright.async_api import async_playwright
+
+        # Write HTML to a temp file so that file:// image references resolve correctly
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", delete=False, encoding="utf-8", dir="/tmp"
+        ) as f:
+            f.write(html_content)
+            tmp_html = f.name
+
+        try:
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                    ]
+                )
+                page = await browser.new_page()
+                # Use goto() with file:// so that all file:// image paths resolve
+                await page.goto(f"file://{tmp_html}", wait_until="networkidle", timeout=60000)
+                pdf_bytes = await page.pdf(
+                    format="A4",
+                    margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
+                    print_background=True,
+                )
+                await browser.close()
+
+            print(f"✅ [PDF] Playwright render complete in {time.time()-t0:.1f}s")
+            return pdf_bytes
+        finally:
+            try:
+                os.unlink(tmp_html)
+            except Exception:
+                pass
+
+    except ImportError:
+        print("⚠️ [PDF] Playwright not installed — falling back to WeasyPrint")
+    except Exception as e:
+        print(f"⚠️ [PDF] Playwright failed ({e}) — falling back to WeasyPrint")
+
+    # --- WeasyPrint fallback ---
+    def _weasyprint():
+        import weasyprint
+        return weasyprint.HTML(string=html_content).write_pdf()
+
+    pdf_bytes = await anyio.to_thread.run_sync(_weasyprint)
+    print(f"✅ [PDF] WeasyPrint render complete in {time.time()-t0:.1f}s")
+    return pdf_bytes
+
 
 async def generate_pdf(student_id: int, request: Request, academic_year: Optional[str] = None):
     """Background PDF generation with status updates (Full Report)."""
     if academic_year is None:
         academic_year = get_current_academic_year()
-    
+
     key = f"{student_id}_{academic_year}"
     async with pdf_status_lock:
         pdf_status[key] = {"ready": False, "status": "generating", "path": ""}
@@ -559,10 +625,7 @@ async def generate_pdf(student_id: int, request: Request, academic_year: Optiona
         context = await build_report_context(request, student_id, academic_year=academic_year)
         html_content = templates.get_template("reports.html").render(context)
 
-        def render_pdf():
-            return render_pdf_wkhtmltopdf(html_content)
-
-        pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
+        pdf_bytes = await render_html_to_pdf(html_content)
         pdf_path = TEMP_DIR / f"report_{student_id}_{academic_year}.pdf"
         pdf_path.write_bytes(pdf_bytes)
 
@@ -618,10 +681,7 @@ async def download_report_pdf(
     context = await build_report_context(request, student_id, academic_year=academic_year)
     html_content = templates.get_template("reports.html").render(context)
 
-    def render_pdf():
-        return render_pdf_wkhtmltopdf(html_content)
-
-    pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
+    pdf_bytes = await render_html_to_pdf(html_content)
     pdf_path.write_bytes(pdf_bytes)
 
     key = f"{student_id}_{academic_year}"
@@ -1218,10 +1278,7 @@ async def start_download_selected(
             html_content = templates.get_template("reports.html").render(context)
             print(f"🖨️ [PDF Debug] Converting HTML → PDF...")
 
-            def render_pdf():
-                return render_pdf_wkhtmltopdf(html_content)
-
-            pdf_bytes = await anyio.to_thread.run_sync(render_pdf)
+            pdf_bytes = await render_html_to_pdf(html_content)
             pdf_path.write_bytes(pdf_bytes)
             print(f"💾 [PDF Debug] PDF written successfully → {pdf_path}")
 

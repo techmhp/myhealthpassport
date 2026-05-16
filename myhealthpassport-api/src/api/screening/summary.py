@@ -204,19 +204,30 @@ async def get_health_screening_data(
         # Apply academic year filter to all queries
         dental_query = DentalScreening.filter(year_filter, student__id=student_id).first()
         dental_data = await dental_query.values("ds_id", "status", "report_summary") if dental_query else None
-        
+        if not dental_data:
+            dental_data = await DentalScreening.filter(student__id=student_id).first().values("ds_id", "status", "report_summary")
+
         eye_query = EyeScreening.filter(year_filter, student__id=student_id).first()
         eye_data = await eye_query.values("es_id", "status", "report_summary") if eye_query else None
-        
+        if not eye_data:
+            eye_data = await EyeScreening.filter(student__id=student_id).first().values("es_id", "status", "report_summary")
+
         clinical_query = ClinicalRecomendations.filter(
             year_filter,
             student__id=student_id,
             report_type__iexact="Physical Screening Report"
         ).first()
         clinical_data = await clinical_query.values("id", "report_type", "status", "summary", "common_summary", "common_status") if clinical_query else None
+        if not clinical_data:
+            clinical_data = await ClinicalRecomendations.filter(
+                student__id=student_id,
+                report_type__iexact="Physical Screening Report"
+            ).first().values("id", "report_type", "status", "summary", "common_summary", "common_status")
 
         emotional_query = ClinicalFindings.filter(year_filter, student__id=student_id).first()
         emotional_developemental_data = await emotional_query.values("id", "status", "summary") if emotional_query else None
+        if not emotional_developemental_data:
+            emotional_developemental_data = await ClinicalFindings.filter(student__id=student_id).first().values("id", "status", "summary")
 
         lab_query = ClinicalRecomendations.filter(
             year_filter,
@@ -224,6 +235,11 @@ async def get_health_screening_data(
             report_type__iexact="Lab Reports"
         ).first()
         lab_data = await lab_query.values("id", "report_type", "status", "summary", "common_summary", "common_status") if lab_query else None
+        if not lab_data:
+            lab_data = await ClinicalRecomendations.filter(
+                student__id=student_id,
+                report_type__iexact="Lab Reports"
+            ).first().values("id", "report_type", "status", "summary", "common_summary", "common_status")
         
         if not dental_data and not eye_data and not clinical_data:
             response_obj = StandardResponse(
@@ -367,6 +383,8 @@ async def get_smart_scale_detailed_report(
 
         # Get smart scale data with academic year filter
         smart_scale_data = await SmartScaleData.filter(year_filter, **filters).select_related("student", "school").first()
+        if not smart_scale_data:
+            smart_scale_data = await SmartScaleData.filter(**filters).select_related("student", "school").first()
 
         # Initialize smart scale data dictionary
         data_dict = {
@@ -514,6 +532,11 @@ async def get_smart_scale_detailed_report(
             student__id=student_id,
             report_type__iexact="physical screening report"
         ).prefetch_related("student").all()
+        if not physical_clinical_data:
+            physical_clinical_data = await ClinicalRecomendations.filter(
+                student__id=student_id,
+                report_type__iexact="physical screening report"
+            ).prefetch_related("student").all()
 
         # Prepare physical screening report
         physical_screening_report = {
@@ -553,6 +576,11 @@ async def get_smart_scale_detailed_report(
             student__id=student_id,
             report_type__iexact="Questionnaire Reports"
         ).prefetch_related("student").all()
+        if not questionnaire_data:
+            questionnaire_data = await ClinicalRecomendations.filter(
+                student__id=student_id,
+                report_type__iexact="Questionnaire Reports"
+            ).prefetch_related("student").all()
 
         # Prepare nutritional questionnaire analysis
         nutritional_questionnaire_analysis = {
@@ -594,6 +622,11 @@ async def get_smart_scale_detailed_report(
             student__id=student_id,
             report_type__iexact="Nutrition Deficiency Report"
         ).prefetch_related("student").all()
+        if not deficiency_data:
+            deficiency_data = await ClinicalRecomendations.filter(
+                student__id=student_id,
+                report_type__iexact="Nutrition Deficiency Report"
+            ).prefetch_related("student").all()
 
         # Prepare nutritional screening analysis
         nutritional_screening_analysis = {
@@ -640,6 +673,10 @@ async def get_smart_scale_detailed_report(
             year_filter,
             student__id=student_id
         ).order_by('-updated_at').prefetch_related("student").all()
+        if not developmental_data:
+            developmental_data = await ClinicalFindings.filter(
+                student__id=student_id
+            ).order_by('-updated_at').prefetch_related("student").all()
 
         # Prepare developmental and emotional assessment
         developmental_emotional_assessment = {
@@ -733,6 +770,8 @@ async def get_smart_scale_detailed_report(
 
         # Fetch dental screening data (latest) with academic year filter
         dental_screening = await DentalScreening.filter(year_filter, student__id=student_id).order_by('-created_at').first()
+        if not dental_screening:
+            dental_screening = await DentalScreening.filter(student__id=student_id).order_by('-created_at').first()
         dental_screening_report = {
             "patient_concern": [],
             "oral_examination": [],
@@ -759,6 +798,8 @@ async def get_smart_scale_detailed_report(
 
         # Fetch eye screening data (latest) with academic year filter
         eye_screening = await EyeScreening.filter(year_filter, student__id=student_id).order_by('-created_at').first()
+        if not eye_screening:
+            eye_screening = await EyeScreening.filter(student__id=student_id).order_by('-created_at').first()
         eye_screening_report = {
             "patient_concern": [],
             "vision_lefteye_res": [],
@@ -787,6 +828,11 @@ async def get_smart_scale_detailed_report(
             student__id=student_id,
             report_type__iexact="Lab Reports"
         ).prefetch_related("student").all()
+        if not lab_reports_data:
+            lab_reports_data = await ClinicalRecomendations.filter(
+                student__id=student_id,
+                report_type__iexact="Lab Reports"
+            ).prefetch_related("student").all()
         lab_reports = {
             "strengths": [],
             "needs_attention": [],

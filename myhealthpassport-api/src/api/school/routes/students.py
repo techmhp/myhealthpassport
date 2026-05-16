@@ -1594,21 +1594,35 @@ async def get_school_students_by_category(
         payment_lookup = {sid: True for sid in paid_students}
 
     class_values_dict = {
-        "12": "12th Class",
-        "11": "11th Class",
-        "10": "10th Class",
-        "9": "9th Class",
-        "8": "8th Class",
-        "7": "7th Class",
-        "6": "6th Class",
-        "5": "5th Class",
-        "4": "4th Class",
-        "3": "3rd Class",
-        "2": "2nd Class",
-        "1": "1st Class",
-        "Nursery": "Nursery",
-        "LKG": "LKG",
-        "UKG": "UKG"
+        # Standard numeric keys
+        "12": "12th Class", "11": "11th Class", "10": "10th Class",
+        "9": "9th Class",   "8": "8th Class",   "7": "7th Class",
+        "6": "6th Class",   "5": "5th Class",   "4": "4th Class",
+        "3": "3rd Class",   "2": "2nd Class",   "1": "1st Class",
+        # Ordinal "Nth Class" keys
+        "12th Class": "12th Class", "11th Class": "11th Class", "10th Class": "10th Class",
+        "9th Class": "9th Class",   "8th Class": "8th Class",   "7th Class": "7th Class",
+        "6th Class": "6th Class",   "5th Class": "5th Class",   "4th Class": "4th Class",
+        "3rd Class": "3rd Class",   "2nd Class": "2nd Class",   "1st Class": "1st Class",
+        # "Class N" format
+        "Class 12": "12th Class", "Class 11": "11th Class", "Class 10": "10th Class",
+        "Class 9": "9th Class",   "Class 8": "8th Class",   "Class 7": "7th Class",
+        "Class 6": "6th Class",   "Class 5": "5th Class",   "Class 4": "4th Class",
+        "Class 3": "3rd Class",   "Class 2": "2nd Class",   "Class 1": "1st Class",
+        # Roman numeral "Class XII" format
+        "Class XII": "12th Class", "Class XI": "11th Class", "Class X": "10th Class",
+        "Class IX": "9th Class",   "Class VIII": "8th Class", "Class VII": "7th Class",
+        "Class VI": "6th Class",   "Class V": "5th Class",    "Class IV": "4th Class",
+        "Class III": "3rd Class",  "Class II": "2nd Class",   "Class I": "1st Class",
+        # Bare Roman numerals
+        "XII": "12th Class", "XI": "11th Class", "X": "10th Class",
+        "IX": "9th Class",   "VIII": "8th Class", "VII": "7th Class",
+        "VI": "6th Class",   "V": "5th Class",    "IV": "4th Class",
+        "III": "3rd Class",  "II": "2nd Class",   "I": "1st Class",
+        # Pre-primary
+        "Nursery": "Nursery", "LKG": "LKG", "UKG": "UKG",
+        "PP-I": "PP-I", "PP-II": "PP-II",
+        "Play group": "Play group", "Play school": "Play school",
     }
 
     class_dict = {}
@@ -3245,24 +3259,49 @@ async def get_students_by_class(
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_400_BAD_REQUEST)
 
-    # Base students query (no year filter)
-    query = SchoolStudents.filter(
+    # Helper: normalize any class format to canonical numeric string
+    # e.g. 'Class VII' → '7', '7th Class' → '7', 'VII' → '7', '7' → '7'
+    _ROMAN = {"I":"1","II":"2","III":"3","IV":"4","V":"5","VI":"6",
+              "VII":"7","VIII":"8","IX":"9","X":"10","XI":"11","XII":"12"}
+    def _norm_class(val):
+        if not val:
+            return ""
+        v = re.sub(r'(?i)^\s*class\s*', '', str(val).strip()).strip()
+        if v.upper() in _ROMAN:
+            return _ROMAN[v.upper()]
+        v = re.sub(r'(?i)(st|nd|rd|th)\b', '', v).strip()
+        v = re.sub(r'(?i)\s*(class|grade|std|standard)\s*$', '', v).strip()
+        if v.isdigit():
+            return v
+        if v.upper() in _ROMAN:
+            return _ROMAN[v.upper()]
+        return str(val).strip()
+
+    # Fetch all students for this school, then filter in Python
+    # (needed because DB may store 'Class VII' while URL passes '7')
+    all_school_students = await SchoolStudents.filter(
         school_id=school_id,
         student__is_deleted=False
     ).prefetch_related("student")
 
-    if classroom:
-        query = query.filter(student__class_room=classroom)
-    if section:
-        query = query.filter(student__section=section)
-    if search:
-        query = query.filter(
-            Q(student__first_name__icontains=search) |
-            Q(student__middle_name__icontains=search) |
-            Q(student__last_name__icontains=search)
-        )
+    filtered = list(all_school_students)
 
-    students = await query.distinct()
+    if classroom:
+        classroom_norm = _norm_class(classroom)
+        filtered = [s for s in filtered if _norm_class(s.student.class_room) == classroom_norm]
+
+    if section:
+        section_upper = section.strip().upper()
+        filtered = [s for s in filtered if s.student.section.strip().upper() == section_upper]
+
+    if search:
+        search_lower = search.lower()
+        filtered = [s for s in filtered if
+            search_lower in (s.student.first_name or "").lower() or
+            search_lower in (s.student.middle_name or "").lower() or
+            search_lower in (s.student.last_name or "").lower()]
+
+    students = filtered
     students.sort(
         key=lambda s: (
             0 if not s.student.roll_no or not str(s.student.roll_no).strip().isdigit()

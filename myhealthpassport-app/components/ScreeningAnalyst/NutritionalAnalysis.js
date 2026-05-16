@@ -9,7 +9,7 @@ import {
 import { toastMessage } from '@/helpers/utilities';
 import InlineSpinner from '../UI/InlineSpinner';
 
-export default function NutritionalAnalysis() {
+export default function NutritionalAnalysis({ academicYear = null }) {
   const { studentId } = useParams();
 
   // Initialize form data with proper structure
@@ -150,7 +150,7 @@ export default function NutritionalAnalysis() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const rawResponse = await nutritionalAnalystRecomendations(studentId);
+      const rawResponse = await nutritionalAnalystRecomendations(studentId, academicYear);
       const results = JSON.parse(rawResponse);
       setApiData(results);
 
@@ -202,7 +202,7 @@ export default function NutritionalAnalysis() {
     } else {
       setLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, academicYear]);
 
   // Keep refs in sync with state so the autosave interval can access latest values
   useEffect(() => { formDataRef.current = formData; }, [formData]);

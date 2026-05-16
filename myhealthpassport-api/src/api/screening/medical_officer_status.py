@@ -260,6 +260,13 @@ async def get_medical_screening_status(
             is_deleted=False
         ).prefetch_related('school').all()
 
+        # Fallback: records saved today are outside the year filter range
+        if not existing_records:
+            existing_records = await MedicalScreeningStatus.filter(
+                student_id=student_id,
+                is_deleted=False
+            ).prefetch_related('school').all()
+
         # Create a dictionary to map status types to records
         status_records = {record.medical_officer_status_type: record for record in existing_records}
 
@@ -458,7 +465,6 @@ async def update_medical_screening_status(
                         existing_record = existing_by_type[status_type]
                         existing_record.status = status_value
                         existing_record.remarks = remarks
-                        existing_record.updated_at = datetime.utcnow()
                         existing_record.updated_by = current_medical_officer.id
                         existing_record.updated_user_role = current_medical_officer.user_role
                         existing_record.updated_role_type = "ANALYST_TEAM"

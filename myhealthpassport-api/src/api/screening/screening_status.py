@@ -515,8 +515,10 @@ async def get_screening_dashboard(
                 errors={"academic_year": str(e)}
             ).__dict__, status_code=400)
 
-        # Build academic year filter
+        # Build academic year filter (for screening records - uses created_at/updated_at)
         year_filter = build_academic_year_filter(academic_year)
+        # Separate filter for AssignSchool (uses the assignment's scheduled date field)
+        assign_year_filter = build_academic_year_filter(academic_year, created_field="date", updated_field="date")
 
         user_role_str = team_member.user_role.value
 
@@ -577,21 +579,33 @@ async def get_screening_dashboard(
         # Get assignments
         if user_role_str == "SUPER_ADMIN":
             user_assignments = await AssignSchool.filter(
-                year_filter & Q(user_id=user_id, team_type=role_type, is_deleted=False)
+                assign_year_filter & Q(user_id=user_id, team_type=role_type, is_deleted=False)
             ).count()
-            
+
             if user_assignments > 0:
                 assignments = await AssignSchool.filter(
-                    year_filter & Q(user_id=user_id, team_type=role_type, is_deleted=False)
+                    assign_year_filter & Q(user_id=user_id, team_type=role_type, is_deleted=False)
                 ).order_by("date")
             else:
                 assignments = await AssignSchool.filter(
-                    year_filter & Q(is_deleted=False)
+                    assign_year_filter & Q(is_deleted=False)
                 ).order_by("date")
+
+                if not assignments:
+                    # Academic year just rolled over — fall back to all assignments
+                    assignments = await AssignSchool.filter(
+                        Q(is_deleted=False)
+                    ).order_by("-date")
         else:
             assignments = await AssignSchool.filter(
-                year_filter & Q(user_id=user_id, team_type=role_type, is_deleted=False)
+                assign_year_filter & Q(user_id=user_id, team_type=role_type, is_deleted=False)
             ).order_by("date")
+
+            if not assignments:
+                # Fall back to all assignments for this user when current year has no data yet
+                assignments = await AssignSchool.filter(
+                    Q(user_id=user_id, team_type=role_type, is_deleted=False)
+                ).order_by("-date")
 
         if not assignments:
             resp = JSONResponse(content=StandardResponse(

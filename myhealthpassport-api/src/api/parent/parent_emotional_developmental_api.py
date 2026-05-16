@@ -328,6 +328,13 @@ async def get_emotional_questions(
             student_id=student_id,
             question_id__in=valid_question_ids
         ).order_by('-updated_at').values("question_id", "answer", "notes")
+
+        # Fallback: answers saved today are outside the year filter range
+        if not existing_answers:
+            existing_answers = await ParentAnswers.filter(
+                student_id=student_id,
+                question_id__in=valid_question_ids
+            ).order_by('-updated_at').values("question_id", "answer", "notes")
         
         answer_map = {answer["question_id"]: answer["answer"] for answer in existing_answers}
         notes = next((a["notes"].replace("Developmental & Emotional:", "").strip() for a in existing_answers if a["notes"] and a["notes"].startswith("Developmental & Emotional:")), None)
@@ -425,7 +432,6 @@ async def submit_emotional_answers(
                 if existing_answer:
                     existing_answer.answer = answer.answer
                     existing_answer.notes = prefixed_notes
-                    existing_answer.updated_at = datetime.utcnow()
                     existing_answer.updated_by = current_parent.id
                     existing_answer.status = True
                     existing_answer.updated_user_role = current_parent.user_role
@@ -520,7 +526,6 @@ async def submit_emotional_answers(
                 if existing_answer:
                     existing_answer.answer = answer.answer
                     existing_answer.notes = prefixed_notes
-                    existing_answer.updated_at = datetime.utcnow()
                     existing_answer.updated_by = current_parent.id
                     existing_answer.status = True
                     existing_answer.updated_user_role = current_parent.user_role

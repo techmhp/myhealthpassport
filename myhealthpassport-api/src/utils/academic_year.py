@@ -6,10 +6,12 @@ def get_current_academic_year() -> str:
     """Returns current academic year in format '2024-2025'."""
     today = datetime.now().date()
     
-    if today.month < 5:  # Jan-Apr belongs to previous academic year
+    # New academic year starts May 1, but default to previous year through June
+    # to allow transition time before new screening data is populated
+    if today.month < 7:  # Jan-Jun belongs to previous academic year
         start_year = today.year - 1
         end_year = today.year
-    else:  # May-Dec belongs to current academic year
+    else:  # Jul-Dec belongs to current academic year
         start_year = today.year
         end_year = today.year + 1
     

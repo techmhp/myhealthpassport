@@ -315,6 +315,12 @@ async def get_clinical_findings(
             student__id=student_id
         ).prefetch_related("student").all()
 
+        # Fallback: records saved today have updated_at outside the year range — fetch without year filter
+        if not findings_list:
+            findings_list = await ClinicalFindings.filter(
+                student__id=student_id
+            ).prefetch_related("student").all()
+
         if not findings_list:
             response_obj = StandardResponse(
                 status=False,
@@ -669,7 +675,6 @@ async def update_clinical_findings(update_data: dict, current_analyst: Any = Dep
                     "clinical_notes_recommendations": _serialise_clinical_notes(report.get("clinical_notes_recommendations", [])),
                     "summary": report.get("summary", ""),
                     "status": report.get("status", ""),
-                    "updated_at": datetime.now(timezone(timedelta(hours=5, minutes=30))),
                     "updated_by": current_analyst.id,
                     "updated_user_role": current_analyst.user_role,
                     "updated_role_type": update_data.get("role_type", existing_record.role_type),

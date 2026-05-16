@@ -53,6 +53,12 @@ const Header = () => {
                   Resources
                 </Link>
               </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/contact">
+                  <span className="mr-2">📬</span>
+                  Contact Us
+                </Link>
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -104,6 +110,12 @@ const Header = () => {
                   <Link href="/resources" onClick={() => setIsMenuOpen(false)}>
                     <span className="mr-2">📚</span>
                     Resources
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full justify-start">
+                  <Link href="/contact" onClick={() => setIsMenuOpen(false)}>
+                    <span className="mr-2">📬</span>
+                    Contact Us
                   </Link>
                 </Button>
 

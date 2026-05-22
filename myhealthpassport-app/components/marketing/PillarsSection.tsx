@@ -6,19 +6,19 @@ const foundationalPillars = [
   {
     icon: Activity,
     title: "Physical Health",
-    description: "Height, weight, body composition",
+    description: "Height, weight, body composition, and child growth monitoring to better understand physical development, stamina, and overall wellness.",
     color: "from-brand to-blue-400",
   },
   {
     icon: SmilePlus,
     title: "Dental Health",
-    description: "Cavity detection, gum health, hygiene",
+    description: "Cavity detection, gum health, hygiene, and preventive oral care support as part of routine vision and dental screening for children.",
     color: "from-sunshine to-amber-400",
   },
   {
     icon: Eye,
     title: "Vision",
-    description: "Visual acuity, colour vision, depth perception",
+    description: "Visual acuity, colour vision, depth perception, and early detection of vision concerns that may affect classroom learning and participation.",
     color: "from-brand to-indigo-400",
   },
 ];
@@ -42,7 +42,7 @@ const corePillars = [
     icon: Brain,
     title: "Developmental Milestones",
     ageTag: "Ages 2–8",
-    subtitle: "Understanding how children grow, learn, and coordinate at the right pace for their age.",
+    subtitle: "Understanding how children grow, learn, and coordinate at the right pace for their age through structured developmental screening for children.",
     bullets: [
       "Motor skills & coordination",
       "Cognitive readiness",
@@ -55,7 +55,7 @@ const corePillars = [
     icon: Heart,
     title: "Emotional & Mental Wellbeing",
     ageTag: "Ages 8+",
-    subtitle: "Supporting how children feel, cope, and relate inside and outside the classroom.",
+    subtitle: "Supporting how children feel, cope, and relate inside and outside the classroom through early child mental health assessment and wellness support.",
     bullets: [
       "Anxiety & stress signals",
       "Emotional regulation",
@@ -82,6 +82,9 @@ const PillarsSection = () => {
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground px-2 mb-4">
             Proactive. Preventive. Personalized.
+          </p>
+          <p className="text-sm text-muted-foreground px-2 mt-2">
+            Our <strong>child wellness program</strong> combines physical, emotional, developmental, and nutritional evaluations to support healthy growth, early intervention, and long-term wellbeing through comprehensive <strong>pediatric health screening</strong>.
           </p>
           <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground px-2">
             Where Most Learning, Behaviour & Confidence Challenges Begin
@@ -146,7 +149,7 @@ const PillarsSection = () => {
             These three pillars often shape how all others show up —
             <br className="hidden sm:block" />
             <span className="sm:hidden"> </span>
-            <span className="text-brand font-semibold not-italic">which is why MHP looks beyond routine checks.</span>
+            <span className="text-brand font-semibold not-italic">which is why MHP looks beyond routine checks through comprehensive pediatric health screening and preventive child wellness support.</span>
           </p>
         </AnimatedSection>
       </div>

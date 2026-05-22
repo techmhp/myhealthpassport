@@ -6,28 +6,28 @@ const outcomeCards = [
     icon: BookOpen,
     emoji: "📚",
     title: "Learning Feels Harder Than It Should",
-    description: "Focus drops, progress slows, exam pressure builds",
+    description: "Focus drops, progress slows, exam pressure builds, and learning challenges may become more visible without timely student health screening and early developmental support.",
     color: "bg-brand",
   },
   {
     icon: Frown,
     emoji: "😔",
     title: "Emotions Feel Bigger",
-    description: "Worry, anger, withdrawal, frequent meltdowns",
+    description: "Worry, anger, withdrawal, frequent meltdowns, and emotional overwhelm may indicate the need for early behavioral assessment for kids and mental wellbeing support.",
     color: "bg-coral",
   },
   {
     icon: Zap,
     emoji: "⚡",
     title: "Energy Levels Don't Match the Day",
-    description: "Constant tiredness, low stamina, frequent sickness",
+    description: "Constant tiredness, low stamina, poor concentration, and frequent sickness can sometimes be linked to nutrition gaps, sleep imbalance, or other underlying health concerns.",
     color: "bg-sunshine",
   },
   {
     icon: Smartphone,
     emoji: "📱",
     title: "Modern Routines Take a Toll",
-    description: "Screens, sleep disruption, stress overload",
+    description: "Screens, sleep disruption, stress overload, and inactive lifestyles continue to affect children's physical and emotional wellbeing, increasing the importance of preventive healthcare for children.",
     color: "bg-lavender",
   },
 ];
@@ -43,7 +43,7 @@ const ChildrenStruggleSection = () => {
             <span className="text-gradient-hero">"Health Issue"</span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground px-2">
-            Parents and teachers usually notice changes long before a diagnosis is ever considered.
+            Many learning, emotional, and behavioural concerns can be identified early through structured <strong>school health program</strong> assessments, <strong>student health screening</strong>, and preventive wellness support for children.
           </p>
         </AnimatedSection>
 
@@ -69,6 +69,9 @@ const ChildrenStruggleSection = () => {
           <p className="text-base sm:text-lg font-medium text-foreground/80">
             Understanding these early helps children{" "}
             <span className="text-brand font-bold">before problems grow.</span>
+          </p>
+          <p className="text-xs text-muted-foreground mt-3">
+            Helping schools build healthier classrooms through modern <strong>school wellness initiatives</strong> and early intervention support for students and parents.
           </p>
         </AnimatedSection>
       </div>

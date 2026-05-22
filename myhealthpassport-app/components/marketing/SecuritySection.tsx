@@ -5,17 +5,17 @@ const features = [
   {
     icon: Lock,
     title: "End-To-End Encryption",
-    description: "Data protected during transmission and storage.",
+    description: "Health data is securely protected during transmission and storage through advanced encryption standards built for a safe and trusted child health monitoring system.",
   },
   {
     icon: Shield,
     title: "Regulatory Compliance",
-    description: "Following Indian healthcare privacy standards.",
+    description: "Following Indian healthcare privacy standards and secure data handling practices to protect sensitive student health information.",
   },
   {
     icon: UserCheck,
     title: "Parent Controlled Sharing",
-    description: "You decide what is shared and for how long.",
+    description: "Parents decide what information is shared, with whom, and for how long through a secure online health report for students and digital access system.",
   },
 ];
 
@@ -40,7 +40,7 @@ const SecuritySection = () => {
             Data Privacy & Security You Can Trust
           </h2>
           <p className="text-base sm:text-lg text-white/80 px-2">
-            We take the protection of your child's health data seriously.
+            Secure and accessible <strong>digital health records for kids</strong> designed for schools, healthcare professionals, and parents with a reliable <strong>child health monitoring system</strong>.
           </p>
         </AnimatedSection>
 

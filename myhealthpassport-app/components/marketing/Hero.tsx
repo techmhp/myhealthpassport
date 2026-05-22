@@ -25,11 +25,12 @@ const Hero = () => {
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-2 sm:mb-3 animate-slide-up">
               Every Child Deserves{" "}
               <span className="text-gradient-hero">Early, Thoughtful Care</span>
+              <span className="block text-xl sm:text-2xl font-semibold text-muted-foreground mt-1">| Child Health Checkup</span>
             </h1>
             
             {/* Description */}
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mb-3 sm:mb-4 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              Empowering schools and parents through proactive child health screening and continuous wellness support. Create your child's unique Health Passport today.
+              Empowering schools and parents through proactive <strong>pediatric health screening</strong> and continuous wellness support. Create your child's unique <strong>digital health passport for kids India</strong> today.
             </p>
             
             {/* CTA Buttons */}
@@ -62,6 +63,11 @@ const Hero = () => {
                 A Healthier Child is a Happier One ✨
               </p>
             </div>
+
+            {/* SEO Supporting Line */}
+            <p className="text-xs text-muted-foreground mt-2 animate-fade-in" style={{ animationDelay: "0.35s" }}>
+              Comprehensive <strong>preventive healthcare for children</strong> through school wellness and health monitoring initiatives.
+            </p>
 
             {/* Mobile Mockup - Compact Version */}
             <div className="lg:hidden w-full mt-4 sm:mt-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>

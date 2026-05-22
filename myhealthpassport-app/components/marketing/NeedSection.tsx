@@ -5,37 +5,37 @@ import AnimatedSection from "./AnimatedSection";
 const stats = [
   { 
     value: "1 in 3", 
-    label: "Nearly 1 in 3 Indian children are overweight, obese, or physically inactive.",
+    label: "Nearly 1 in 3 Indian children are overweight, obese, physically inactive, or require proper child growth monitoring to support healthy development and lifestyle habits.",
     title: "Physical Screening",
     icon: Activity 
   },
   { 
     value: "60–70%", 
-    label: "Children have nutrition gaps — including poor diet quality, micronutrient deficiencies, or irregular eating habits that affect energy and focus.",
+    label: "Children may experience nutrition gaps including poor diet quality, micronutrient deficiencies, or irregular eating habits that affect energy, immunity, concentration, and academic performance.",
     title: "Nutrition",
     icon: Utensils 
   },
   {
     value: "20–25%", 
-    label: "Children experience emotional or mental wellbeing challenges such as anxiety, low confidence, attention difficulties, or exam stress.",
+    label: "Many children experience emotional or behavioural challenges such as anxiety, low confidence, attention difficulties, or exam stress that may require early child mental health assessment and wellness support.",
     title: "Emotional Development",
     icon: Brain 
   },
   { 
     value: "1 in 4", 
-    label: "School-age children have vision issues that can impact reading, board work, and classroom participation.",
+    label: "School-age children may experience vision concerns that affect reading, board work, focus, and classroom participation, highlighting the importance of regular vision and dental screening for children.",
     title: "Vision Screening",
     icon: Eye 
   },
   { 
     value: "45–55%", 
-    label: "Children show signs of dental problems such as cavities, gum issues, or oral discomfort.",
+    label: "Many children show early signs of cavities, gum issues, oral discomfort, or hygiene concerns that can impact confidence, eating habits, and overall wellbeing.",
     title: "Dental Screening",
     icon: SmilePlus 
   },
   { 
     value: "30–40%", 
-    label: "Children show abnormalities in routine lab markers such as iron, vitamin D, B12, or other nutritional indicators when tested.",
+    label: "Routine pediatric diagnostic tests may identify abnormalities in iron, vitamin D, B12, and other nutritional markers that influence growth, immunity, focus, and daily energy levels.",
     title: "Lab Reports",
     icon: FlaskConical 
   },
@@ -57,7 +57,7 @@ const NeedSection = () => {
             <span className="text-gradient-hero">Matters</span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground px-2">
-            Early detection dramatically impacts a child's learning, emotional well-being, and long-term development.
+            Early detection through regular <strong>child health checkup</strong> programs improves learning outcomes, emotional wellbeing, and long-term development for school-age children.
           </p>
         </AnimatedSection>
 
@@ -86,6 +86,9 @@ const NeedSection = () => {
             );
           })}
         </div>
+        <p className="text-center text-xs text-muted-foreground mt-8 px-4">
+          Designed for schools and parents seeking reliable <strong>school health programs in Hyderabad</strong> and preventive child healthcare solutions for long-term student wellbeing.
+        </p>
       </div>
     </section>
   );

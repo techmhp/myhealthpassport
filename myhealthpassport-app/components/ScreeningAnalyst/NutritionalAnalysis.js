@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   nutritionalAnalystRecomendations,
   createNutritionalAnalystRecomendations,
@@ -11,6 +12,7 @@ import InlineSpinner from '../UI/InlineSpinner';
 
 export default function NutritionalAnalysis({ academicYear = null }) {
   const { studentId } = useParams();
+  const router = useRouter();
 
   // Initialize form data with proper structure
   const initializeFormData = () => ({
@@ -165,7 +167,7 @@ export default function NutritionalAnalysis({ academicYear = null }) {
     } catch (err) {
       setHasExistingData(false);
       setFormData(initializeFormData());
-      // toastMessage(err.message || 'Failed to fetch data', 'error');
+      toastMessage(err.message || 'Failed to fetch data', 'error');
     } finally {
       setLoading(false);
     }
@@ -189,9 +191,6 @@ export default function NutritionalAnalysis({ academicYear = null }) {
         })
         .catch(err => {
           toastMessage(err, 'error');
-        })
-        .finally(() => {
-          setLoading(false);
         });
     }
   }, []);

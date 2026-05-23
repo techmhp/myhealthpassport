@@ -96,7 +96,8 @@ export default function PsychologistAnalysis({ academicYear = null }) {
         setFormData(initializeFormData());
       }
     } catch (err) {
-      console.log('Error fetching data:', err);
+      console.error('Error fetching data:', err);
+      toastMessage(err.message || 'Failed to fetch data', 'error');
       setHasExistingData(false);
       setFormData(initializeFormData());
     } finally {
@@ -194,9 +195,6 @@ export default function PsychologistAnalysis({ academicYear = null }) {
       })
       .catch(err => {
         toastMessage(err, 'error');
-      })
-      .finally(() => {
-        setLoading(false);
       });
   }, [academicYear]);
 

@@ -11,7 +11,7 @@ const services = [
     icon: Brain,
     title: "Resilience and Learning",
     tagline: "Support for the Mind",
-    description: "Guided support for children facing emotional, behavioural, or learning challenges — with expert psychologists and therapists.",
+    description: "Guided support for children facing emotional, behavioural, developmental, or learning-related challenges through expert-led child mental health assessment and therapeutic care.",
     color: "lavender",
     highlights: [
       "Anxiety, mood changes & emotional regulation",
@@ -66,7 +66,7 @@ const services = [
     icon: Apple,
     title: "Nourish",
     tagline: "Fuel for Growth",
-    description: "Personalised nutrition plans and lifestyle guidance to address energy, immunity, growth, and eating habit concerns.",
+    description: "Personalised nutrition guidance and wellness support focused on energy, immunity, growth, eating patterns, and healthy lifestyle development.",
     color: "mint",
     highlights: [
       "Low energy, fatigue & poor stamina",
@@ -242,7 +242,7 @@ const ConcernCardsSection = ({ onTalkToTeam }: { onTalkToTeam: () => void }) => 
             Skip Screening. <span className="text-gradient-hero">Get Direct Support.</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            If your child already has a diagnosis or known concern, connect directly with the right expert.
+            If your child already has a diagnosis, developmental concern, or emotional challenge, connect directly with experienced specialists for personalised care and support.
           </p>
         </div>
       </AnimatedSection>

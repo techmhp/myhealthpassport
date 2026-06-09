@@ -29,11 +29,11 @@ export default function ParentPage() {
         <section className="py-16 lg:py-24 bg-gradient-soft">
           <div className="container mx-auto px-4 text-center max-w-3xl">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">
-              Understand Your Child&apos;s Health —{" "}
-              <span className="text-gradient-hero">Calmly and Clearly</span>
+              Understand Your Child&apos;s Health Clearly with{" "}
+              <span className="text-gradient-hero">Pediatric Health Screening</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-8">
-              A comprehensive health screening at the MHP Centre to help parents gain clarity before choosing any support.
+              A comprehensive pediatric health screening at the MHP Centre to help parents gain clarity before choosing the right support for their child&apos;s physical, emotional, nutritional, and developmental wellbeing.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="text-lg px-10 py-6 rounded-xl shadow-glow" asChild>
@@ -45,11 +45,54 @@ export default function ParentPage() {
                 Talk to Our Team
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground mt-6">
+              Helping families make informed decisions through compassionate preventive healthcare for children and early wellness support.
+            </p>
           </div>
         </section>
 
         <CareProgramsSection />
         <ConcernCardsSection onTalkToTeam={() => setTalkOpen(true)} />
+
+        {/* FAQ Section */}
+        <section className="py-16 lg:py-20 bg-gradient-soft">
+          <div className="container mx-auto px-4 max-w-3xl">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-center mb-10">Frequently Asked Questions</h2>
+            <div className="space-y-6">
+              {[
+                {
+                  q: "What is included in pediatric health screening?",
+                  a: "A complete pediatric health screening may include physical assessments, developmental evaluations, emotional wellbeing reviews, nutrition analysis, vision and dental screening, and health reporting.",
+                },
+                {
+                  q: "How does a child wellness program help children?",
+                  a: "A structured child wellness program helps track growth, emotional health, nutrition, learning development, and overall wellbeing through continuous monitoring and expert guidance.",
+                },
+                {
+                  q: "Why is developmental screening important for children?",
+                  a: "Developmental screening for children helps identify delays in learning, communication, motor skills, and behaviour early so that timely support and intervention can be provided.",
+                },
+                {
+                  q: "What is a digital health passport for kids?",
+                  a: "A digital health passport for kids securely stores child health records, screening reports, wellness tracking, and progress updates for parents and healthcare professionals.",
+                },
+                {
+                  q: "Where can parents find pediatric services in Hyderabad?",
+                  a: "Parents looking for trusted pediatric services in Hyderabad can access child health screening, emotional wellness support, nutrition guidance, and developmental care programs through MHP.",
+                },
+              ].map((item, i) => (
+                <div key={i} className="bg-card rounded-2xl p-6 border border-border">
+                  <h3 className="font-bold text-base mb-2">{item.q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              Designed for families seeking trusted pediatric services in Hyderabad and holistic child wellness support under one care system.
+            </p>
+          </div>
+        </section>
+
         <TalkToTeamDialog open={talkOpen} onOpenChange={setTalkOpen} />
 
         <section className="pt-24 pb-16 lg:pt-32 lg:pb-20 bg-gradient-soft">

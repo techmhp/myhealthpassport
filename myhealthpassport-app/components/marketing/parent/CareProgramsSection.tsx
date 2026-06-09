@@ -12,7 +12,7 @@ const programs = [
     icon: Search,
     title: "INSIGHT",
     tagline: "Clarity Before Care",
-    description: "A one-time screening to understand your child's physical, nutritional, emotional, and developmental health — before any labels or interventions.",
+    description: "A one-time screening designed to provide deeper understanding through comprehensive developmental screening for children, emotional evaluation, nutritional review, and physical health assessment — before any labels or interventions.",
     color: "brand",
     highlights: [
       "Growth, nutrition & developmental assessment",
@@ -23,7 +23,7 @@ const programs = [
     details: [
       "Vision, dental & lab insights included",
       "Child-friendly, calm screening environment",
-      "Digital Health Passport for long-term tracking",
+      "Secure digital health passport for kids for long-term tracking",
       "Honest recommendations — only if needed",
     ],
     outcome: "Clear understanding. Confident decisions. No guesswork.",
@@ -36,7 +36,7 @@ const programs = [
     icon: TrendingUp,
     title: "FLOURISH",
     tagline: "Track. Support. Progress.",
-    description: "A structured, ongoing wellness program with continuous assessment, guided expert support, and measurable progress.",
+    description: "An ongoing child wellness program with continuous assessment, guided expert support, and measurable progress tailored to each child's evolving needs.",
     color: "mint",
     highlights: [
       "Psychological & nutritional evaluation",
@@ -208,10 +208,13 @@ const CareProgramsSection = () => (
             Beyond Screening
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4">
-            Our Care <span className="text-gradient-hero">Programmes</span>
+            Our Care <span className="text-gradient-hero">Programmes</span> for Long-Term Child Wellness
           </h2>
           <p className="text-lg text-muted-foreground">
             Two structured pathways — one for clarity, one for continuous growth.
+          </p>
+          <p className="text-sm text-muted-foreground mt-3">
+            Structured wellness pathways focused on long-term child development, emotional resilience, and preventive healthcare for children.
           </p>
         </div>
       </AnimatedSection>

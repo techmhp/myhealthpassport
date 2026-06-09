@@ -11,7 +11,7 @@ const programs = [
     number: "01",
     tag: "Entry Point",
     title: "Awareness & Screening Program",
-    oneLiner: "Nutrition and Psychology awareness talks combined with eye & dental screening.",
+    oneLiner: "Nutrition and Psychology awareness talks combined with eye & dental screening as part of structured school health camps and wellness support.",
     icon: Eye,
     emoji: "🎯",
     color: "text-lavender",
@@ -33,7 +33,7 @@ const programs = [
     number: "02",
     tag: "Space-Efficient",
     title: "Compact Health Buddy Centre",
-    oneLiner: "Year-round psychologist & nutritionist — minimal space, maximum impact.",
+    oneLiner: "Year-round psychologist & nutritionist support — minimal space, maximum impact for student wellbeing and emotional support systems.",
     icon: Heart,
     emoji: "💚",
     color: "text-mint",
@@ -55,7 +55,7 @@ const programs = [
     number: "03",
     tag: "Most Comprehensive",
     title: "MHP Health Buddy Centre",
-    oneLiner: "A complete on-campus MHP presence — curriculum, monitoring & continuous parent coordination.",
+    oneLiner: "A complete on-campus MHP presence supporting curriculum delivery, monitoring, assessments, and continuous parent coordination through integrated wellness systems.",
     icon: Building2,
     emoji: "🏥",
     color: "text-brand",
@@ -91,7 +91,7 @@ const SchoolProgramsGrid = () => {
             <span className="text-gradient-hero">MHP</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            From awareness talks to a full on-campus health centre — every school finds its fit.
+            From awareness talks to a full on-campus health centre — every school can choose a model that supports preventive care, emotional wellbeing, and student development.
           </p>
         </div>
 

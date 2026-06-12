@@ -10,7 +10,16 @@ export async function POST(req) {
       await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, method, age, plan, ts }),
+        body: JSON.stringify({
+          Date: ts,
+          Name: name,
+          Phone: phone,
+          Email: '',
+          Interest: plan,
+          Mode: method,
+          Source: 'INSIGHT LP',
+          Status: '',
+        }),
       });
     }
 

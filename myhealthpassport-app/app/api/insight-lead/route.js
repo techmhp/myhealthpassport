@@ -4,7 +4,8 @@ export async function POST(req) {
     const data = await req.json();
     const { name, phone, method, age, plan, ts } = data;
 
-    const webhookUrl = process.env.INSIGHT_LEADS_SHEET_URL;
+    const webhookUrl = process.env.INSIGHT_LEADS_SHEET_URL ||
+      'https://script.google.com/macros/s/AKfycbxjMiLLNqBtqld41NOeGSfHkgUceVrJ32M0QRt2J6LRyAgbPCunxlT9TDfIrA-01t-3/exec';
 
     if (webhookUrl) {
       const params = new URLSearchParams({

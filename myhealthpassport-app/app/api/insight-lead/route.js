@@ -7,19 +7,19 @@ export async function POST(req) {
     const webhookUrl = process.env.INSIGHT_LEADS_SHEET_URL;
 
     if (webhookUrl) {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          Date: ts,
-          Name: name,
-          Phone: phone,
-          Email: '',
-          Interest: plan,
-          Mode: method,
-          Source: 'INSIGHT LP',
-          Status: '',
-        }),
+      const params = new URLSearchParams({
+        Date: ts || new Date().toISOString(),
+        Name: name || '',
+        Phone: phone || '',
+        Email: '',
+        Interest: plan || '',
+        Mode: method || '',
+        Source: 'INSIGHT LP',
+        Status: '',
+      });
+      await fetch(`${webhookUrl}?${params.toString()}`, {
+        method: 'GET',
+        redirect: 'follow',
       });
     }
 

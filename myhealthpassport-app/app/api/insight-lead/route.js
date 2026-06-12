@@ -1,3 +1,4 @@
+// Forwards INSIGHT lead form submissions to Google Sheets via Apps Script webhook
 export async function POST(req) {
   try {
     const data = await req.json();

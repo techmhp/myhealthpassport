@@ -452,6 +452,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     btn.disabled=true;btn.textContent='Submitting…';
     var data={name:document.getElementById('pname').value,phone:document.getElementById('phone').value,method:document.getElementById('method').value,age:document.getElementById('age').value,plan:document.getElementById('plan').value,ts:new Date().toISOString()};
     if(typeof fbq==='function'){fbq('track','Lead',{content_name:data.plan});}
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({'event':'insightlp_lead_submit'});
     fetch('/api/insight-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
       .catch(function(){})
       .finally(function(){

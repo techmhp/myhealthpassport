@@ -889,29 +889,29 @@ async def export_students(
     current_user: dict = Depends(get_current_user),
 ):
     """Export all students for a school as a CSV file."""
-    qs = SchoolStudents.filter(school_id=school_id).prefetch_related("student")
-    school_students = await qs
+    school_students = await SchoolStudents.filter(school_id=school_id).prefetch_related("student")
+
+    students = [ss.student for ss in school_students if ss.student and not ss.student.is_deleted]
+    if class_name:
+        students = [s for s in students if str(s.class_room).strip() == str(class_name).strip()]
+    if section:
+        students = [s for s in students if str(s.section).strip().upper() == str(section).strip().upper()]
+
+    # Single batch query for parent phones — avoids one query per student
+    phone_by_student = {}
+    if students:
+        links = await ParentChildren.filter(student_id__in=[s.id for s in students])
+        for link in links:
+            phone_by_student.setdefault(link.student_id, link.primary_phone_no or "")
+
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
         "Roll No", "First Name", "Middle Name", "Last Name",
         "Class", "Section", "Gender", "DOB", "Blood Group", "Phone",
     ])
-    for ss in school_students:
-        s = ss.student
-        if not s or s.is_deleted:
-            continue
-        if class_name and str(s.class_room).strip() != str(class_name).strip():
-            continue
-        if section and str(s.section).strip().upper() != str(section).strip().upper():
-            continue
-        phone = ""
-        try:
-            pc = await s.parent_children.filter().first()
-            if pc:
-                phone = pc.primary_phone_no or ""
-        except Exception:
-            pass
+    for s in students:
+        phone = phone_by_student.get(s.id, "")
         writer.writerow([
             s.roll_no or "",
             s.first_name or "",

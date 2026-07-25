@@ -1664,17 +1664,49 @@ async def _run_bulk_pdf_job(
         school_students = await SchoolStudents.filter(
             school_id=school_id, is_deleted=False
         ).prefetch_related("student")
-        students = [
+        roster = [
             ss.student for ss in school_students
             if ss.student and not ss.student.is_deleted
         ]
+        roster_ids = [s.id for s in roster]
+
+        if not roster_ids:
+            await mark(status="error", error="No students found for this school.")
+            return
+
+        # Only render students who actually have screening data. Rendering is the
+        # expensive step, and a roster is mostly students who have not been
+        # screened yet — without this we'd spend minutes producing empty PDFs.
+        # These are a handful of bulk queries, not one per student.
+        source_models = [
+            SmartScaleData, ClinicalFindings, ClinicalRecomendations,
+            DentalScreening, EyeScreening, BehaviouralScreening,
+        ]
+        id_sets = await asyncio.gather(*(
+            model.filter(student_id__in=roster_ids, is_deleted=False)
+                 .values_list("student_id", flat=True)
+            for model in source_models
+        ))
+        with_data = set()
+        for ids in id_sets:
+            with_data.update(ids)
+
+        students = [s for s in roster if s.id in with_data]
+        no_data_count = len(roster) - len(students)
 
         total = len(students)
-        await mark(total=total)
-        print(f"🟢 [Bulk PDF] Job {job_id}: {total} students for school {school_id}")
+        await mark(total=total, skipped=no_data_count)
+        print(
+            f"🟢 [Bulk PDF] Job {job_id}: school {school_id} — "
+            f"{len(roster)} on roster, {total} with screening data, "
+            f"{no_data_count} skipped (never screened)"
+        )
 
         if total == 0:
-            await mark(status="error", error="No students found for this school.")
+            await mark(
+                status="error",
+                error=f"None of the {len(roster)} students have screening data yet.",
+            )
             return
 
         semaphore = asyncio.Semaphore(BULK_RENDER_CONCURRENCY)
@@ -1727,7 +1759,7 @@ async def _run_bulk_pdf_job(
                 status="error",
                 error="No reports could be generated — no student had enough screening data.",
                 generated=0,
-                skipped=len(skipped),
+                skipped=len(skipped) + no_data_count,
             )
             return
 
@@ -1749,13 +1781,14 @@ async def _run_bulk_pdf_job(
                 summary = [
                     f"School ID: {school_id}",
                     f"Sections: {', '.join(sections)}",
-                    f"Students found: {len(results)}",
+                    f"Students on roster: {len(roster)}",
                     f"Reports generated: {len(generated)}",
-                    f"Skipped: {len(skipped)}",
+                    f"Skipped — never screened (no data at all): {no_data_count}",
+                    f"Skipped — render failed: {len(skipped)}",
                 ]
                 if skipped:
                     summary.append("")
-                    summary.append("Skipped students (insufficient screening data):")
+                    summary.append("Students whose report could not be rendered:")
                     summary.extend(f"  - {s['label']}: {s['reason']}" for s in skipped)
                 zf.writestr("_summary.txt", "\n".join(summary))
 
@@ -1766,9 +1799,12 @@ async def _run_bulk_pdf_job(
             ready=True,
             path=str(zip_path),
             generated=len(generated),
-            skipped=len(skipped),
+            skipped=len(skipped) + no_data_count,
         )
-        print(f"✅ [Bulk PDF] Job {job_id} ready: {len(generated)} generated, {len(skipped)} skipped")
+        print(
+            f"✅ [Bulk PDF] Job {job_id} ready: {len(generated)} generated, "
+            f"{len(skipped)} failed, {no_data_count} never screened"
+        )
 
     except Exception as e:
         print(f"❌ [Bulk PDF] Job {job_id} failed: {e}")

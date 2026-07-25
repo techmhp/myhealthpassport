@@ -110,14 +110,44 @@ const SchoolData = () => {
 
       const jobId = start.job_id;
 
-      // Poll every 3s. No hard timeout — a 400-student school legitimately
-      // takes a while; the user can cancel from the progress dialog.
+      // Poll every 3s. No hard timeout — a large school legitimately takes a
+      // while — but give up if the server stops recognising the job, or if it
+      // reports no progress at all for long enough to mean something is wrong.
+      let unknownJobPolls = 0;
+      let stalledPolls = 0;
+      let lastDone = -1;
+
       while (!bulkCancelled.current) {
         const statusRes = await fetch(
           `/api/bulk-pdf/status?school_id=${schoolid}&job_id=${jobId}`,
           { cache: 'no-store' }
         );
+
+        if (statusRes.status === 404) {
+          // Job vanished — usually the API restarted mid-run.
+          if (++unknownJobPolls >= 3) {
+            toastMessage('The export was interrupted on the server. Please try again.', 'error');
+            setBulkPdf(null);
+            return;
+          }
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        unknownJobPolls = 0;
+
         const job = await statusRes.json();
+
+        // ~2 min with the counter never moving means the job is wedged.
+        if ((job.done || 0) === lastDone) {
+          if (++stalledPolls >= 40) {
+            toastMessage('The export stopped making progress. Please try again.', 'error');
+            setBulkPdf(null);
+            return;
+          }
+        } else {
+          stalledPolls = 0;
+          lastDone = job.done || 0;
+        }
 
         if (job.state === 'error') {
           // "nothing signed off yet" is a normal outcome, not a failure

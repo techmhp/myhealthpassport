@@ -1637,6 +1637,14 @@ BULK_DIR.mkdir(parents=True, exist_ok=True)
 bulk_jobs: Dict[str, Dict[str, Any]] = {}
 bulk_jobs_lock = asyncio.Lock()
 
+# asyncio only holds a weak reference to a running task, so a task with no
+# other reference can be garbage-collected mid-execution. Keep them here.
+_bulk_tasks: set = set()
+
+# A job whose heartbeat has gone quiet for this long is treated as dead, so a
+# crashed run can't wedge the reuse path and block every later attempt.
+BULK_STALE_SECONDS = 120
+
 # Cap concurrent renders so a bulk job can't starve the API of CPU.
 BULK_RENDER_CONCURRENCY = 2
 BULK_ALL_SECTIONS = ["dental", "eye", "physical", "emotional", "nutrition", "lab"]
@@ -1678,6 +1686,7 @@ async def _run_bulk_pdf_job(
         async with bulk_jobs_lock:
             if job_id in bulk_jobs:
                 bulk_jobs[job_id].update(fields)
+                bulk_jobs[job_id]["heartbeat"] = time.time()
 
     try:
         school_students = await SchoolStudents.filter(
@@ -1783,6 +1792,7 @@ async def _run_bulk_pdf_job(
                     async with bulk_jobs_lock:
                         if job_id in bulk_jobs:
                             bulk_jobs[job_id]["done"] = bulk_jobs[job_id].get("done", 0) + 1
+                            bulk_jobs[job_id]["heartbeat"] = time.time()
 
         await asyncio.gather(*(render_one(s) for s in students))
 
@@ -1885,11 +1895,19 @@ async def start_bulk_pdf(
             ):
                 continue
             if job.get("status") == "generating":
-                return JSONResponse({
-                    "status": False,
-                    "job_id": existing_id,
-                    "message": "Generation already in progress",
-                })
+                # Only reuse a run that is still alive. A crashed task leaves the
+                # job stuck on "generating"; without this check every later click
+                # would be handed that dead job and wait forever.
+                last_beat = job.get("heartbeat", job.get("started_at", 0))
+                if time.time() - last_beat < BULK_STALE_SECONDS:
+                    return JSONResponse({
+                        "status": False,
+                        "job_id": existing_id,
+                        "message": "Generation already in progress",
+                    })
+                job["status"] = "error"
+                job["error"] = "Previous run stopped responding; starting a fresh one."
+                print(f"⚠️ [Bulk PDF] Job {existing_id} stale — superseding")
             if job.get("status") == "ready" and is_pdf_fresh(Path(job.get("path", ""))):
                 return JSONResponse({
                     "status": True,
@@ -1910,9 +1928,30 @@ async def start_bulk_pdf(
             "skipped": 0,
             "path": "",
             "started_at": time.time(),
+            "heartbeat": time.time(),
         }
 
-    asyncio.create_task(_run_bulk_pdf_job(job_id, school_id, sections, academic_year, request))
+    task = asyncio.create_task(
+        _run_bulk_pdf_job(job_id, school_id, sections, academic_year, request)
+    )
+    # Hold a reference until it finishes, otherwise the task may be collected
+    # mid-run and the job would sit on "generating" forever.
+    _bulk_tasks.add(task)
+
+    def _on_done(t: asyncio.Task):
+        _bulk_tasks.discard(t)
+        # If the task died without recording an outcome, say so rather than
+        # leaving the job looking like it is still working.
+        job = bulk_jobs.get(job_id)
+        if job and job.get("status") == "generating":
+            exc = t.exception() if not t.cancelled() else None
+            job["status"] = "error"
+            job["error"] = f"Report generation stopped unexpectedly: {exc}" if exc else "Report generation was interrupted."
+            job["heartbeat"] = time.time()
+            print(f"❌ [Bulk PDF] Job {job_id} ended without result: {exc}")
+
+    task.add_done_callback(_on_done)
+    print(f"🚀 [Bulk PDF] Job {job_id} started for school {school_id}")
 
     return JSONResponse({
         "status": False,

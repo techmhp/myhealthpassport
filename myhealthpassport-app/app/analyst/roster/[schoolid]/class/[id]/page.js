@@ -119,7 +119,10 @@ const ClassView = () => {
         toastMessage(res.message || 'Failed to download', 'error');
         return;
       }
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const binary = atob(res.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const label = classSection.replace('-', '');
       const a = document.createElement('a');

@@ -1295,6 +1295,14 @@ export const exportAllReportsExcel = async (schoolId, className, section) => {
   return await call.GetCallBinary(`/screening/export/all-reports-excel?${params.toString()}`);
 };
 
+export const exportStudentsList = async (schoolId, className, section) => {
+  const call = new V1SecureApi();
+  const params = new URLSearchParams({ school_id: schoolId });
+  if (className) params.append('class_name', className);
+  if (section) params.append('section', section);
+  return await call.GetCallBlob(`/school/export-students?${params.toString()}`);
+};
+
 export const createPDFDownloadToken = async (studentId, key, academicYear) => {
   const cookieStore = await cookies();
   const access_token = cookieStore.get('access_token')?.value;

@@ -11,6 +11,7 @@ import PlusButton from '@/components/UI/PlusButton';
 import Link from 'next/link';
 import {
   schoolDetails,
+  exportStudentsList,
   exportNutritionChecklist,
   exportNutritionAnalysis,
   exportPsychologyChecklist,
@@ -20,6 +21,7 @@ import {
 import { toastMessage } from '@/helpers/utilities';
 
 const DOWNLOAD_MODULES = [
+  { key: 'students-list', label: 'All Students (CSV)' },
   { key: 'nutrition-checklist', label: 'Nutrition Checklist' },
   { key: 'nutrition-analysis', label: 'Nutrition Analysis' },
   { key: 'psychology-checklist', label: 'Psychology Checklist' },
@@ -72,7 +74,8 @@ const SchoolData = () => {
     setDownloadingModule(moduleKey);
     try {
       let res;
-      if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, null, null);
+      if (moduleKey === 'students-list') res = await exportStudentsList(schoolid, null, null);
+      else if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, null, null);
       else if (moduleKey === 'nutrition-analysis') res = await exportNutritionAnalysis(schoolid, null, null);
       else if (moduleKey === 'psychology-checklist') res = await exportPsychologyChecklist(schoolid, null, null);
       else if (moduleKey === 'psychology-analysis') res = await exportPsychologyAnalysis(schoolid, null, null);

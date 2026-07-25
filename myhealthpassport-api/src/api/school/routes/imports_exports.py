@@ -1,11 +1,13 @@
+import csv
 import io
 import re
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 from src.whatsapp import notify_student_registered, notify_bulk_import_success
-from fastapi import Depends, File, UploadFile, status
-from fastapi.responses import JSONResponse
+from fastapi import Depends, File, Query, UploadFile, status
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.core.cache_maanger import ObjectCache
 from src.core.manager import get_current_user
@@ -879,7 +881,58 @@ async def confirm_students_data(request_data: SchoolImportConfirmSchema, school_
         )
         return JSONResponse(content=resp.__dict__, status_code=status.HTTP_200_OK)
     
-## below are for teachers 
+@router.get("/export-students")
+async def export_students(
+    school_id: int = Query(..., description="School ID"),
+    class_name: Optional[str] = Query(None, description="Filter by class (optional)"),
+    section: Optional[str] = Query(None, description="Filter by section (optional)"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Export all students for a school as a CSV file."""
+    qs = SchoolStudents.filter(school_id=school_id).prefetch_related("student")
+    school_students = await qs
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Roll No", "First Name", "Middle Name", "Last Name",
+        "Class", "Section", "Gender", "DOB", "Blood Group", "Phone",
+    ])
+    for ss in school_students:
+        s = ss.student
+        if not s or s.is_deleted:
+            continue
+        if class_name and str(s.class_room).strip() != str(class_name).strip():
+            continue
+        if section and str(s.section).strip().upper() != str(section).strip().upper():
+            continue
+        phone = ""
+        try:
+            pc = await s.parent_children.filter().first()
+            if pc:
+                phone = pc.primary_phone_no or ""
+        except Exception:
+            pass
+        writer.writerow([
+            s.roll_no or "",
+            s.first_name or "",
+            s.middle_name or "",
+            s.last_name or "",
+            s.class_room or "",
+            s.section or "",
+            s.gender or "",
+            str(s.dob) if s.dob else "",
+            s.blood_group or "",
+            phone,
+        ])
+    filename = f"students_school{school_id}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+## below are for teachers
 async def is_phone_existing(phone: str) -> bool:
     """Mock check if phone already exists in the database."""
     existing_staff = await SchoolStaff.filter(phone=phone)

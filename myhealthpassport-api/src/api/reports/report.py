@@ -1674,6 +1674,7 @@ async def _run_bulk_pdf_job(
     sections: List[str],
     academic_year: Optional[str],
     request: Request,
+    include_incomplete: bool = True,
 ):
     """Render every student's report for a school and bundle them into a ZIP."""
     zip_path = BULK_DIR / f"bulk_{job_id}.zip"
@@ -1730,15 +1731,21 @@ async def _run_bulk_pdf_job(
         }
         partial_ids = set(verified_by_student.keys()) - ready_ids
 
-        students = [s for s in roster if s.id in ready_ids]
+        if include_incomplete:
+            # Export everyone on the roster. A student with nothing recorded still
+            # gets a PDF — profile plus whatever sections do have data.
+            students = list(roster)
+        else:
+            students = [s for s in roster if s.id in ready_ids]
         no_data_count = len(roster) - len(students)
 
         total = len(students)
         await mark(total=total, skipped=no_data_count)
         print(
             f"🟢 [Bulk PDF] Job {job_id}: school {school_id} — "
-            f"{len(roster)} on roster, {total} report-ready, "
-            f"{len(partial_ids)} partially verified, {no_data_count} skipped"
+            f"{len(roster)} on roster, {total} to render "
+            f"(include_incomplete={include_incomplete}), "
+            f"{len(ready_ids)} fully verified, {len(partial_ids)} partially verified"
         )
 
         if total == 0:
@@ -1828,8 +1835,11 @@ async def _run_bulk_pdf_job(
                     f"Sections: {', '.join(sections)}",
                     f"Students on roster: {len(roster)}",
                     f"Reports generated: {len(generated)}",
+                    f"  fully verified by a medical officer: {len(ready_ids)}",
+                    f"  partially verified: {len(partial_ids)}",
+                    f"  not yet screened (profile only): "
+                    f"{max(0, len(generated) - len(ready_ids) - len(partial_ids))}",
                     f"Skipped — report not signed off yet: {no_data_count}",
-                    f"  (of those, {len(partial_ids)} are partially verified)",
                     f"Skipped — render failed: {len(skipped)}",
                 ]
                 if skipped:
@@ -1870,8 +1880,14 @@ async def start_bulk_pdf(
     request: Request,
     payload: Optional[Dict[str, Any]] = None,
     academic_year: Optional[str] = None,
+    include_incomplete: bool = True,
 ):
-    """Kick off a whole-school PDF export. Returns a job_id to poll."""
+    """Kick off a whole-school PDF export. Returns a job_id to poll.
+
+    include_incomplete (default) exports every student on the roster, whether
+    or not their screening is finished. Pass false to restrict the export to
+    reports a medical officer has fully signed off.
+    """
     if academic_year == "null":
         academic_year = None
 
@@ -1892,6 +1908,7 @@ async def start_bulk_pdf(
                 job.get("school_id") != school_id
                 or job.get("sections") != sections
                 or job.get("academic_year") != academic_year
+                or job.get("include_incomplete") != include_incomplete
             ):
                 continue
             if job.get("status") == "generating":
@@ -1920,6 +1937,7 @@ async def start_bulk_pdf(
             "school_id": school_id,
             "sections": sections,
             "academic_year": academic_year,
+            "include_incomplete": include_incomplete,
             "status": "generating",
             "ready": False,
             "total": 0,
@@ -1932,7 +1950,9 @@ async def start_bulk_pdf(
         }
 
     task = asyncio.create_task(
-        _run_bulk_pdf_job(job_id, school_id, sections, academic_year, request)
+        _run_bulk_pdf_job(
+            job_id, school_id, sections, academic_year, request, include_incomplete
+        )
     )
     # Hold a reference until it finishes, otherwise the task may be collected
     # mid-run and the job would sit on "generating" forever.

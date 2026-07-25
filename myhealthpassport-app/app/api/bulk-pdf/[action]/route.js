@@ -28,7 +28,7 @@ async function handle(req, action) {
   }
 
   const qs = new URLSearchParams();
-  for (const key of ['job_id', 'academic_year']) {
+  for (const key of ['job_id', 'academic_year', 'include_incomplete']) {
     const val = incoming.get(key);
     if (val && val !== 'null') qs.append(key, val);
   }

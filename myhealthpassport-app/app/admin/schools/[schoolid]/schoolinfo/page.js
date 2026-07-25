@@ -100,7 +100,11 @@ const SchoolData = () => {
     setBulkPdf({ done: 0, total: 0 });
 
     try {
-      const startRes = await fetch(`/api/bulk-pdf/start?school_id=${schoolid}`, { method: 'POST' });
+      // include_incomplete: export every student on the roster, screened or not.
+      const startRes = await fetch(
+        `/api/bulk-pdf/start?school_id=${schoolid}&include_incomplete=true`,
+        { method: 'POST' }
+      );
       const start = await startRes.json();
       if (!startRes.ok || !start.job_id) {
         toastMessage(start?.error || start?.message || 'Could not start PDF export', 'error');
@@ -305,7 +309,7 @@ const SchoolData = () => {
                 >
                   All Health Reports (PDF)
                   <span className="block text-[11px] text-gray-400 leading-tight mt-0.5">
-                    ZIP of one PDF per student
+                    Every student, screened or not — ZIP of one PDF each
                   </span>
                 </button>
               </div>
@@ -335,7 +339,10 @@ const SchoolData = () => {
                 </div>
               )}
               <p className="text-xs text-gray-500 text-center mt-5">
-                A large school can take several minutes. The download starts automatically when it&rsquo;s ready.
+                {bulkPdf.total > 0
+                  ? `Roughly ${Math.max(1, Math.ceil((bulkPdf.total - bulkPdf.done) * 2.5 / 60))} min remaining. `
+                  : ''}
+                The download starts automatically when it&rsquo;s ready — you can close this and keep working.
               </p>
               <button
                 onClick={() => {

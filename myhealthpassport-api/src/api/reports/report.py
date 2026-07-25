@@ -25,6 +25,7 @@ from src.models.student_models import SmartScaleData, Students, SchoolStudents
 from src.models.school_models import Schools
 from src.core.file_manager import get_new_url, s3_client, AWS_S3_BUCKET_NAME  # ✅ NEW: Import S3 client
 from src.utils.academic_year import (
+    build_academic_year_filter,
     get_current_academic_year,
     parse_academic_year,
 )
@@ -1701,8 +1702,12 @@ async def _run_bulk_pdf_job(
         # checks below, all marked verified. Checking for the mere existence of
         # screening rows is not enough — those get pre-created for the whole
         # roster, so every student would match.
+        # Scope to the academic year, exactly as the roster does. Without this,
+        # sign-offs from earlier years count towards "complete" — and worse,
+        # checks verified in different years could add up to a false six.
+        year_filter = build_academic_year_filter(academic_year)
         med_statuses = await MedicalScreeningStatus.filter(
-            student_id__in=roster_ids, is_deleted=False
+            year_filter, student_id__in=roster_ids, is_deleted=False
         ).values_list("student_id", "medical_officer_status_type", "status")
 
         verified_by_student: Dict[int, set] = {}

@@ -6,15 +6,7 @@ import StudentCardView from '@/components/StudentCardView';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import Header from '@/components/Header';
 import SchoolClassRoomStudentsList from '@/components/SchoolClassRoomStudentsList';
-import {
-  schoolDetails,
-  studentListByClassAndSection,
-  exportNutritionChecklist,
-  exportNutritionAnalysis,
-  exportPsychologyAnalysis,
-  exportPsychologyChecklist,
-  exportSmartScale,
-} from '@/services/secureApis';
+import { schoolDetails, studentListByClassAndSection } from '@/services/secureApis';
 import { formatFullName, toastMessage } from '@/helpers/utilities';
 import PlusButton from '@/components/UI/PlusButton';
 import Link from 'next/link';
@@ -108,18 +100,20 @@ const ClassView = () => {
     setDownloadingModule(moduleKey);
     try {
       const dashIdx = classSection.indexOf('-'); const classRoom = dashIdx >= 0 ? classSection.slice(0, dashIdx) : classSection; const section = dashIdx >= 0 ? classSection.slice(dashIdx + 1) : '';
-      let res;
-      if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, classRoom, section);
-      else if (moduleKey === 'nutrition-analysis') res = await exportNutritionAnalysis(schoolid, classRoom, section);
-      else if (moduleKey === 'psychology-checklist') res = await exportPsychologyChecklist(schoolid, classRoom, section);
-      else if (moduleKey === 'psychology-analysis') res = await exportPsychologyAnalysis(schoolid, classRoom, section);
-      else if (moduleKey === 'smart-scale') res = await exportSmartScale(schoolid, classRoom, section);
-
-      if (res?.error) {
-        toastMessage(res.message || 'Failed to download', 'error');
+      const qs = new URLSearchParams({ school_id: schoolid });
+      if (classRoom) qs.append('class_name', classRoom);
+      if (section) qs.append('section', section);
+      const res = await fetch(`/api/export/${moduleKey}?${qs.toString()}`, { cache: 'no-store' });
+      if (!res.ok) {
+        let message = 'Failed to download';
+        try {
+          const err = await res.json();
+          message = err?.error || message;
+        } catch {}
+        toastMessage(message, 'error');
         return;
       }
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const label = classSection.replace('-', '');
       const a = document.createElement('a');

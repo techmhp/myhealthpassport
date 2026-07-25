@@ -6,15 +6,7 @@ import Header from '@/components/Header';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import SchoolStudentsList from '@/components/SchoolStudentsList';
 import SectionalView from '@/components/SectionalView';
-import {
-  schoolDetails,
-  studentList,
-  exportNutritionChecklist,
-  exportNutritionAnalysis,
-  exportPsychologyAnalysis,
-  exportPsychologyChecklist,
-  exportSmartScale,
-} from '@/services/secureApis';
+import { schoolDetails, studentList } from '@/services/secureApis';
 import { toastMessage } from '@/helpers/utilities';
 
 const EXPORT_MODULES = [
@@ -76,19 +68,18 @@ const Students = () => {
     setShowDownloadMenu(false);
     setDownloadingModule(moduleKey);
     try {
-      let res;
       // school-level download: no class/section filter
-      if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, null, null);
-      else if (moduleKey === 'nutrition-analysis') res = await exportNutritionAnalysis(schoolid, null, null);
-      else if (moduleKey === 'psychology-checklist') res = await exportPsychologyChecklist(schoolid, null, null);
-      else if (moduleKey === 'psychology-analysis') res = await exportPsychologyAnalysis(schoolid, null, null);
-      else if (moduleKey === 'smart-scale') res = await exportSmartScale(schoolid, null, null);
-
-      if (res?.error) {
-        toastMessage(res.message || 'Failed to download', 'error');
+      const res = await fetch(`/api/export/${moduleKey}?school_id=${schoolid}`, { cache: 'no-store' });
+      if (!res.ok) {
+        let message = 'Failed to download';
+        try {
+          const err = await res.json();
+          message = err?.error || message;
+        } catch {}
+        toastMessage(message, 'error');
         return;
       }
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

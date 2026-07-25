@@ -9,15 +9,7 @@ import SectionalView from '@/components/SectionalView';
 import SchoolStudentsList from '@/components/SchoolStudentsList';
 import PlusButton from '@/components/UI/PlusButton';
 import Link from 'next/link';
-import {
-  schoolDetails,
-  exportStudentsList,
-  exportNutritionChecklist,
-  exportNutritionAnalysis,
-  exportPsychologyChecklist,
-  exportPsychologyAnalysis,
-  exportSmartScale,
-} from '@/services/secureApis';
+import { schoolDetails } from '@/services/secureApis';
 import { toastMessage } from '@/helpers/utilities';
 
 const DOWNLOAD_MODULES = [
@@ -73,19 +65,17 @@ const SchoolData = () => {
     setShowDownloadMenu(false);
     setDownloadingModule(moduleKey);
     try {
-      let res;
-      if (moduleKey === 'students-list') res = await exportStudentsList(schoolid, null, null);
-      else if (moduleKey === 'nutrition-checklist') res = await exportNutritionChecklist(schoolid, null, null);
-      else if (moduleKey === 'nutrition-analysis') res = await exportNutritionAnalysis(schoolid, null, null);
-      else if (moduleKey === 'psychology-checklist') res = await exportPsychologyChecklist(schoolid, null, null);
-      else if (moduleKey === 'psychology-analysis') res = await exportPsychologyAnalysis(schoolid, null, null);
-      else if (moduleKey === 'smart-scale') res = await exportSmartScale(schoolid, null, null);
-
-      if (res?.error) {
-        toastMessage(res.message || 'Failed to download', 'error');
+      const res = await fetch(`/api/export/${moduleKey}?school_id=${schoolid}`, { cache: 'no-store' });
+      if (!res.ok) {
+        let message = 'Failed to download';
+        try {
+          const err = await res.json();
+          message = err?.error || message;
+        } catch {}
+        toastMessage(message, 'error');
         return;
       }
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

@@ -2001,9 +2001,36 @@ async def bulk_pdf_status(school_id: int, job_id: str):
     })
 
 
+@router.post("/school/{school_id}/bulk-pdf-token")
+async def create_bulk_pdf_token(
+    school_id: int,
+    job_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Issue a short-lived token so the browser can fetch the ZIP directly.
+
+    The ZIP is far too large to relay through the Next.js route handler, which
+    runs in Lambda and caps response size — same reason the per-student PDF
+    downloads straight from the API.
+    """
+    token = str(uuid.uuid4())
+    cache = ObjectCache(cache_key=f"bulk-pdf-token:{token}")
+    await cache.set({"school_id": school_id, "job_id": job_id}, ttl=300)
+    return JSONResponse({"status": True, "token": token})
+
+
 @router.get("/school/{school_id}/bulk-pdf-download")
-async def bulk_pdf_download(school_id: int, job_id: str):
+async def bulk_pdf_download(school_id: int, job_id: str, download_token: Optional[str] = None):
     """Download the finished ZIP for a bulk PDF job."""
+    if download_token:
+        token_cache = ObjectCache(cache_key=f"bulk-pdf-token:{download_token}")
+        payload = await token_cache.get()
+        if not payload or payload.get("job_id") != job_id or payload.get("school_id") != school_id:
+            return JSONResponse(
+                {"status": False, "message": "Invalid or expired download token"},
+                status_code=403,
+            )
+
     async with bulk_jobs_lock:
         job = bulk_jobs.get(job_id)
         job = dict(job) if job else None

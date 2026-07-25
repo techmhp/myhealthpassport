@@ -6,7 +6,9 @@ import { cookies } from 'next/headers';
 const ACTIONS = {
   start: { method: 'POST', path: schoolId => `/report/school/${schoolId}/start-bulk-pdf` },
   status: { method: 'GET', path: schoolId => `/report/school/${schoolId}/bulk-pdf-status` },
-  download: { method: 'GET', path: schoolId => `/report/school/${schoolId}/bulk-pdf-download` },
+  // Issues a short-lived token; the browser then fetches the ZIP straight from
+  // the API. The file is too large to relay through this route handler.
+  token: { method: 'POST', path: schoolId => `/report/school/${schoolId}/bulk-pdf-token` },
 };
 
 async function handle(req, action) {
@@ -45,18 +47,6 @@ async function handle(req, action) {
   }
 
   const result = await fetch(upstream, init);
-
-  // The finished job is a ZIP — stream it straight through.
-  if (action === 'download' && result.ok) {
-    return new Response(result.body, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="health_reports_school${schoolId}.zip"`,
-        'Cache-Control': 'no-store',
-      },
-    });
-  }
 
   // Upstream is normally JSON, but a restarting API or a gateway timeout returns
   // an HTML error page. Forwarding that as application/json makes the caller's

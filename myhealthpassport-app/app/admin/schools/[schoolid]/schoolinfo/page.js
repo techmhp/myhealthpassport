@@ -171,24 +171,38 @@ const SchoolData = () => {
         });
 
         if (job.status === true || job.state === 'ready') {
-          const zipRes = await fetch(
-            `/api/bulk-pdf/download?school_id=${schoolid}&job_id=${jobId}`,
-            { cache: 'no-store' }
+          // Fetch a short-lived token, then pull the ZIP straight from the API.
+          // Relaying a file this size through the Next.js route handler fails —
+          // it runs in Lambda, which caps response size. Same approach the
+          // per-student PDF download uses.
+          const tokenRes = await fetch(
+            `/api/bulk-pdf/token?school_id=${schoolid}&job_id=${jobId}`,
+            { method: 'POST' }
           );
-          if (!zipRes.ok) {
-            toastMessage('Reports were generated but the download failed', 'error');
+          const tokenData = await tokenRes.json();
+          if (!tokenRes.ok || !tokenData.token) {
+            toastMessage(
+              tokenData?.error || 'Reports are ready but the download link could not be created',
+              'error'
+            );
             setBulkPdf(null);
             return;
           }
-          const blob = await zipRes.blob();
-          const url = window.URL.createObjectURL(blob);
+
+          const params = new URLSearchParams({
+            job_id: jobId,
+            download_token: tokenData.token,
+          });
+          const directUrl =
+            `${process.env.NEXT_PUBLIC_API_URL}/report/school/${schoolid}` +
+            `/bulk-pdf-download?${params.toString()}`;
+
           const a = document.createElement('a');
-          a.href = url;
-          a.download = `health_reports_School${schoolid}.zip`;
+          a.href = directUrl;
+          a.style.display = 'none';
           document.body.appendChild(a);
           a.click();
           a.remove();
-          setTimeout(() => window.URL.revokeObjectURL(url), 100);
 
           const skipped = job.skipped || 0;
           toastMessage(

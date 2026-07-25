@@ -26,6 +26,8 @@ const SchoolData = () => {
   const [school, setSchool] = useState([]);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [downloadingModule, setDownloadingModule] = useState(null);
+  const [bulkPdf, setBulkPdf] = useState(null); // { done, total, generated, skipped }
+  const bulkCancelled = useRef(false);
   const downloadMenuRef = useRef(null);
 
   const tabs = [
@@ -88,6 +90,85 @@ const SchoolData = () => {
       toastMessage(err?.message || 'Failed to download', 'error');
     } finally {
       setDownloadingModule(null);
+    }
+  };
+
+  // Whole-school PDF export: start a job, poll until the ZIP is built, download it.
+  const handleBulkPdf = async () => {
+    setShowDownloadMenu(false);
+    bulkCancelled.current = false;
+    setBulkPdf({ done: 0, total: 0 });
+
+    try {
+      const startRes = await fetch(`/api/bulk-pdf/start?school_id=${schoolid}`, { method: 'POST' });
+      const start = await startRes.json();
+      if (!startRes.ok || !start.job_id) {
+        toastMessage(start?.error || start?.message || 'Could not start PDF export', 'error');
+        setBulkPdf(null);
+        return;
+      }
+
+      const jobId = start.job_id;
+
+      // Poll every 3s. No hard timeout — a 400-student school legitimately
+      // takes a while; the user can cancel from the progress dialog.
+      while (!bulkCancelled.current) {
+        const statusRes = await fetch(
+          `/api/bulk-pdf/status?school_id=${schoolid}&job_id=${jobId}`,
+          { cache: 'no-store' }
+        );
+        const job = await statusRes.json();
+
+        if (job.state === 'error') {
+          toastMessage(job.error || 'PDF export failed', 'error');
+          setBulkPdf(null);
+          return;
+        }
+
+        setBulkPdf({
+          done: job.done || 0,
+          total: job.total || 0,
+          generated: job.generated || 0,
+          skipped: job.skipped || 0,
+        });
+
+        if (job.status === true || job.state === 'ready') {
+          const zipRes = await fetch(
+            `/api/bulk-pdf/download?school_id=${schoolid}&job_id=${jobId}`,
+            { cache: 'no-store' }
+          );
+          if (!zipRes.ok) {
+            toastMessage('Reports were generated but the download failed', 'error');
+            setBulkPdf(null);
+            return;
+          }
+          const blob = await zipRes.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `health_reports_School${schoolid}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => window.URL.revokeObjectURL(url), 100);
+
+          const skipped = job.skipped || 0;
+          toastMessage(
+            skipped > 0
+              ? `Downloaded ${job.generated} reports — ${skipped} skipped (incomplete screening data)`
+              : `Downloaded ${job.generated} reports`,
+            'success'
+          );
+          setBulkPdf(null);
+          return;
+        }
+
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    } catch (err) {
+      toastMessage(err?.message || 'PDF export failed', 'error');
+    } finally {
+      if (!bulkCancelled.current) setBulkPdf(null);
     }
   };
 
@@ -173,22 +254,70 @@ const SchoolData = () => {
               {downloadingModule ? 'Downloading…' : 'Download'}
             </button>
             {showDownloadMenu && (
-              <div className="absolute right-0 mt-2 w-52 bg-white border border-[#ECF2FF] rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-60 bg-white border border-[#ECF2FF] rounded-lg shadow-lg z-50">
                 {DOWNLOAD_MODULES.map(m => (
                   <button
                     key={m.key}
                     onClick={() => handleDownload(m.key)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F4F8FF] hover:text-[#005BFE] transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F4F8FF] hover:text-[#005BFE] transition-colors first:rounded-t-lg"
                   >
                     {m.label}
                   </button>
                 ))}
+                <div className="border-t border-[#ECF2FF]" />
+                <button
+                  onClick={handleBulkPdf}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F4F8FF] hover:text-[#005BFE] transition-colors rounded-b-lg"
+                >
+                  All Health Reports (PDF)
+                  <span className="block text-[11px] text-gray-400 leading-tight mt-0.5">
+                    ZIP of one PDF per student
+                  </span>
+                </button>
               </div>
             )}
           </div>
         </div>
         {renderTabContent()}
       </div>
+
+      {bulkPdf && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BFE] mb-5" />
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Generating health reports</h3>
+              <p className="text-sm text-gray-600 text-center">
+                {bulkPdf.total > 0
+                  ? `${bulkPdf.done} of ${bulkPdf.total} students processed`
+                  : 'Preparing student list…'}
+              </p>
+              {bulkPdf.total > 0 && (
+                <div className="w-full bg-[#ECF2FF] rounded-full h-2 mt-4">
+                  <div
+                    className="bg-[#005BFE] h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((bulkPdf.done / bulkPdf.total) * 100)}%` }}
+                  />
+                </div>
+              )}
+              <p className="text-xs text-gray-500 text-center mt-5">
+                A large school can take several minutes. The download starts automatically when it&rsquo;s ready.
+              </p>
+              <button
+                onClick={() => {
+                  bulkCancelled.current = true;
+                  setBulkPdf(null);
+                  toastMessage('Stopped waiting — generation continues in the background', 'info');
+                }}
+                className="mt-5 text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                Close and keep working
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link href={`/admin/schools/${schoolid}/student/add`}>
         <PlusButton />
       </Link>

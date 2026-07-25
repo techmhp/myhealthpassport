@@ -1,8 +1,10 @@
 import asyncio
 import base64
+import re
 import time
 import json
 import uuid
+import zipfile
 from typing import Optional, Any, Dict, Tuple, List
 from pathlib import Path
 from datetime import datetime
@@ -1617,3 +1619,271 @@ async def download_selected_ready(
         "message": "No recent PDF found. Please start generation.",
         "next": next_url
     }
+
+
+# =========================================================
+# Bulk (whole-school) PDF export — background job + ZIP
+# =========================================================
+# Rendering one report takes seconds, and a school can have 400+ students, so
+# this never runs inside a request: the caller starts a job, polls for
+# progress, then downloads the finished ZIP.
+
+BULK_DIR = TEMP_DIR / "bulk"
+BULK_DIR.mkdir(parents=True, exist_ok=True)
+
+bulk_jobs: Dict[str, Dict[str, Any]] = {}
+bulk_jobs_lock = asyncio.Lock()
+
+# Cap concurrent renders so a bulk job can't starve the API of CPU.
+BULK_RENDER_CONCURRENCY = 2
+BULK_ALL_SECTIONS = ["dental", "eye", "physical", "emotional", "nutrition", "lab"]
+
+
+def _safe_filename(value: str) -> str:
+    """Reduce a name to something safe to use as a filename inside the ZIP."""
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", (value or "").strip())
+    return cleaned.strip("_") or "student"
+
+
+async def _run_bulk_pdf_job(
+    job_id: str,
+    school_id: int,
+    sections: List[str],
+    academic_year: Optional[str],
+    request: Request,
+):
+    """Render every student's report for a school and bundle them into a ZIP."""
+    zip_path = BULK_DIR / f"bulk_{job_id}.zip"
+
+    async def mark(**fields):
+        async with bulk_jobs_lock:
+            if job_id in bulk_jobs:
+                bulk_jobs[job_id].update(fields)
+
+    try:
+        school_students = await SchoolStudents.filter(
+            school_id=school_id, is_deleted=False
+        ).prefetch_related("student")
+        students = [
+            ss.student for ss in school_students
+            if ss.student and not ss.student.is_deleted
+        ]
+
+        total = len(students)
+        await mark(total=total)
+        print(f"🟢 [Bulk PDF] Job {job_id}: {total} students for school {school_id}")
+
+        if total == 0:
+            await mark(status="error", error="No students found for this school.")
+            return
+
+        semaphore = asyncio.Semaphore(BULK_RENDER_CONCURRENCY)
+        results: List[Dict[str, Any]] = []
+
+        async def render_one(student):
+            async with semaphore:
+                label = f"{student.roll_no or student.id}_{student.first_name or ''}"
+                try:
+                    context = await build_report_context(
+                        request,
+                        student.id,
+                        required_sections=sections,
+                        academic_year=academic_year,
+                        strict=False,
+                    )
+                    context.update({
+                        "show_profile": True,
+                        "show_physical": "physical" in sections,
+                        "show_nutrition": "nutrition" in sections,
+                        "show_emotional": "emotional" in sections,
+                        "show_dental": "dental" in sections,
+                        "show_eye": "eye" in sections,
+                        "show_lab": "lab" in sections,
+                    })
+                    html_content = templates.get_template("reports.html").render(context)
+                    pdf_bytes = await render_html_to_pdf(html_content)
+                    results.append({
+                        "ok": True,
+                        "name": f"{_safe_filename(label)}.pdf",
+                        "bytes": pdf_bytes,
+                    })
+                except HTTPException as e:
+                    # Incomplete screening data — skip this student, don't fail the job.
+                    results.append({"ok": False, "label": label, "reason": str(e.detail)})
+                except Exception as e:
+                    results.append({"ok": False, "label": label, "reason": str(e)})
+                finally:
+                    async with bulk_jobs_lock:
+                        if job_id in bulk_jobs:
+                            bulk_jobs[job_id]["done"] = bulk_jobs[job_id].get("done", 0) + 1
+
+        await asyncio.gather(*(render_one(s) for s in students))
+
+        generated = [r for r in results if r.get("ok")]
+        skipped = [r for r in results if not r.get("ok")]
+
+        if not generated:
+            await mark(
+                status="error",
+                error="No reports could be generated — no student had enough screening data.",
+                generated=0,
+                skipped=len(skipped),
+            )
+            return
+
+        def write_zip():
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                used = set()
+                for item in generated:
+                    name = item["name"]
+                    # Guard against two students producing the same filename.
+                    if name in used:
+                        stem, dot, ext = name.rpartition(".")
+                        counter = 2
+                        while f"{stem}_{counter}{dot}{ext}" in used:
+                            counter += 1
+                        name = f"{stem}_{counter}{dot}{ext}"
+                    used.add(name)
+                    zf.writestr(name, item["bytes"])
+
+                summary = [
+                    f"School ID: {school_id}",
+                    f"Sections: {', '.join(sections)}",
+                    f"Students found: {len(results)}",
+                    f"Reports generated: {len(generated)}",
+                    f"Skipped: {len(skipped)}",
+                ]
+                if skipped:
+                    summary.append("")
+                    summary.append("Skipped students (insufficient screening data):")
+                    summary.extend(f"  - {s['label']}: {s['reason']}" for s in skipped)
+                zf.writestr("_summary.txt", "\n".join(summary))
+
+        await anyio.to_thread.run_sync(write_zip)
+
+        await mark(
+            status="ready",
+            ready=True,
+            path=str(zip_path),
+            generated=len(generated),
+            skipped=len(skipped),
+        )
+        print(f"✅ [Bulk PDF] Job {job_id} ready: {len(generated)} generated, {len(skipped)} skipped")
+
+    except Exception as e:
+        print(f"❌ [Bulk PDF] Job {job_id} failed: {e}")
+        await mark(status="error", error=str(e))
+
+
+@router.post("/school/{school_id}/start-bulk-pdf")
+async def start_bulk_pdf(
+    school_id: int,
+    request: Request,
+    payload: Optional[Dict[str, Any]] = None,
+    academic_year: Optional[str] = None,
+):
+    """Kick off a whole-school PDF export. Returns a job_id to poll."""
+    if academic_year == "null":
+        academic_year = None
+
+    sections = BULK_ALL_SECTIONS
+    if payload:
+        requested = [
+            r.strip().lower() for r in payload.get("reports", [])
+            if isinstance(r, str) and r.strip()
+        ]
+        if requested:
+            sections = requested
+
+    # Reuse an in-flight or freshly finished job rather than starting a second
+    # expensive render of the same data.
+    async with bulk_jobs_lock:
+        for existing_id, job in bulk_jobs.items():
+            if (
+                job.get("school_id") != school_id
+                or job.get("sections") != sections
+                or job.get("academic_year") != academic_year
+            ):
+                continue
+            if job.get("status") == "generating":
+                return JSONResponse({
+                    "status": False,
+                    "job_id": existing_id,
+                    "message": "Generation already in progress",
+                })
+            if job.get("status") == "ready" and is_pdf_fresh(Path(job.get("path", ""))):
+                return JSONResponse({
+                    "status": True,
+                    "job_id": existing_id,
+                    "message": "Bulk PDF ready",
+                })
+
+        job_id = uuid.uuid4().hex[:12]
+        bulk_jobs[job_id] = {
+            "school_id": school_id,
+            "sections": sections,
+            "academic_year": academic_year,
+            "status": "generating",
+            "ready": False,
+            "total": 0,
+            "done": 0,
+            "generated": 0,
+            "skipped": 0,
+            "path": "",
+            "started_at": time.time(),
+        }
+
+    asyncio.create_task(_run_bulk_pdf_job(job_id, school_id, sections, academic_year, request))
+
+    return JSONResponse({
+        "status": False,
+        "job_id": job_id,
+        "message": "Bulk PDF generation started",
+    })
+
+
+@router.get("/school/{school_id}/bulk-pdf-status")
+async def bulk_pdf_status(school_id: int, job_id: str):
+    """Progress for a bulk PDF job."""
+    async with bulk_jobs_lock:
+        job = bulk_jobs.get(job_id)
+        job = dict(job) if job else None
+
+    if not job or job.get("school_id") != school_id:
+        return JSONResponse({"status": False, "message": "Unknown job_id"}, status_code=404)
+
+    return JSONResponse({
+        "status": job.get("status") == "ready",
+        "state": job.get("status"),
+        "total": job.get("total", 0),
+        "done": job.get("done", 0),
+        "generated": job.get("generated", 0),
+        "skipped": job.get("skipped", 0),
+        "error": job.get("error"),
+    })
+
+
+@router.get("/school/{school_id}/bulk-pdf-download")
+async def bulk_pdf_download(school_id: int, job_id: str):
+    """Download the finished ZIP for a bulk PDF job."""
+    async with bulk_jobs_lock:
+        job = bulk_jobs.get(job_id)
+        job = dict(job) if job else None
+
+    if not job or job.get("school_id") != school_id:
+        return JSONResponse({"status": False, "message": "Unknown job_id"}, status_code=404)
+
+    zip_path = Path(job.get("path", ""))
+    if job.get("status") != "ready" or not zip_path.exists():
+        return JSONResponse(
+            {"status": False, "state": job.get("status"), "message": "Bulk PDF is not ready yet"},
+            status_code=409,
+        )
+
+    filename = f"health_reports_school{school_id}.zip"
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

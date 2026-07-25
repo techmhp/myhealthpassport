@@ -17,6 +17,7 @@ from tortoise.expressions import Q
 from src.core.manager import get_current_user
 from src.core.cache_maanger import ObjectCache
 
+from src.models.consultation_models import MedicalScreeningStatus
 from src.models.other_models import ClinicalFindings, ClinicalRecomendations
 from src.models.screening_models import EyeScreening, DentalScreening, BehaviouralScreening
 from src.models.student_models import SmartScaleData, Students, SchoolStudents
@@ -1638,6 +1639,18 @@ bulk_jobs_lock = asyncio.Lock()
 BULK_RENDER_CONCURRENCY = 2
 BULK_ALL_SECTIONS = ["dental", "eye", "physical", "emotional", "nutrition", "lab"]
 
+# A report counts as complete once a medical officer has verified all six
+# checks. Mirrors generated_report_status in school/routes/students.py — the
+# same rule behind the Medical Officer tick on the roster.
+REPORT_REQUIRED_STATUSES = {
+    "physical_screening_status",
+    "lab_report_status",
+    "dental_screening_status",
+    "vision_screening_status",
+    "psychological_report_status",
+    "nutritional_report_status",
+}
+
 
 def _safe_filename(value: str) -> str:
     """Reduce a name to something safe to use as a filename inside the ZIP."""
@@ -1674,39 +1687,49 @@ async def _run_bulk_pdf_job(
             await mark(status="error", error="No students found for this school.")
             return
 
-        # Only render students who actually have screening data. Rendering is the
-        # expensive step, and a roster is mostly students who have not been
-        # screened yet — without this we'd spend minutes producing empty PDFs.
-        # These are a handful of bulk queries, not one per student.
-        source_models = [
-            SmartScaleData, ClinicalFindings, ClinicalRecomendations,
-            DentalScreening, EyeScreening, BehaviouralScreening,
-        ]
-        id_sets = await asyncio.gather(*(
-            model.filter(student_id__in=roster_ids, is_deleted=False)
-                 .values_list("student_id", flat=True)
-            for model in source_models
-        ))
-        with_data = set()
-        for ids in id_sets:
-            with_data.update(ids)
+        # Only render students whose report is actually signed off. Rendering is
+        # the expensive step, and most of a roster is students who have not been
+        # screened yet — rendering those produces empty PDFs and wastes minutes.
+        #
+        # "Signed off" here is the same rule the roster UI uses to show the
+        # Medical Officer tick: a MedicalScreeningStatus row for each of the six
+        # checks below, all marked verified. Checking for the mere existence of
+        # screening rows is not enough — those get pre-created for the whole
+        # roster, so every student would match.
+        med_statuses = await MedicalScreeningStatus.filter(
+            student_id__in=roster_ids, is_deleted=False
+        ).values_list("student_id", "medical_officer_status_type", "status")
 
-        students = [s for s in roster if s.id in with_data]
+        verified_by_student: Dict[int, set] = {}
+        for sid, status_type, status_value in med_statuses:
+            if status_value == "verified":
+                verified_by_student.setdefault(sid, set()).add(status_type)
+
+        ready_ids = {
+            sid for sid, types in verified_by_student.items()
+            if REPORT_REQUIRED_STATUSES.issubset(types)
+        }
+        partial_ids = set(verified_by_student.keys()) - ready_ids
+
+        students = [s for s in roster if s.id in ready_ids]
         no_data_count = len(roster) - len(students)
 
         total = len(students)
         await mark(total=total, skipped=no_data_count)
         print(
             f"🟢 [Bulk PDF] Job {job_id}: school {school_id} — "
-            f"{len(roster)} on roster, {total} with screening data, "
-            f"{no_data_count} skipped (never screened)"
+            f"{len(roster)} on roster, {total} report-ready, "
+            f"{len(partial_ids)} partially verified, {no_data_count} skipped"
         )
 
         if total == 0:
-            await mark(
-                status="error",
-                error=f"None of the {len(roster)} students have screening data yet.",
-            )
+            detail = f"No student at this school has a completed report yet ({len(roster)} on roster)."
+            if partial_ids:
+                detail += (
+                    f" {len(partial_ids)} student(s) are part-way through — a report is only"
+                    " included once a medical officer has verified all six screenings."
+                )
+            await mark(status="error", error=detail)
             return
 
         semaphore = asyncio.Semaphore(BULK_RENDER_CONCURRENCY)
@@ -1783,7 +1806,8 @@ async def _run_bulk_pdf_job(
                     f"Sections: {', '.join(sections)}",
                     f"Students on roster: {len(roster)}",
                     f"Reports generated: {len(generated)}",
-                    f"Skipped — never screened (no data at all): {no_data_count}",
+                    f"Skipped — report not signed off yet: {no_data_count}",
+                    f"  (of those, {len(partial_ids)} are partially verified)",
                     f"Skipped — render failed: {len(skipped)}",
                 ]
                 if skipped:

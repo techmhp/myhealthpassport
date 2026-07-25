@@ -120,7 +120,9 @@ const SchoolData = () => {
         const job = await statusRes.json();
 
         if (job.state === 'error') {
-          toastMessage(job.error || 'PDF export failed', 'error');
+          // "nothing signed off yet" is a normal outcome, not a failure
+          const isEmpty = (job.error || '').includes('completed report');
+          toastMessage(job.error || 'PDF export failed', isEmpty ? 'info' : 'error');
           setBulkPdf(null);
           return;
         }

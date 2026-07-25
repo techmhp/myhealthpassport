@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import re
+import shutil
 import time
 import json
 import uuid
@@ -1667,6 +1668,10 @@ async def _run_bulk_pdf_job(
 ):
     """Render every student's report for a school and bundle them into a ZIP."""
     zip_path = BULK_DIR / f"bulk_{job_id}.zip"
+    # Per-job scratch dir: each PDF lands here as it is rendered, so peak memory
+    # stays at one PDF rather than the whole school's worth.
+    work_dir = BULK_DIR / f"work_{job_id}"
+    work_dir.mkdir(parents=True, exist_ok=True)
 
     async def mark(**fields):
         async with bulk_jobs_lock:
@@ -1757,11 +1762,13 @@ async def _run_bulk_pdf_job(
                     })
                     html_content = templates.get_template("reports.html").render(context)
                     pdf_bytes = await render_html_to_pdf(html_content)
-                    results.append({
-                        "ok": True,
-                        "name": f"{_safe_filename(label)}.pdf",
-                        "bytes": pdf_bytes,
-                    })
+                    # Write straight to disk — holding hundreds of PDFs in memory
+                    # until the ZIP is built can exhaust RAM and take the API down.
+                    out_name = f"{_safe_filename(label)}.pdf"
+                    out_path = work_dir / f"{student.id}_{out_name}"
+                    await anyio.to_thread.run_sync(out_path.write_bytes, pdf_bytes)
+                    del pdf_bytes
+                    results.append({"ok": True, "name": out_name, "path": out_path})
                 except HTTPException as e:
                     # Incomplete screening data — skip this student, don't fail the job.
                     results.append({"ok": False, "label": label, "reason": str(e.detail)})
@@ -1799,7 +1806,7 @@ async def _run_bulk_pdf_job(
                             counter += 1
                         name = f"{stem}_{counter}{dot}{ext}"
                     used.add(name)
-                    zf.writestr(name, item["bytes"])
+                    zf.write(item["path"], arcname=name)
 
                 summary = [
                     f"School ID: {school_id}",
@@ -1833,6 +1840,13 @@ async def _run_bulk_pdf_job(
     except Exception as e:
         print(f"❌ [Bulk PDF] Job {job_id} failed: {e}")
         await mark(status="error", error=str(e))
+
+    finally:
+        # The ZIP is what gets served; the loose PDFs are no longer needed.
+        try:
+            await anyio.to_thread.run_sync(lambda: shutil.rmtree(work_dir, ignore_errors=True))
+        except Exception:
+            pass
 
 
 @router.post("/school/{school_id}/start-bulk-pdf")

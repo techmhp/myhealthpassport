@@ -58,11 +58,23 @@ async function handle(req, action) {
     });
   }
 
+  // Upstream is normally JSON, but a restarting API or a gateway timeout returns
+  // an HTML error page. Forwarding that as application/json makes the caller's
+  // .json() blow up with "Unexpected token '<'", which hides the real problem.
   const text = await result.text();
-  return new Response(text, {
-    status: result.status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
+  try {
+    JSON.parse(text);
+    return new Response(text, {
+      status: result.status,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  } catch {
+    const hint =
+      result.status === 502 || result.status === 504
+        ? 'The reports service is restarting or timed out. Please try again in a minute.'
+        : `Unexpected response from the reports service (HTTP ${result.status}).`;
+    return Response.json({ error: hint }, { status: result.status === 200 ? 502 : result.status });
+  }
 }
 
 export async function GET(req, { params }) {

@@ -157,6 +157,7 @@ const ROLE_COLUMNS = (root, userRole, page = null) => {
       { key: 'nutrition_analysis_status', header: 'Nutrition Analysis', type: 'status' },
       { key: 'psychological_analysis_status', header: 'Emotional Analysis', type: 'status' },
       { key: 'medical_officer_analysis_status', header: 'Medical Officer', type: 'status' },
+      { key: 'report_pdf', header: 'Report (PDF)', type: 'report_pdf' },
     ];
   }
 

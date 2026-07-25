@@ -3,16 +3,18 @@ import { useState, useEffect } from 'react';
 import { downloadPDFSelected, startPDFGenerationSelected, createPDFDownloadToken } from '@/services/secureApis';
 import { toastMessage } from '@/helpers/utilities';
 
-const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, onDownloadEnd, children, className = '', academicYear = null }) => {
+const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, onDownloadEnd, children, className = '', academicYear = null, prewarm = true }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(0);
 
   // Pre-warm: silently kick off PDF generation when the button mounts so the
   // PDF is cached (or nearly ready) by the time the user clicks download.
+  // Disabled (prewarm={false}) when many buttons render at once — e.g. a roster
+  // list — so mounting the page doesn't fire one generation job per student.
   useEffect(() => {
-    if (!studentId) return;
-    const prewarm = async () => {
+    if (!studentId || !prewarm) return;
+    const runPrewarm = async () => {
       try {
         const data = JSON.stringify({
           reports:
@@ -25,9 +27,9 @@ const PDFDownloadButton = ({ studentId, selectedReports = [], onDownloadStart, o
         // Silent fail — pre-warm is best-effort only
       }
     };
-    prewarm();
+    runPrewarm();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, academicYear]);
+  }, [studentId, academicYear, prewarm]);
 
   const pollPDFStatus = async (queryParameter) => {
     // Poll up to 5 minutes: first 10 polls every 3s, then every 5s after that

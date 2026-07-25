@@ -150,9 +150,11 @@ const SchoolData = () => {
         }
 
         if (job.state === 'error') {
-          // "nothing signed off yet" is a normal outcome, not a failure
+          // "nothing signed off yet" is a normal outcome, not a failure.
+          // toastMessage only renders error/success/warn — 'info' is silently
+          // dropped, which looks like the dialog closing with no explanation.
           const isEmpty = (job.error || '').includes('completed report');
-          toastMessage(job.error || 'PDF export failed', isEmpty ? 'info' : 'error');
+          toastMessage(job.error || 'PDF export failed', isEmpty ? 'warn' : 'error');
           setBulkPdf(null);
           return;
         }
@@ -339,7 +341,7 @@ const SchoolData = () => {
                 onClick={() => {
                   bulkCancelled.current = true;
                   setBulkPdf(null);
-                  toastMessage('Stopped waiting — generation continues in the background', 'info');
+                  toastMessage('Stopped waiting — generation continues in the background', 'warn');
                 }}
                 className="mt-5 text-sm text-gray-500 hover:text-gray-700 underline"
               >

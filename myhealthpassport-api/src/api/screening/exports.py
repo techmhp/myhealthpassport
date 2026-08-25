@@ -44,6 +44,11 @@ def _make_student_name(student) -> str:
     return " ".join(p for p in parts if p and p.strip()).strip()
 
 
+def _fmt_dob(student) -> str:
+    """Date of birth as YYYY-MM-DD, matching the students-list export."""
+    return str(student.dob) if student.dob else ""
+
+
 def _extract_answers(questions_data, question_type: str) -> str:
     """Pull answer list for a given question_type out of a report's questions_data."""
     if not questions_data:
@@ -114,7 +119,7 @@ async def export_nutrition_checklist(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Eyes", "Hair", "Mouth/Lips", "Skin", "Nails", "Teeth",
         "General Signs", "Bone & Muscle", "Notes", "Saved At",
     ])
@@ -127,6 +132,7 @@ async def export_nutrition_checklist(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
             ns.eyes if ns else "",
             ns.hair if ns else "",
             ns.mouth_lips if ns else "",
@@ -180,7 +186,7 @@ async def export_nutrition_analysis(
     output = io.StringIO()
     writer = csv.writer(output)
 
-    headers = ["Roll No", "Name", "Gender", "Class", "Section"]
+    headers = ["Roll No", "Name", "Gender", "Class", "Section", "DOB"]
     for rt in REPORT_TYPES:
         short = rt.replace(" Report", "").replace(" Reports", "")
         headers += [
@@ -202,6 +208,7 @@ async def export_nutrition_analysis(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
         ]
 
         for rt in REPORT_TYPES:
@@ -258,7 +265,7 @@ async def export_psychology_analysis(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Good Strengths - Findings", "Good Strengths - Remarks",
         "Need Attention - Findings", "Need Attention - Remarks",
         "Status", "Summary", "Clinical Notes & Recommendations",
@@ -289,6 +296,7 @@ async def export_psychology_analysis(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
             good_findings,
             good_remarks,
             need_findings,
@@ -337,7 +345,7 @@ async def export_smart_scale(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Height (cm)", "Age (years)", "Weighing Time", "Body Weight (kg)", "BMI",
         "Body Fat Rate (%)", "Fat Content (kg)", "Lean Body Mass (kg)",
         "Muscle Mass (kg)", "Muscle Rate (%)", "Skeletal Muscle Mass (kg)",
@@ -361,6 +369,7 @@ async def export_smart_scale(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
             sd.height_cm if sd else "",
             sd.age_years if sd else "",
             sd.weighing_time.strftime("%Y-%m-%d %H:%M") if (sd and sd.weighing_time) else "",
@@ -490,7 +499,7 @@ async def export_psychology_checklist(
     output = io.StringIO()
     writer = csv.writer(output)
 
-    headers = ["Roll No", "Name", "Gender", "Class", "Section"]
+    headers = ["Roll No", "Name", "Gender", "Class", "Section", "DOB"]
     for _, cat_label in _BS_CATEGORIES:
         headers.append(f"{cat_label} - Concern")
         headers.append(f"{cat_label} - Checklist Items")
@@ -507,6 +516,7 @@ async def export_psychology_checklist(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
         ]
         for cat_key, _ in _BS_CATEGORIES:
             cat_data = getattr(bs, cat_key, None) if bs else None
@@ -560,7 +570,7 @@ async def export_dental_screening(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Patient Concern", "Oral Examination", "Examination Note",
         "Diagnosis", "Treatment Recommendations", "Treatment Recommendations Note",
         "Report Summary", "Next Follow-up", "Screening Status", "Saved At",
@@ -574,6 +584,7 @@ async def export_dental_screening(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
             ds.patient_concern if ds else "",
             ds.oral_examination if ds else "",
             ds.examination_note if ds else "",
@@ -623,7 +634,7 @@ async def export_vision_screening(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Patient Concern", "Vision Left Eye", "Vision Right Eye",
         "Additional Findings", "Recommendations", "Report Summary",
         "Next Follow-up", "Screening Status", "Saved At",
@@ -637,6 +648,7 @@ async def export_vision_screening(
             student.gender,
             student.class_room,
             student.section,
+            _fmt_dob(student),
             es.patient_concern if es else "",
             es.vision_lefteye_res if es else "",
             es.vision_righteye_res if es else "",
@@ -708,7 +720,7 @@ async def export_all_reports_excel(
     # ── Sheet 1: Dental ───────────────────────────────────────────────────────
     ws_dental = wb.create_sheet("Dental Screening")
     dental_headers = [
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Patient Concern", "Oral Examination", "Examination Note",
         "Diagnosis", "Treatment Recommendations", "Treatment Recommendations Note",
         "Report Summary", "Next Follow-up", "Screening Status", "Saved At",
@@ -717,7 +729,7 @@ async def export_all_reports_excel(
     for student in students:
         ds = dental_map.get(student.id)
         ws_dental.append([
-            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section,
+            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section, _fmt_dob(student),
             ds.patient_concern if ds else "",
             ds.oral_examination if ds else "",
             ds.examination_note if ds else "",
@@ -733,7 +745,7 @@ async def export_all_reports_excel(
     # ── Sheet 2: Vision ───────────────────────────────────────────────────────
     ws_vision = wb.create_sheet("Vision Screening")
     vision_headers = [
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Patient Concern", "Vision Left Eye", "Vision Right Eye",
         "Additional Findings", "Recommendations", "Report Summary",
         "Next Follow-up", "Screening Status", "Saved At",
@@ -742,7 +754,7 @@ async def export_all_reports_excel(
     for student in students:
         es = vision_map.get(student.id)
         ws_vision.append([
-            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section,
+            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section, _fmt_dob(student),
             es.patient_concern if es else "",
             es.vision_lefteye_res if es else "",
             es.vision_righteye_res if es else "",
@@ -757,7 +769,7 @@ async def export_all_reports_excel(
     # ── Sheet 3: Nutrition ────────────────────────────────────────────────────
     ws_nutrition = wb.create_sheet("Nutrition Screening")
     nutrition_headers = [
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Eyes", "Hair", "Mouth/Lips", "Skin", "Nails", "Teeth",
         "General Signs", "Bone & Muscle", "Notes", "Screening Status", "Saved At",
     ]
@@ -765,7 +777,7 @@ async def export_all_reports_excel(
     for student in students:
         ns = nutrition_map.get(student.id)
         ws_nutrition.append([
-            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section,
+            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section, _fmt_dob(student),
             ns.eyes if ns else "",
             ns.hair if ns else "",
             ns.mouth_lips if ns else "",
@@ -782,14 +794,14 @@ async def export_all_reports_excel(
     # ── Sheet 4: Psychology / Behavioural ─────────────────────────────────────
     ws_psych = wb.create_sheet("Psychology Screening")
     psych_headers = [
-        "Roll No", "Name", "Gender", "Class", "Section",
+        "Roll No", "Name", "Gender", "Class", "Section", "DOB",
         "Gross Motor Skills", "Notes", "Next Follow-up", "Screening Status", "Saved At",
     ]
     _style_header_row(ws_psych, psych_headers, "8B5CF6")
     for student in students:
         bs = behaviour_map.get(student.id)
         ws_psych.append([
-            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section,
+            student.roll_no, _make_student_name(student), student.gender, student.class_room, student.section, _fmt_dob(student),
             bs.gross_motor_skills if bs else "",
             bs.note if bs else "",
             bs.next_followup if bs else "",

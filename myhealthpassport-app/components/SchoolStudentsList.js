@@ -8,7 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import ROLE_COLUMNS from '@/helpers/roleBasedTableColumns';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 import { studentList, updateOverallScreeningStatus, updatePaymentStatus } from '@/services/secureApis';
-import { toastMessage, formatFullName, renderStatusIcon, renderMedicalOfficerStatus } from '@/helpers/utilities';
+import { toastMessage, formatFullName, renderStatusIcon, renderMedicalOfficerStatus, matchesSearch } from '@/helpers/utilities';
 import ConfirmModal from './UI/ConfirmModal';
 import FilterSection from './FilterSection';
 import PDFDownloadButton from './PDFDownloadButton';
@@ -69,17 +69,7 @@ const SchoolStudentsList = ({ school, page = null, onStudentClick = null }) => {
 
   // Filter the student list based on the search term
   const filteredStudents = allStudents.filter(student => {
-    // Convert search term to lowercase for case-insensitive search
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-
-    // Check if the search term is found in any of the relevant fields
-    return (
-      student.roll_no.toLowerCase().includes(lowerCaseSearchTerm) ||
-      formatFullName(student).toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.gender.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.age.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.phone.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    return matchesSearch(searchQuery, [student.roll_no, formatFullName(student), student.gender, student.age, student.phone]);
   });
 
   const columns = ROLE_COLUMNS(root, role, page) || ROLE_COLUMNS('SCHOOL_STAFF', 'SCHOOL_ADMIN');

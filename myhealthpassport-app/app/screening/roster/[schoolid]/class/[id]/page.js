@@ -15,7 +15,7 @@ import {
   exportPsychologyChecklist,
   exportSmartScale,
 } from '@/services/secureApis';
-import { formatFullName, toastMessage } from '@/helpers/utilities';
+import { formatFullName, toastMessage, matchesSearch } from '@/helpers/utilities';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 import FilterSection from '@/components/FilterSection';
 
@@ -148,12 +148,7 @@ const ClassView = () => {
 
   // Filter the student list based on search, date, and absentee status
   const filteredStudents = students.filter(student => {
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-    const matchesSearch =
-      student.roll_no.toLowerCase().includes(lowerCaseSearchTerm) ||
-      formatFullName(student).toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.gender.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.age.toLowerCase().includes(lowerCaseSearchTerm);
+    const matchesTerm = matchesSearch(searchQuery, [student.roll_no, formatFullName(student), student.gender, student.age]);
 
     // Absentee filter: hide students with registration_status === false
     const matchesAbsent = hideAbsent ? student.registration_status !== false : true;
@@ -163,7 +158,7 @@ const ClassView = () => {
     const studentDate = student.screening_date || student.registered_date || student.created_at;
     const matchesDate = filterDate ? (studentDate ? studentDate.startsWith(filterDate) : true) : true;
 
-    return matchesSearch && matchesAbsent && matchesDate;
+    return matchesTerm && matchesAbsent && matchesDate;
   });
 
   const renderTabContent = () => {

@@ -8,7 +8,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { getExpertsList, getExpertsListNearByYou, getPrefferedExpertsList } from '@/services/secureApis';
-import { toastMessage, formatFullName } from '@/helpers/utilities';
+import { toastMessage, formatFullName, matchesSearch } from '@/helpers/utilities';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 
 const tabs = [
@@ -116,12 +116,7 @@ const Book = () => {
 
   const experts = results[activeTab.toUpperCase()] || [];
   const filteredExperts = experts.filter(expert => {
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-    return (
-      formatFullName(expert).toLowerCase().includes(lowerCaseSearchTerm) ||
-      expert.location.toLowerCase().includes(lowerCaseSearchTerm) ||
-      expert.education.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    return matchesSearch(searchQuery, [formatFullName(expert), expert.location, expert.education]);
   });
 
   // Place this helper above renderTabContent

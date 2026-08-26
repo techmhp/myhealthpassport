@@ -7,7 +7,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import Header from '@/components/Header';
 import SchoolClassRoomStudentsList from '@/components/SchoolClassRoomStudentsList';
 import { schoolDetails, studentListByClassAndSection, exportDentalScreening, exportVisionScreening } from '@/services/secureApis';
-import { formatFullName, toastMessage } from '@/helpers/utilities';
+import { formatFullName, toastMessage, matchesSearch } from '@/helpers/utilities';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 import FilterSection from '@/components/FilterSection';
 
@@ -106,13 +106,7 @@ const ClassView = () => {
 
   // Filter the student list based on the search term
   const filteredStudents = students.filter(student => {
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-    return (
-      student.roll_no.toLowerCase().includes(lowerCaseSearchTerm) ||
-      formatFullName(student).toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.gender.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.age.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    return matchesSearch(searchQuery, [student.roll_no, formatFullName(student), student.gender, student.age]);
   });
 
   const renderTabContent = () => {

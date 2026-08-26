@@ -33,6 +33,28 @@ export const formatFullName = user => {
   return fullName.trim();
 };
 
+// Normalize a value for searching: coerce to a string, collapse runs of
+// whitespace to a single space, trim, then lowercase.
+// Names imported from CSV often carry stray leading/trailing/double spaces.
+// HTML collapses those when the row is painted, so a student *looks* like
+// "ABDUL AZIZ BIN OSMAN" on screen while the underlying string is
+// "ABDUL  AZIZ BIN OSMAN" - and a raw includes() never matches what the user types.
+export const normalizeForSearch = value =>
+  String(value ?? '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '') // zero-width chars: invisible, and \s does not match them
+    .replace(/\s+/g, ' ') // covers non-breaking spaces, tabs and stray double spaces
+    .trim()
+    .toLowerCase();
+
+// True when the search term appears in any of the given fields.
+// Fields may be null/undefined or non-strings (age, roll numbers); normalizeForSearch
+// handles them, so a missing phone number can no longer throw mid-filter.
+export const matchesSearch = (searchQuery, fields) => {
+  const term = normalizeForSearch(searchQuery);
+  if (!term) return true;
+  return fields.some(field => normalizeForSearch(field).includes(term));
+};
+
 export function ChangeDateFormat(value, format) {
   if (value === '' || typeof value === 'undefined') {
     return null;

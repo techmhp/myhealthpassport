@@ -10,7 +10,7 @@ import Labs from '@/components/Labs';
 import YearSelect from '@/components/YearSelect';
 import { getExpertsList, schoolList } from '@/services/secureApis';
 import Spinner from '@/components/UI/Spinner';
-import { formatFullName, toastMessage } from '@/helpers/utilities';
+import { formatFullName, toastMessage, matchesSearch } from '@/helpers/utilities';
 import ExpertCard from '@/components/ExpertCard';
 
 const Payments = () => {
@@ -94,18 +94,12 @@ const Payments = () => {
   };
 
   const filteredSchools = schools?.items?.filter(school => {
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-    return school.school_full_name.toLowerCase().includes(lowerCaseSearchTerm);
+    return matchesSearch(searchQuery, [school.school_full_name]);
   });
 
   const filteredExperts = experts => {
     const filteredResults = experts.filter(expert => {
-      const lowerCaseSearchTerm = searchQuery.toLowerCase();
-      return (
-        formatFullName(expert).toLowerCase().includes(lowerCaseSearchTerm) ||
-        expert.location.toLowerCase().includes(lowerCaseSearchTerm) ||
-        expert.education.toLowerCase().includes(lowerCaseSearchTerm)
-      );
+      return matchesSearch(searchQuery, [formatFullName(expert), expert.location, expert.education]);
     });
     return filteredResults;
   };

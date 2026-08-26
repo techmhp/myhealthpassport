@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getExpertsList } from '@/services/secureApis';
-import { formatFullName, toastMessage } from '@/helpers/utilities';
+import { formatFullName, toastMessage, matchesSearch } from '@/helpers/utilities';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 
 const tabs = [
@@ -67,12 +67,7 @@ const Experts = () => {
 
   const experts = results[activeTab.toUpperCase()] || [];
   const filteredExperts = experts.filter(expert => {
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-    return (
-      formatFullName(expert).toLowerCase().includes(lowerCaseSearchTerm) ||
-      expert.location.toLowerCase().includes(lowerCaseSearchTerm) ||
-      expert.education.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    return matchesSearch(searchQuery, [formatFullName(expert), expert.location, expert.education]);
   });
 
   const renderTabContent = () => {

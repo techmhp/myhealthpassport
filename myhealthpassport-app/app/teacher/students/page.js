@@ -6,7 +6,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import Header from '@/components/Header';
 import SchoolClassRoomStudentsList from '@/components/SchoolClassRoomStudentsList';
 import { getProfile, schoolDetails, studentListByClassAndSection } from '@/services/secureApis';
-import { formatFullName, toastMessage } from '@/helpers/utilities';
+import { formatFullName, toastMessage, matchesSearch } from '@/helpers/utilities';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 import Image from 'next/image';
 
@@ -75,16 +75,7 @@ const Students = () => {
 
   // Filter the student list based on the search term
   const filteredStudents = students.filter(student => {
-    // Convert search term to lowercase for case-insensitive search
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-
-    // Check if the search term is found in any of the relevant fields
-    return (
-      formatFullName(student).toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.phone.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.age.toLowerCase().includes(lowerCaseSearchTerm) ||
-      student.gender.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    return matchesSearch(searchQuery, [formatFullName(student), student.phone, student.age, student.gender]);
   });
 
   const renderTabContent = () => {

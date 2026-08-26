@@ -9,8 +9,7 @@ import FilterSection from '@/components/FilterSection';
 import InlineSpinner from '@/components/UI/InlineSpinner';
 import { useRouter } from 'next/navigation';
 import { getPatientsList } from '@/services/secureApis';
-import { formatFullName, toastMessage } from '@/helpers/utilities';
-
+import { formatFullName, toastMessage, matchesSearch } from '@/helpers/utilities';
 const Patients = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Table-View');
@@ -52,16 +51,7 @@ const Patients = () => {
 
   // Filter the patients list based on the search term
   const filteredPatients = patients.filter(patient => {
-    // Convert search term to lowercase for case-insensitive search
-    const lowerCaseSearchTerm = searchQuery.toLowerCase();
-
-    // Check if the search term is found in any of the relevant fields
-    return (
-      formatFullName(patient).toLowerCase().includes(lowerCaseSearchTerm) ||
-      patient.phone.toLowerCase().includes(lowerCaseSearchTerm) ||
-      patient.age.toLowerCase().includes(lowerCaseSearchTerm) ||
-      patient.gender.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    return matchesSearch(searchQuery, [formatFullName(patient), patient.phone, patient.age, patient.gender]);
   });
 
   if (loading)
